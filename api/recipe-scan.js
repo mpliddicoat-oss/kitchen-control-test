@@ -60,15 +60,16 @@ Return ONLY valid JSON, no markdown, no explanation, in this exact shape:
   "yieldQty": number,
   "yieldUnit": "one of: portions, g, kg, ml, litre, each",
   "ingredients": [
-    { "name": "ingredient name only, no quantity or prep notes", "quantity": number, "unit": "g, kg, ml, litre, each, tbsp, tsp, bunch, sprig, slice, or portion" }
+    { "name": "ingredient name with product form kept (e.g. 'lime juice', 'onion') but prep instructions removed — see rules below", "quantity": number, "unit": "g, kg, ml, litre, each, tbsp, tsp, bunch, sprig, slice, or portion — copied exactly from the page, never converted" }
   ],
   "steps": [ "step 1 text", "step 2 text" ]
 }
 
 Important:
-- "name" in each ingredient line must be the ingredient itself only — strip quantities, units, and prep instructions like "finely diced" or "at room temperature" into nothing; keep the core ingredient name as it would appear in a stock list (e.g. "chicken thighs", not "2kg boneless chicken thighs, diced")
+- UNITS — copy the measure/unit column EXACTLY as printed, do not convert or normalise it. If the sheet says "Grams" or "g", output unit "g". If it says "Kg" or "Kilograms", output unit "kg". Never guess a different unit based on how large or small the quantity looks, and never silently switch between g and kg — a misread here directly breaks the recipe's costing.
+- INGREDIENT NAMES — only strip preparation/handling instructions: words describing what's done to the ingredient before use, like "finely diced", "chopped", "crushed", "peeled", "at room temperature", "for garnish", "to taste", "drained". Do NOT strip words that describe the product itself, since these mean a different thing must be bought/matched — keep "juice" (lime juice ≠ lime), "zest", "puree", "paste", "stock", "powder", "extract", "oil", "vinegar", "sauce", "flakes", "leaves". Example: "275g lime juice" -> name "lime juice", not "lime". Example: "1kg finely diced onion" -> name "onion" (diced is prep, safe to drop).
 - If a recipe line references another recipe or sub-component within itself (e.g. "200g Beer Batter (see recipe)"), still list it under "ingredients" with its name — it will be matched separately
-- Convert fractions and mixed units to a single decimal "quantity" and a single "unit" (e.g. "1 1/2 cups" -> best numeric estimate in the closest listed unit)
+- Convert fractions and mixed units to a single decimal "quantity" and a single "unit" (e.g. "1 1/2 cups" -> best numeric estimate in the closest listed unit) — this fraction-to-decimal conversion is fine; it's converting between measurement systems (g/kg/ml/litre) that must be avoided
 - If yield/portions is not stated, make a reasonable estimate from the ingredient quantities and note it is estimated by keeping yieldQty conservative
 - "category" must be your best single guess from the fixed list given — never invent a new category
 - Keep step text as written, one instruction per array entry, do not merge or split beyond what's on the page
