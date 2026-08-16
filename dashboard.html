@@ -3178,6 +3178,39 @@ function ingSave(){
     }
     _promotingAwaitingId=null;
   }
+
+  // If this ingredient was created from an unmatched recipe-import row,
+  // skip the normal ingredient-list return and drop straight back into
+  // the recipe form with this slot filled in.
+  if(_recImportReturnSlot!==null && _recImportReturnSlot!==undefined){
+    var returnSlot=_recImportReturnSlot;
+    _recImportReturnSlot=null;
+    _ingId=null; _ingA={}; _ingExtraSups=[]; save(); dashUpdate();
+    if (typeof cascadeAllergenUpdate === 'function') cascadeAllergenUpdate(ingToSync.id);
+    if(ingToSync && typeof saveIngredientToSupabase==='function'){
+      saveIngredientToSupabase(ingToSync).then(function(newId){
+        if(newId && newId!==ingToSync.id){
+          var oldId=ingToSync.id;
+          ingToSync.id=newId; save();
+          // If the recipe slot still points at the temp local id, update it
+          if(_recComps[returnSlot] && _recComps[returnSlot].id===oldId){
+            _recComps[returnSlot].id=newId;
+            compRender('rec');
+          }
+        }
+      });
+    }
+    go('recipes', document.querySelector('.nav-btn[onclick*="recipes"]'));
+    showOnly('rec-form','rec-list','rec-detail');
+    if(_recComps[returnSlot]){
+      _recComps[returnSlot].id=ingToSync.id;
+      _recComps[returnSlot].unit=ingToSync.unit||_recComps[returnSlot].unit||'g';
+      delete _recComps[returnSlot]._scannedName;
+    }
+    compRender('rec');
+    recCalc();
+    return;
+  }
   var savedIngId = _ingId;
   _ingId=null; _ingA={}; _ingExtraSups=[]; save(); dashUpdate(); ingList();
   // Cascade allergen changes to recipes, dishes, allergen sheet
@@ -3437,6 +3470,7 @@ function yldDelIdx(i,ev){ if(window._yldRenderItems&&window._yldRenderItems[i]) 
 // RECIPES
 // ================================================================
 var _recId=null, _recComps=[];
+var _recImportReturnSlot=null; // index in _recComps awaiting a newly-created ingredient
 function recList(){ _recId=null; showOnly('rec-list','rec-form','rec-detail'); recRender(); }
 function recNew(){
   _recId=null; _recComps=[]; _recSteps=[];
@@ -3449,6 +3483,20 @@ function recNew(){
   showOnly('rec-form','rec-list','rec-detail');
 }
 function recAddComp(type){ _recComps.push({type:type,id:'',qty:type==='recipe'?1:'',unit:'g'}); compRender('rec'); }
+
+// Called from the "+ create new ingredient" link on an unmatched recipe-import
+// row. Jumps to a pre-filled ingredient form; ingSave() below routes back
+// here and fills in the slot once the new ingredient is saved.
+function addNewIngredientForRecipeSlot(i){
+  var comp = _recComps[i];
+  if (!comp) return;
+  _recImportReturnSlot = i;
+  var scannedName = comp._scannedName || '';
+  go('ingredients', document.querySelector('.nav-btn[onclick*="ingredients"]'));
+  ingNew();
+  var nameEl = el('ing-name');
+  if (nameEl) nameEl.value = scannedName;
+}
 function recEdit(id){
   if(id===undefined) id=_recId; var r=byId(DB.recipes,id); if(!r) return;
   _recId=id; el('rec-name').value=r.name; el('rec-cat').value=r.category; el('rec-portions').value=r.yieldQty||r.portions||1; var ryuEdit=el('rec-yield-unit'); if(ryuEdit) ryuEdit.value=r.yieldUnit||'portions'; // Load steps
@@ -3465,7 +3513,7 @@ function recDel(id){
 }
 function recSave(){
   var name=el('rec-name').value.trim(); if(!name){ alert('Recipe name required.'); return; }
-  var data={name:tc(name),category:val('rec-cat'),portions:parseFloat(val('rec-portions'))||1,yieldQty:parseFloat(val('rec-portions'))||1,yieldUnit:(el('rec-yield-unit')?el('rec-yield-unit').value:'portions'),steps:_recSteps.filter(function(s){return s.trim();}),method:_recSteps.filter(function(s){return s.trim();}).join('\n'),components:_recComps.filter(function(c){ return !!c.id; })};
+  var data={name:tc(name),category:val('rec-cat'),portions:parseFloat(val('rec-portions'))||1,yieldQty:parseFloat(val('rec-portions'))||1,yieldUnit:(el('rec-yield-unit')?el('rec-yield-unit').value:'portions'),steps:_recSteps.filter(function(s){return s.trim();}),method:_recSteps.filter(function(s){return s.trim();}).join('\n'),components:_recComps.filter(function(c){ return !!c.id || !!c._scannedName; })};
   var savedRecId = _recId;
   if(_recId) Object.assign(byId(DB.recipes,_recId),data); else { var newRec=Object.assign({id:uid()},data); DB.recipes.push(newRec); savedRecId=newRec.id; }
   _recId=null; _recSteps=[]; save(); dashUpdate(); recList();
@@ -3481,7 +3529,9 @@ function recCalc(){
   var p=parseFloat(val('rec-portions'))||1; var ryuEl=el('rec-yield-unit'); var yUnit=ryuEl?ryuEl.value:'portions';
   el('rec-total').innerHTML=fmt(t); el('rec-port-disp').textContent=p+' '+yUnit; if(el('rec-yield-label')) el('rec-yield-label').textContent='Yield ('+yUnit+')'; el('rec-cpp').innerHTML=fmt(t/p); var cpp2=document.getElementById('rec-cpp2'); if(cpp2) cpp2.innerHTML=fmt(t/p);
   var a={}; _recComps.forEach(function(c){ Object.assign(a,compAllergens(c)); });
-  el('rec-live-allergens').innerHTML=chipHTML(a,true)||'<span style="font-size:12px;color:var(--muted)">No allergens yet</span>';
+  var missingCount=_recComps.filter(function(c){ return !c.id; }).length;
+  var warning=missingCount?('<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:600">&#9888; '+missingCount+' ingredient'+(missingCount===1?'':'s')+' not yet linked — cost and allergens below are incomplete until '+(missingCount===1?'it\'s':'they\'re')+' resolved.</div>'):'';
+  el('rec-live-allergens').innerHTML=warning+(chipHTML(a,true)||'<span style="font-size:12px;color:var(--muted)">No allergens yet</span>');
 }
 function recShowDetail(id){
   _recId=id;
@@ -3493,9 +3543,16 @@ function recShowDetail(id){
   el('rec-detail-sub').textContent=r.category+' · Yields: '+yQty+' '+yUnit;
 
   // Build ingredients table
-  var t=0, tbody='', ingRows=[];
+  var t=0, tbody='', ingRows=[], missingCount=0;
   (r.components||[]).forEach(function(comp){
     var name='',cost=0,qty=comp.qty,unit=comp.unit||'',printName='';
+    if(!comp.id){
+      missingCount++;
+      var label=comp._scannedName || (comp.type==='recipe'?'Unresolved sub-recipe':comp.type==='yield'?'Unresolved yield':'Unresolved ingredient');
+      name='<span class="badge" style="background:#fef3c7;color:#92400e;margin-right:4px">&#9888; Missing</span>'+label;
+      tbody+='<tr style="background:#fffbeb"><td>'+name+'</td><td>'+(qty||'--')+'</td><td>'+(unit||'--')+'</td><td>--</td></tr>';
+      return;
+    }
     if(comp.type==='recipe'){
       var sub=byId(DB.recipes,comp.id); if(!sub) return;
       name='<span class="badge bg-teal" style="margin-right:4px">Recipe</span>'+sub.name;
@@ -3513,7 +3570,10 @@ function recShowDetail(id){
     ingRows.push({name:printName,qty:qty,unit:unit});
   });
 
+  var missingBanner=missingCount?('<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;font-weight:600">&#9888; '+missingCount+' ingredient'+(missingCount===1?'':'s')+' not yet linked — cost and allergens below are incomplete. Edit this recipe to resolve '+(missingCount===1?'it':'them')+'.</div>'):'';
+
   el('rec-detail-table').innerHTML=
+    missingBanner+
     '<h3 style="margin-bottom:10px">Ingredients (Yields '+yQty+' '+yUnit+')</h3>'+
     '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="dt"><thead><tr><th>Ingredient</th><th>Qty</th><th>Unit</th><th>Cost</th></tr></thead>'+
     '<tbody>'+tbody+'</tbody></table></div>'+
@@ -3592,7 +3652,11 @@ function recScale(){
 }
 function recRender(f){
   var items=DB.recipes.filter(function(r){ return r.name.toLowerCase().indexOf((f||'').toLowerCase())>=0; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
-  el('rec-items').innerHTML=items.length?items.map(function(r){ return '<div class="card-row"><div onclick="recShowDetail(\''+r.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+r.name+'</div><div class="cr-sub">'+r.category+' &middot; '+(r.yieldQty||r.portions||1)+' '+(r.yieldUnit||'portions')+' &middot; '+fmt(recCostPer(r))+'/'+(r.yieldUnit||'portion')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="recEdit(\''+r.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="recDel(\''+r.id+'\')">Del</button></div></div>'; }).join(''):'<p style="color:var(--muted);text-align:center;padding:30px">No recipes yet.</p>';
+  el('rec-items').innerHTML=items.length?items.map(function(r){
+    var missingCount=(r.components||[]).filter(function(c){ return !c.id; }).length;
+    var missingTag=missingCount?' <span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px">&#9888; '+missingCount+' missing</span>':'';
+    return '<div class="card-row"><div onclick="recShowDetail(\''+r.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+r.name+missingTag+'</div><div class="cr-sub">'+r.category+' &middot; '+(r.yieldQty||r.portions||1)+' '+(r.yieldUnit||'portions')+' &middot; '+fmt(recCostPer(r))+'/'+(r.yieldUnit||'portion')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="recEdit(\''+r.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="recDel(\''+r.id+'\')">Del</button></div></div>';
+  }).join(''):'<p style="color:var(--muted);text-align:center;padding:30px">No recipes yet.</p>';
 }
 
 // ================================================================
@@ -3661,8 +3725,8 @@ function compRender(ctx){
       var onIChg=arrNm+'['+i+'].id=this.value;'+arrNm+'['+i+'].unit=byId(DB.ingredients,this.value)?byId(DB.ingredients,this.value).unit:'+q+'g'+q+';compRender('+q+ctx+q+')';
       var onUnitI=arrNm+'['+i+'].unit=this.value;'+calcNm+'()';
       html+='<div class="comp-row" style="grid-template-columns:auto 2fr 70px 90px auto 28px">';
-      html+='<span class="badge bg-green">Ingredient</span>';
-      html+='<div><div id="comp-ing-sel-'+ctx+'-'+i+'"></div>'+(comp._scannedName?'<div style="font-size:11px;color:#b45309;margin-top:2px">Scanned as: "'+comp._scannedName+'" — pick a match &darr;</div>':'')+'</div>';
+      html+=comp._scannedName?'<span class="badge" style="background:#fef3c7;color:#92400e">&#9888; Missing</span>':'<span class="badge bg-green">Ingredient</span>';
+      html+='<div><div id="comp-ing-sel-'+ctx+'-'+i+'"></div>'+(comp._scannedName?'<div style="font-size:11px;color:#b45309;margin-top:2px">Scanned as: "'+comp._scannedName+'" — pick a match, or '+(ctx==='rec'?'<a href="javascript:void(0)" onclick="addNewIngredientForRecipeSlot('+i+')" style="color:#b45309;text-decoration:underline">create new ingredient</a>':'create a new ingredient first')+'</div>':'')+'</div>';
       html+='<input type="number" step="any" min="0" value="'+(comp.qty||'')+'" placeholder="Qty" oninput="'+onQty+'">';
       html+='<select onchange="'+onUnitI+'">'+['g','kg','ml','litre','each','portion','bunch','sprig','tbsp','tsp','slice'].map(function(u){return'<option'+(comp.unit===u?' selected':'')+'>'+u+'</option>';}).join('')+'</select>';
       html+=costStr+'<button class="btn btn-red btn-sm" onclick="'+onRm+'">X</button></div>';
