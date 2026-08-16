@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Control for Independent Food Businesses — No Head Office, No Problem | Kitchen Control</title>
+<meta name="description" content="Kitchen management built for independent restaurants, cafes and food businesses — allergen tracking, recipe costing and invoice scanning, no head office required.">
+<link rel="canonical" href="https://www.kitchen-control.co.uk/for-independent-businesses.html">
+<meta property="og:title" content="Kitchen Control for Independent Food Businesses">
+<meta property="og:description" content="Kitchen management built for independent restaurants, cafes and food businesses.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.kitchen-control.co.uk/for-independent-businesses.html">
+<meta property="og:image" content="https://www.kitchen-control.co.uk/images/og-image.png">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-RDBRZY77BD');
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper: #F7F5F1;
+    --paper-dim: #EFEBE2;
+    --navy: #2A3950;
+    --navy-soft: #5B6779;
+    --green: #97C25A;
+    --green-dark: #75973F;
+    --grey: #8C9199;
+    --line: #DAD5C9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--navy);
+    font-family:'DM Mono', monospace;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+  }
+  .mono{font-family:'DM Mono', monospace;}
+  .display{font-family:'Oswald', sans-serif; font-weight:700; letter-spacing:-0.01em; text-transform:uppercase;}
+  a{color:inherit;}
+
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px;}
+
+  /* ===== Header ===== */
+  header{border-bottom:1px solid var(--line); padding:20px 0;}
+  header .wrap{display:flex; justify-content:space-between; align-items:center;}
+  .logo{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+    letter-spacing:0.02em;
+    text-transform:uppercase;
+    color:var(--navy);
+    text-decoration:none;
+  }
+  .logo span{color:var(--green-dark);}
+  .header-cta{
+    font-family:'DM Mono', monospace;
+    font-size:0.75rem;
+    font-weight:500;
+    color:var(--navy);
+    text-decoration:none;
+    border:1px solid var(--navy);
+    padding:9px 14px;
+    border-radius:2px;
+  }
+
+  /* ===== Hero ===== */
+  .hero{padding:60px 0 40px;}
+  .eyebrow{
+    font-family:'DM Mono', monospace;
+    font-size:0.74rem;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--green-dark);
+    margin-bottom:16px;
+    display:flex; align-items:center; gap:9px;
+  }
+  .eyebrow::before{content:''; width:7px; height:7px; background:var(--green-dark); border-radius:50%; display:inline-block;}
+  h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    text-transform:uppercase;
+    font-size:clamp(1.9rem, 4.6vw, 3rem);
+    line-height:1.08;
+    margin-bottom:20px;
+    max-width:16ch;
+    color:var(--navy);
+  }
+  .lede{font-size:1.02rem; color:var(--navy-soft); max-width:58ch; margin-bottom:32px;}
+  .lede strong{color:var(--navy);}
+  .cta-row{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:8px;}
+  .btn-primary{
+    font-family:'DM Mono', monospace; font-weight:500; font-size:0.82rem;
+    background:var(--navy); color:var(--paper);
+    padding:13px 22px; text-decoration:none; border-radius:2px; display:inline-block;
+  }
+  .btn-secondary{
+    font-family:'DM Mono', monospace; font-size:0.82rem; color:var(--navy);
+    padding:13px 6px; text-decoration:underline; text-underline-offset:4px; display:inline-block;
+  }
+
+  /* ===== Section framing ===== */
+  section{padding:52px 0;}
+  .section-line{border-top:1px solid var(--line);}
+  h2{
+    font-family:'Oswald', sans-serif; font-weight:700; text-transform:uppercase;
+    font-size:clamp(1.4rem, 2.6vw, 1.9rem); margin-bottom:14px; max-width:24ch; color:var(--navy);
+  }
+  .section-intro{color:var(--navy-soft); max-width:60ch; margin-bottom:32px; font-size:0.96rem;}
+
+  /* ===== Pain point cards ===== */
+  .pain-grid{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line);}
+  .pain-item{background:#fff; padding:24px;}
+  .pain-num{font-family:'DM Mono', monospace; font-size:0.78rem; color:var(--green-dark); margin-bottom:10px;}
+  .pain-item h3{font-family:'Oswald', sans-serif; text-transform:uppercase; font-size:0.95rem; margin-bottom:8px; color:var(--navy);}
+  .pain-item p{color:var(--navy-soft); font-size:0.88rem;}
+  @media (max-width:640px){.pain-grid{grid-template-columns:1fr;}}
+
+  /* ===== Feature docket ===== */
+  .docket{
+    background:#fff;
+    border:1px solid var(--line);
+    max-width:480px;
+    box-shadow:0 4px 0 var(--line);
+    margin:0 auto;
+  }
+  .docket-top{padding:20px 22px 16px; border-bottom:1px dashed var(--grey);}
+  .docket-top .mono{font-size:0.72rem; color:var(--grey); text-transform:uppercase; letter-spacing:0.08em;}
+  .docket-title{font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; font-size:1rem; margin-top:6px;}
+  .docket-body{padding:6px 22px;}
+  .docket-row{
+    display:flex; justify-content:space-between; align-items:baseline; gap:16px;
+    font-family:'DM Mono', monospace;
+    font-size:0.82rem;
+    padding:11px 0;
+    border-bottom:1px dotted var(--line);
+  }
+  .docket-row:last-child{border-bottom:none;}
+  .docket-row .tick{color:var(--green-dark); font-weight:700; flex-shrink:0;}
+  .docket-foot{
+    padding:16px 22px 22px;
+    font-family:'DM Mono', monospace;
+    font-size:0.74rem;
+    color:var(--grey);
+    border-top:1px dashed var(--grey);
+  }
+
+  /* ===== Honesty box ===== */
+  .honest-box{background:var(--paper-dim); border-left:3px solid var(--navy); padding:20px 22px; margin:32px 0; font-size:0.9rem; max-width:640px;}
+  .honest-box .tag{display:block; font-family:'Oswald', sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--navy); margin-bottom:8px; font-weight:600;}
+
+  /* ===== Closing CTA ===== */
+  .closer{background:var(--navy); color:var(--paper); padding:56px 0;}
+  .closer h2{color:var(--paper); max-width:18ch;}
+  .closer .section-intro{color:#B7BFC9;}
+  .closer .btn-primary{background:var(--green); color:var(--navy);}
+  .closer .btn-secondary{color:var(--paper);}
+  .price-tag{font-family:'DM Mono', monospace; font-size:0.82rem; color:#B7BFC9; margin-top:16px;}
+  .price-tag strong{color:var(--paper); font-size:1.05rem;}
+
+  footer{padding:28px 0; font-family:'DM Mono', monospace; font-size:0.72rem; color:var(--grey); border-top:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a href="/" class="logo">Kitchen<span>·</span>Control</a>
+    <a href="https://www.kitchen-control.co.uk/" class="header-cta">FIND OUT MORE</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Kitchen Control for Independent Food Businesses</div>
+    <h1>No head office. No back-of-house team. Just you.</h1>
+    <p class="lede">Run an independent restaurant, cafe or kitchen and there's no chain support desk to call when the allergen sheet's out of date or a supplier price jumps mid-month. <strong>Kitchen Control was built for exactly that gap</strong> — by a chef who's run a kitchen the same way.</p>
+    <div class="cta-row">
+      <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
+      <a href="#docket" class="btn-secondary">See what it covers ↓</a>
+    </div>
+  </div>
+</section>
+
+<section class="section-line">
+  <div class="wrap">
+    <h2>What's different about running it alone</h2>
+    <p class="section-intro">Not a chain outlet following someone else's playbook — a kitchen where the person cooking is often the person doing the books, the ordering, and the allergen sheet, with nobody upstream checking any of it.</p>
+    <div class="pain-grid">
+      <div class="pain-item">
+        <div class="pain-num">01</div>
+        <h3>No head office backup</h3>
+        <p>An independent business doesn't get a compliance team, a central purchasing system, or someone else's software licence. Whatever's in place, you put there yourself.</p>
+      </div>
+      <div class="pain-item">
+        <div class="pain-num">02</div>
+        <h3>Allergen liability sits with you</h3>
+        <p>If a customer asks and the answer's wrong, that's not a brand's problem to manage — it's yours, on the day, at the table.</p>
+      </div>
+      <div class="pain-item">
+        <div class="pain-num">03</div>
+        <h3>Staff turnover is constant</h3>
+        <p>Independent kitchens run lean, and cover changes often. Whatever system you use needs to make sense to someone on their first shift, not just to you.</p>
+      </div>
+      <div class="pain-item">
+        <div class="pain-num">04</div>
+        <h3>You're the ordering department</h3>
+        <p>No procurement team cross-checking invoices. Whatever a supplier sends, you're the one who has to catch the mistake.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-line" id="docket">
+  <div class="wrap">
+    <h2>What Kitchen Control actually does</h2>
+    <p class="section-intro">Four things, built to be run by one person, with no training course required.</p>
+
+    <div class="docket">
+      <div class="docket-top">
+        <div class="mono">KITCHEN CONTROL — CORE FEATURES</div>
+        <div class="docket-title">On the pass, every shift</div>
+      </div>
+      <div class="docket-body">
+        <div class="docket-row"><span class="tick">✓</span><span>Allergen management, tracked against every recipe</span></div>
+        <div class="docket-row"><span class="tick">✓</span><span>Live recipe costing — know your real margin, not last month's guess</span></div>
+        <div class="docket-row"><span class="tick">✓</span><span>AI invoice scanning — no manual typing when a delivery lands</span></div>
+        <div class="docket-row"><span class="tick">✓</span><span>Team access, so cover staff see the same information you do</span></div>
+      </div>
+      <div class="docket-foot">£12.99/MONTH · 30-DAY FREE TRIAL · SET UP IN AN AFTERNOON</div>
+    </div>
+
+    <div class="honest-box">
+      <span class="tag">What this isn't</span>
+      Kitchen Control isn't a till system and it doesn't manage general stock or inventory — it's built specifically for the kitchen's back-of-house admin: allergens, costing, invoices and team access. If you're after a full EPOS or stock-control solution, pair Kitchen Control with whatever you're already using for that side of the business.
+    </div>
+  </div>
+</section>
+
+<section class="closer" id="trial">
+  <div class="wrap">
+    <h2>Try it for 30 days. Cancel any time.</h2>
+    <p class="section-intro">Built for independent kitchens with no head office behind them — including yours.</p>
+    <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
+    <div class="price-tag">Then <strong>£12.99/month</strong>. Cancel any time.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="margin-bottom:12px;">
+    <a href="/compare-spreadsheets.html">vs Spreadsheets</a> · <a href="/compare-menuiq.html">vs MenuIQ</a> · <a href="/compare-jelly.html">vs Jelly</a> · <a href="/for-independent-businesses.html">For Independent Businesses</a> · <a href="/guide-allergen-law.html">Allergen Law Guide</a>
+  </div>
+  <div class="wrap">KITCHEN CONTROL LTD · COMPANIES HOUSE NO. 17239504 · KITCHEN-CONTROL.CO.UK</div>
+</footer>
+
+</body>
+</html>

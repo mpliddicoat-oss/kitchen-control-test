@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Control — Quick Start Guide</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f3f4f6;color:#1a2332;line-height:1.7;}
+.top-bar{background:linear-gradient(135deg,#16222c,#223548);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.2);}
+.top-bar-logo{display:flex;align-items:center;gap:10px;}
+
+.top-bar-name{color:white;font-weight:700;font-size:15px;}
+.back-btn{padding:7px 14px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:white;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s;font-family:inherit;}
+.back-btn:hover{background:rgba(255,255,255,0.2);}
+.container{max-width:860px;margin:0 auto;padding:32px 20px;}
+.hero{background:linear-gradient(135deg,#16222c,#223548);color:white;border-radius:16px;padding:40px;margin-bottom:28px;box-shadow:0 4px 20px rgba(0,0,0,0.15);}
+.hero h1{font-size:2rem;font-weight:700;margin-bottom:8px;}
+.hero p{color:rgba(255,255,255,0.7);font-size:15px;}
+.card{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.card h2{font-size:1.1rem;font-weight:700;color:#16222c;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #7fbf3f;display:flex;align-items:center;gap:8px;}
+.card h3{font-size:0.95rem;font-weight:700;color:#7fbf3f;margin:16px 0 8px;}
+.card p{font-size:14px;color:#4b5563;margin-bottom:10px;}
+.card ol,.card ul{padding-left:20px;margin-bottom:12px;}
+.card li{font-size:14px;color:#4b5563;margin-bottom:6px;}
+.tip{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;color:#166534;}
+.tip strong{color:#15803d;}
+.step-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:16px;}
+.step-card{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;}
+.step-num{width:28px;height:28px;background:#7fbf3f;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-bottom:10px;}
+.step-card h4{font-size:13px;font-weight:700;color:#16222c;margin-bottom:6px;}
+.step-card p{font-size:12px;color:#6b7280;margin:0;}
+.nav-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;}
+.nav-card{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;text-decoration:none;color:inherit;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.nav-card:hover{border-color:#7fbf3f;transform:translateY(-2px);box-shadow:0 4px 12px rgba(127,191,63,0.15);}
+.nav-card h3{font-size:15px;font-weight:700;color:#16222c;margin-bottom:6px;}
+.nav-card p{font-size:13px;color:#6b7280;margin:0;}
+.badge{display:inline-block;background:#7fbf3f;color:white;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:10px;}
+footer{text-align:center;padding:32px 20px;color:#9ca3af;font-size:13px;}
+@media(max-width:600px){.hero{padding:24px;} .hero h1{font-size:1.5rem;}}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-RDBRZY77BD");
+</script>
+</head>
+<body>
+<div class="top-bar">
+  <div class="top-bar-logo">
+    <img src="logo.png" alt="Kitchen Control" style="height:32px;width:auto;">
+  </div>
+  <a href="userguide.html" class="back-btn">&#8592; Back</a>
+</div>
+<div class="container">
+  <div class="hero">
+    <h1>&#9889; Quick Start Guide</h1>
+    <p>Get your kitchen fully operational in a few sessions. Follow these steps in order.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#128666; Step 1 — Add Your Suppliers</h2>
+    <p>Go to <strong>Suppliers → Add Supplier</strong> and enter your main suppliers. You'll need at least one before adding ingredients.</p>
+    <div class="tip"><strong>Tip:</strong> You can also import suppliers automatically by scanning an invoice.</div>
+  </div>
+
+  <div class="card">
+    <h2>&#128247; Step 2 — Scan Your First Invoice</h2>
+    <p>Go to <strong>Dashboard → Import Invoice</strong>. Take a clear photo of a delivery invoice. Kitchen Control will extract all product names and prices automatically.</p>
+    <div class="tip"><strong>Tip:</strong> Digital PDF invoices from supplier portals give the best results.</div>
+  </div>
+
+  <div class="card">
+    <h2>&#129346; Step 3 — Build Your Ingredient Library</h2>
+    <p>Go to <strong>Ingredients → Add Ingredient</strong>. For each ingredient enter:</p>
+    <ul>
+      <li>Ingredient name</li>
+      <li>Supplier and pack size</li>
+      <li>Pack cost (updates automatically when you scan invoices)</li>
+      <li>Allergen information</li>
+    </ul>
+    <div class="tip"><strong>Tip:</strong> Use <strong>Scan Label</strong> on an ingredient to automatically detect allergens from the packaging.</div>
+  </div>
+
+  <div class="card">
+    <h2>&#9878; Step 4 — Create Yields (Optional)</h2>
+    <p>Go to <strong>Yields → New Yield</strong>. Yields calculate the true cost of a prepared ingredient — for example a whole chicken yielding trimmed breast portions.</p>
+    <div class="tip"><strong>Tip:</strong> Yields give you much more accurate GP calculations than using raw ingredient costs.</div>
+  </div>
+
+  <div class="card">
+    <h2>&#128214; Step 5 — Build Recipes</h2>
+    <p>Go to <strong>Recipes → New Recipe</strong>. Add ingredients, yields and sub-recipes. Kitchen Control calculates the total cost and cost per portion automatically.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#127869; Step 6 — Create Dishes</h2>
+    <p>Go to <strong>Dishes → New Dish</strong>. Combine recipes into customer-facing dishes. Enter your sell price to see live GP%.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#128203; Step 7 — Build Menus</h2>
+    <p>Go to <strong>Menus → New Menu</strong>. Add dishes and arrange them in course order using the ▲▼ arrows. Dishes sort automatically by category.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#9888; Step 8 — Print Allergen Sheets</h2>
+    <p>Go to <strong>Allergen Sheet</strong>. Select By Dish, By Recipe, By Ingredient or By Menu to generate your allergen matrix. Click Print for a print-ready version.</p>
+    <div class="tip"><strong>Important:</strong> Always verify allergen information independently. Kitchen Control is only as accurate as the data you enter.</div>
+  </div>
+
+</div>
+<footer><p>Kitchen Control &copy; 2026 &middot; Built by chefs, for chefs.</p></footer>
+</body>
+</html>

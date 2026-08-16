@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Control - Sign In</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#223548,#16222c);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;color:#223548;}
+.card{background:#fff;border-radius:14px;padding:40px 32px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;}
+.logo{margin-bottom:18px;}
+.logo img{max-width:200px;height:auto;}
+h1{font-size:20px;font-weight:600;margin-bottom:6px;color:#223548;}
+.subtitle{font-size:13px;color:#6b7280;margin-bottom:24px;line-height:1.5;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;text-align:left;}
+label{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;}
+input{padding:11px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:16px;font-family:inherit;background:#fff;color:#223548;width:100%;transition:border-color .15s;}
+input:focus{outline:none;border-color:#7fbf3f;}
+.btn{width:100%;padding:11px;background:#7fbf3f;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;margin-top:6px;}
+.btn:hover{background:#5a9a25;}
+.btn:disabled{background:#9ca3af;cursor:not-allowed;}
+.btn-secondary{width:100%;padding:11px;background:#fff;color:#223548;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:10px;text-decoration:none;display:block;}
+.btn-secondary:hover{border-color:#7fbf3f;color:#5a9a25;}
+.error{color:#dc2626;font-size:13px;margin-top:10px;display:none;background:#fee2e2;padding:8px;border-radius:6px;border:1px solid #fecaca;}
+.success{color:#065f46;font-size:13px;margin-top:10px;display:none;background:#d1fae5;padding:8px;border-radius:6px;border:1px solid #6ee7b7;}
+.footer{margin-top:20px;font-size:11px;color:#9ca3af;line-height:1.5;}
+.forgot{font-size:12px;color:#7fbf3f;cursor:pointer;margin-top:8px;display:block;text-align:right;}
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:#d1d5db;font-size:12px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#e5e7eb;}
+.panel{display:none;}
+.panel.active{display:block;}
+</style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-RDBRZY77BD");
+</script>
+</head>
+<body>
+<div class="card">
+  <div class="logo"><img src="logo.png" alt="Kitchen Control"></div>
+  <h1>Kitchen Control</h1>
+  <p class="subtitle">Back of house management system</p>
+
+  <!-- Sign In Panel -->
+  <div id="panel-signin" class="panel active">
+    <div class="fg"><label>Email</label><input type="email" id="si-email" placeholder="chef@kitchen.com" autocomplete="email"></div>
+    <div class="fg"><label>Password</label><input type="password" id="si-pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="btn" id="si-btn" data-text="Sign In" onclick="signIn()">Sign In</button>
+    <span class="forgot" onclick="showPanel('reset')">Forgot password?</span>
+    <div class="error" id="si-error"></div>
+    <div class="divider">or</div>
+    <a href="signup.html" class="btn-secondary">Start Free 30-Day Trial →</a>
+  </div>
+
+  <!-- Reset Password Panel -->
+  <div id="panel-reset" class="panel">
+    <p style="font-size:13px;color:#6b7280;margin-bottom:16px;text-align:left">Enter your email and we'll send you a reset link.</p>
+    <div class="fg"><label>Email</label><input type="email" id="rp-email" placeholder="chef@kitchen.com"></div>
+    <button class="btn" id="rp-btn" data-text="Send Reset Link" onclick="resetPassword()">Send Reset Link</button>
+    <span class="forgot" onclick="showPanel('signin')">← Back to sign in</span>
+    <div class="error" id="rp-error"></div>
+    <div class="success" id="rp-success"></div>
+  </div>
+
+  <div class="footer">Kitchen Control &copy; 2026</div>
+</div>
+
+<script>
+// Redirect auth token links before anything else
+(function(){
+  var h = window.location.hash;
+  var s = window.location.search;
+  if((h && h.indexOf('type=recovery') >= 0) || (s && s.indexOf('type=recovery') >= 0)){
+    window.location.href = '/reset-password.html' + s + h;
+    return;
+  }
+  if(h && h.indexOf('type=invite') >= 0){
+    window.location.href = '/accept-invite.html' + h;
+    return;
+  }
+})();
+
+const SUPABASE_URL = 'https://qdvektbnhyfzxuxjhorw.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkdmVrdGJuaHlmenh1eGpob3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MTA2OTMsImV4cCI6MjA5MzQ4NjY5M30.DOo4wLbkQ-uU5ZdOtdRWGWUr3eOJQ7vEutLubCop1Nw';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function showPanel(name){
+  document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+function setLoading(btnId, loading){
+  var btn = document.getElementById(btnId);
+  btn.disabled = loading;
+  btn.textContent = loading ? 'Please wait...' : btn.getAttribute('data-text');
+}
+
+async function signIn(){
+  var email = document.getElementById('si-email').value.trim();
+  var pass = document.getElementById('si-pass').value;
+  var err = document.getElementById('si-error');
+  err.style.display = 'none';
+  if(!email || !pass){ err.textContent = 'Please enter your email and password.'; err.style.display = 'block'; return; }
+  setLoading('si-btn', true);
+  var {data, error} = await sb.auth.signInWithPassword({email, password: pass});
+  setLoading('si-btn', false);
+  if(error){ err.textContent = error.message; err.style.display = 'block'; return; }
+  localStorage.setItem('kc_user_name', data.user.user_metadata.full_name || email);
+  localStorage.setItem('kc_user_biz', data.user.user_metadata.business_name || '');
+  window.location.replace('dashboard.html');
+}
+
+async function resetPassword(){
+  var email = document.getElementById('rp-email').value.trim();
+  var err = document.getElementById('rp-error');
+  var suc = document.getElementById('rp-success');
+  err.style.display = 'none'; suc.style.display = 'none';
+  if(!email){ err.textContent = 'Please enter your email.'; err.style.display = 'block'; return; }
+  setLoading('rp-btn', true);
+  var {error} = await sb.auth.resetPasswordForEmail(email, {redirectTo: 'https://kitchen-control.co.uk/login.html'});
+  setLoading('rp-btn', false);
+  if(error){ err.textContent = error.message; err.style.display = 'block'; return; }
+  suc.textContent = 'Reset link sent! Check your email.';
+  suc.style.display = 'block';
+}
+
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Enter'){
+    var active = document.querySelector('.panel.active').id;
+    if(active === 'panel-signin') signIn();
+    if(active === 'panel-reset') resetPassword();
+  }
+});
+
+// Already logged in — go straight to dashboard
+sb.auth.getSession().then(function(res){
+  if(res.data.session){ window.location.replace('dashboard.html'); }
+});
+</script>
+</body>
+</html>

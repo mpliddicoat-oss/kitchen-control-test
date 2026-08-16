@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unsubscribe — Kitchen Control</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f4f6f8;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .card {
+    background: #ffffff;
+    border-radius: 10px;
+    overflow: hidden;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  .header {
+    background: #13294B;
+    padding: 28px;
+    text-align: center;
+  }
+  .header img {
+    height: 60px;
+    width: auto;
+  }
+  .body {
+    padding: 40px 36px;
+    text-align: center;
+  }
+  .icon { font-size: 48px; margin-bottom: 16px; }
+  h1 {
+    color: #13294B;
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+  p {
+    color: #555;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+  a.btn {
+    display: inline-block;
+    margin-top: 20px;
+    background: #8CC63F;
+    color: #13294B;
+    text-decoration: none;
+    padding: 12px 28px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+  }
+  .footer {
+    background: #f4f6f8;
+    padding: 16px;
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+  }
+</style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-RDBRZY77BD");
+</script>
+</head>
+<body>
+
+<div class="card">
+
+  <div class="header">
+    <img src="https://www.kitchen-control.co.uk/logo.png" alt="Kitchen Control">
+  </div>
+
+  <div class="body" id="content">
+    <div class="icon">⏳</div>
+    <h1>Processing...</h1>
+    <p>Please wait a moment.</p>
+  </div>
+
+  <div class="footer">
+    Kitchen Control Ltd &nbsp;·&nbsp; Company No. 17239504
+  </div>
+
+</div>
+
+<script>
+  const SUPABASE_URL = "https://qdvektbnhyfzxuxjhorw.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkdmVrdGJuaHlmenh1eGpob3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MTA2OTMsImV4cCI6MjA5MzQ4NjY5M30.DOo4wLbkQ-uU5ZdOtdRWGWUr3eOJQ7vEutLubCop1Nw";
+
+  async function processUnsubscribe() {
+    const content = document.getElementById("content");
+    const params  = new URLSearchParams(window.location.search);
+    const token   = params.get("token");
+
+    // No token in URL
+    if (!token) {
+      content.innerHTML = `
+        <div class="icon">❌</div>
+        <h1>Invalid Link</h1>
+        <p>This unsubscribe link is not valid. If you'd like to be removed from our list please email us directly.</p>
+        <a class="btn" href="mailto:hello@kitchen-control.co.uk">Contact Us</a>
+      `;
+      return;
+    }
+
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/unsubscribe_prospect`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: JSON.stringify({ p_token: token })
+      });
+
+      const result = await response.json();
+
+      if (result === true) {
+        // Successfully unsubscribed
+        content.innerHTML = `
+          <div class="icon">✅</div>
+          <h1>You've been unsubscribed</h1>
+          <p>You won't receive any further emails from Kitchen Control.</p>
+          <p>If this was a mistake or you'd like to get back in touch, we'd love to hear from you.</p>
+          <a class="btn" href="https://www.kitchen-control.co.uk">Visit Kitchen Control</a>
+        `;
+      } else {
+        // Token not found or already unsubscribed
+        content.innerHTML = `
+          <div class="icon">👍</div>
+          <h1>Already unsubscribed</h1>
+          <p>This email address is already removed from our list. You won't hear from us again.</p>
+        `;
+      }
+
+    } catch (err) {
+      content.innerHTML = `
+        <div class="icon">⚠️</div>
+        <h1>Something went wrong</h1>
+        <p>We couldn't process your request right now. Please email us directly and we'll remove you manually.</p>
+        <a class="btn" href="mailto:hello@kitchen-control.co.uk">Contact Us</a>
+      `;
+    }
+  }
+
+  processUnsubscribe();
+</script>
+
+</body>
+</html>

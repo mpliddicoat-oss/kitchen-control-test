@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Control vs Jelly — Kitchen Software Compared | Kitchen Control</title>
+<meta name="description" content="Honest comparison of Kitchen Control and Jelly for independent UK kitchens: pricing, invoice scanning, allergen tracking and who each is actually built for.">
+<link rel="canonical" href="https://www.kitchen-control.co.uk/compare-jelly.html">
+<meta property="og:title" content="Kitchen Control vs Jelly — Compared">
+<meta property="og:description" content="Honest comparison of Kitchen Control and Jelly for independent UK kitchens.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.kitchen-control.co.uk/compare-jelly.html">
+<meta property="og:image" content="https://www.kitchen-control.co.uk/images/og-image.png">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-RDBRZY77BD');
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper: #F7F5F1;
+    --paper-dim: #EFEBE2;
+    --navy: #2A3950;
+    --navy-soft: #5B6779;
+    --green: #97C25A;
+    --green-dark: #75973F;
+    --grey: #8C9199;
+    --line: #DAD5C9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--navy);
+    font-family:'DM Mono', monospace;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+  }
+  .mono{font-family:'DM Mono', monospace;}
+  .display{font-family:'Oswald', sans-serif; font-weight:700; letter-spacing:-0.01em; text-transform:uppercase;}
+  a{color:inherit;}
+
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px;}
+
+  /* ===== Header ===== */
+  header{border-bottom:1px solid var(--line); padding:20px 0;}
+  header .wrap{display:flex; justify-content:space-between; align-items:center;}
+  .logo{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+    letter-spacing:0.02em;
+    text-transform:uppercase;
+    color:var(--navy);
+    text-decoration:none;
+  }
+  .logo span{color:var(--green-dark);}
+  .header-cta{
+    font-family:'DM Mono', monospace;
+    font-size:0.75rem;
+    font-weight:500;
+    color:var(--navy);
+    text-decoration:none;
+    border:1px solid var(--navy);
+    padding:9px 14px;
+    border-radius:2px;
+  }
+
+  /* ===== Hero ===== */
+  .hero{padding:60px 0 40px;}
+  .eyebrow{
+    font-family:'DM Mono', monospace;
+    font-size:0.74rem;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--green-dark);
+    margin-bottom:16px;
+    display:flex; align-items:center; gap:9px;
+  }
+  .eyebrow::before{content:''; width:7px; height:7px; background:var(--green-dark); border-radius:50%; display:inline-block;}
+  h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    text-transform:uppercase;
+    font-size:clamp(1.9rem, 4.4vw, 2.9rem);
+    line-height:1.08;
+    margin-bottom:20px;
+    max-width:16ch;
+    color:var(--navy);
+  }
+  .lede{font-size:1.02rem; color:var(--navy-soft); max-width:58ch; margin-bottom:32px;}
+  .lede strong{color:var(--navy);}
+  .cta-row{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:48px;}
+  .btn-primary{
+    font-family:'DM Mono', monospace; font-weight:500; font-size:0.82rem;
+    background:var(--navy); color:var(--paper);
+    padding:13px 22px; text-decoration:none; border-radius:2px; display:inline-block;
+  }
+  .btn-secondary{
+    font-family:'DM Mono', monospace; font-size:0.82rem; color:var(--navy);
+    padding:13px 6px; text-decoration:underline; text-underline-offset:4px; display:inline-block;
+  }
+
+  /* ===== Snapshot cards ===== */
+  .snapshot{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:8px;}
+  @media (max-width:640px){.snapshot{grid-template-columns:1fr;}}
+  .snap-card{background:#fff; border:1px solid var(--line); padding:20px 22px;}
+  .snap-card.kc{border-top:3px solid var(--green-dark);}
+  .snap-card.mq{border-top:3px solid var(--grey);}
+  .snap-name{font-family:'Oswald', sans-serif; font-weight:600; text-transform:uppercase; font-size:0.95rem; margin-bottom:10px;}
+  .snap-row{display:flex; justify-content:space-between; font-size:0.82rem; padding:6px 0; border-bottom:1px dotted var(--line);}
+  .snap-row:last-child{border-bottom:none;}
+  .snap-row .label{color:var(--grey);}
+
+  /* ===== Section framing ===== */
+  section{padding:52px 0;}
+  .section-line{border-top:1px solid var(--line);}
+  h2{
+    font-family:'Oswald', sans-serif; font-weight:700; text-transform:uppercase;
+    font-size:clamp(1.4rem, 2.6vw, 1.9rem); margin-bottom:14px; max-width:22ch; color:var(--navy);
+  }
+  .section-intro{color:var(--navy-soft); max-width:60ch; margin-bottom:32px; font-size:0.96rem;}
+
+  /* ===== Price comparison strip ===== */
+  .price-strip{
+    display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:20px;
+    background:#fff; border:1px solid var(--line); padding:26px 28px; margin-bottom:32px;
+  }
+  .price-block{text-align:center;}
+  .price-block .who{font-family:'Oswald', sans-serif; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--grey); margin-bottom:6px;}
+  .price-block .amount{font-family:'Oswald', sans-serif; font-size:2rem; font-weight:700; color:var(--navy);}
+  .price-block .amount.kc-amount{color:var(--green-dark);}
+  .price-block .per{font-size:0.76rem; color:var(--grey); margin-top:2px;}
+  .price-vs{font-family:'DM Mono', monospace; font-size:0.78rem; color:var(--grey); text-align:center;}
+  @media (max-width:640px){.price-strip{grid-template-columns:1fr; text-align:center;} .price-vs{padding:8px 0;}}
+
+  /* ===== Comparison table ===== */
+  .compare-table{width:100%; border-collapse:collapse; font-size:0.86rem;}
+  .compare-table th{
+    font-family:'Oswald', sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;
+    text-align:left; padding:11px 13px; color:var(--grey); border-bottom:2px solid var(--navy); font-weight:600;
+  }
+  .compare-table th.col-highlight{color:var(--navy);}
+  .compare-table td{padding:13px; border-bottom:1px solid var(--line); vertical-align:top;}
+  .compare-table td:first-child{font-weight:500; color:var(--navy); width:26%;}
+  .compare-table td.win{background:rgba(151,194,90,0.10);}
+  .yes{color:var(--green-dark); font-weight:600;}
+  .no{color:var(--grey); font-weight:600;}
+  .part{color:var(--grey); font-style:italic;}
+
+  @media (max-width:640px){
+    .compare-table thead{display:none;}
+    .compare-table, .compare-table tbody, .compare-table tr, .compare-table td{display:block; width:100%;}
+    .compare-table tr{border:1px solid var(--line); margin-bottom:12px; padding:13px;}
+    .compare-table td{border-bottom:none; padding:5px 0;}
+    .compare-table td:first-child{
+      font-family:'Oswald', sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--grey);
+    }
+    .compare-table td:nth-child(2)::before{content:'Kitchen Control — '; color:var(--grey); font-weight:400;}
+    .compare-table td:nth-child(3)::before{content:'Jelly — '; color:var(--grey); font-weight:400;}
+  }
+
+  /* ===== Honesty box ===== */
+  .honest-box{background:var(--paper-dim); border-left:3px solid var(--navy); padding:20px 22px; margin:32px 0; font-size:0.9rem;}
+  .honest-box .tag{display:block; font-family:'Oswald', sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--navy); margin-bottom:8px; font-weight:600;}
+
+  /* ===== Who it's for ===== */
+  .who-grid{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line);}
+  .who-item{background:var(--paper); padding:24px;}
+  .who-item h3{font-family:'Oswald', sans-serif; text-transform:uppercase; font-size:0.95rem; margin-bottom:10px; color:var(--navy);}
+  .who-item p{color:var(--navy-soft); font-size:0.88rem;}
+  @media (max-width:640px){.who-grid{grid-template-columns:1fr;}}
+
+  /* ===== Closing CTA ===== */
+  .closer{background:var(--navy); color:var(--paper); padding:56px 0;}
+  .closer h2{color:var(--paper); max-width:18ch;}
+  .closer .section-intro{color:#B7BFC9;}
+  .closer .btn-primary{background:var(--green); color:var(--navy);}
+  .closer .btn-secondary{color:var(--paper);}
+  .price-tag{font-family:'DM Mono', monospace; font-size:0.82rem; color:#B7BFC9; margin-top:16px;}
+  .price-tag strong{color:var(--paper); font-size:1.05rem;}
+
+  footer{padding:28px 0; font-family:'DM Mono', monospace; font-size:0.72rem; color:var(--grey); border-top:1px solid var(--line);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a href="/" class="logo">Kitchen<span>·</span>Control</a>
+    <a href="https://www.kitchen-control.co.uk/" class="header-cta">FIND OUT MORE</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Kitchen Control vs Jelly</div>
+    <h1>Same problem, ten times the price tag.</h1>
+    <p class="lede">Jelly is a genuinely strong tool — automated invoice scanning, live dish costing, price alerts. Kitchen Control does the invoice and costing piece too. The difference is who each one is actually built for, and what you're paying for the rest.</p>
+    <div class="cta-row">
+      <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
+      <a href="#table" class="btn-secondary">See the comparison ↓</a>
+    </div>
+
+    <div class="price-strip">
+      <div class="price-block">
+        <div class="who">Kitchen Control</div>
+        <div class="amount kc-amount">£12.99</div>
+        <div class="per">per month, flat</div>
+      </div>
+      <div class="price-vs">VS</div>
+      <div class="price-block">
+        <div class="who">Jelly</div>
+        <div class="amount">£129</div>
+        <div class="per">per location, per month</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section-line" id="table">
+  <div class="wrap">
+    <h2>Feature by feature</h2>
+    <p class="section-intro">Where the two genuinely overlap, and where Jelly's extra features — and extra cost — actually go.</p>
+
+    <table class="compare-table">
+      <thead>
+        <tr><th>Capability</th><th>Kitchen Control</th><th class="col-highlight">Jelly</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Monthly price</td>
+          <td><span class="yes">£12.99</span> flat, one plan</td>
+          <td><span class="no">£129</span> per location</td>
+        </tr>
+        <tr>
+          <td>Automated invoice scanning</td>
+          <td><span class="yes">Yes</span> — AI-read, auto-imports ingredients</td>
+          <td><span class="yes">Yes</span> — photo or forwarded email</td>
+        </tr>
+        <tr>
+          <td>Live recipe / dish costing</td>
+          <td><span class="yes">Yes</span></td>
+          <td><span class="yes">Yes</span> — updates with every invoice</td>
+        </tr>
+        <tr>
+          <td>Allergen management</td>
+          <td><span class="yes">Yes</span> — core feature</td>
+          <td><span class="no">Not offered</span> — not their focus</td>
+        </tr>
+        <tr>
+          <td>Supplier price-change alerts</td>
+          <td><span class="no">No</span></td>
+          <td><span class="yes">Yes</span> — flags every price move</td>
+        </tr>
+        <tr>
+          <td>POS integration (Square, ePOSnow)</td>
+          <td><span class="no">No</span></td>
+          <td><span class="yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td>Xero / accounting push</td>
+          <td><span class="no">No</span></td>
+          <td><span class="yes">Yes</span> — one-click</td>
+        </tr>
+        <tr>
+          <td>Stock / stocktake tools</td>
+          <td><span class="no">Not yet</span></td>
+          <td><span class="yes">Yes</span> — wet and dry stock</td>
+        </tr>
+        <tr>
+          <td>Multi-site dashboard</td>
+          <td><span class="no">No</span> — single-site by design</td>
+          <td><span class="yes">Yes</span></td>
+        </tr>
+        <tr>
+          <td>Typical customer</td>
+          <td>Independent kitchens, any size</td>
+          <td><span class="part">£500k+ revenue, growing toward multi-site</span></td>
+        </tr>
+        <tr>
+          <td>Setup time</td>
+          <td><span class="yes">Same-day</span>, self-serve</td>
+          <td><span class="part">Within a week, demo-led onboarding</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="honest-box">
+      <span class="tag">Fair's fair</span>
+      Jelly does more than Kitchen Control in the financial-operations direction — POS integration, live price alerts, Xero push, and proper stocktake tooling are real, useful things Kitchen Control doesn't do. If your kitchen is turning over £500k+ and margin recovery across purchasing is your main problem, that extra depth may be worth £129 a location. If you're a single independent kitchen wanting invoice scanning, live costing and allergen tracking without the price tag or the sales call, that's the gap Kitchen Control is built to fill.
+    </div>
+  </div>
+</section>
+
+<section class="section-line">
+  <div class="wrap">
+    <h2>Who each one is actually for</h2>
+    <div class="who-grid">
+      <div class="who-item">
+        <h3>Choose Kitchen Control if...</h3>
+        <p>You want invoice scanning, live costing and allergen tracking in one place, without needing a POS integration, an accountant's login, or a demo call to see what it costs.</p>
+      </div>
+      <div class="who-item">
+        <h3>Choose Jelly if...</h3>
+        <p>You're running £500k+ turnover, already on Square or ePOSnow, and margin recovery through price alerts and stocktake is your main problem — with room in the budget for £129 a location.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="closer" id="trial">
+  <div class="wrap">
+    <h2>Try it for 30 days. Cancel any time.</h2>
+    <p class="section-intro">Built for independent UK kitchens — invoice scanning, costing and allergen tracking, no POS lock-in required.</p>
+    <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
+    <div class="price-tag">Then <strong>£12.99/month</strong>. Cancel any time.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="margin-bottom:12px;">
+    <a href="/compare-spreadsheets.html">vs Spreadsheets</a> · <a href="/compare-menuiq.html">vs MenuIQ</a> · <a href="/compare-jelly.html">vs Jelly</a> · <a href="/for-independent-businesses.html">For Independent Businesses</a> · <a href="/guide-allergen-law.html">Allergen Law Guide</a>
+  </div>
+  <div class="wrap">KITCHEN CONTROL LTD · COMPANIES HOUSE NO. 17239504 · KITCHEN-CONTROL.CO.UK</div>
+</footer>
+
+</body>
+</html>

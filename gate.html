@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Control - Access</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#223548,#16222c);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;color:#223548;}
+.gate-card{background:#fff;border-radius:14px;padding:40px 32px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;}
+.gate-logo{margin-bottom:18px;}
+.gate-logo img{max-width:200px;height:auto;}
+h1{font-size:20px;font-weight:600;margin-bottom:6px;color:#223548;}
+.subtitle{font-size:13px;color:#6b7280;margin-bottom:24px;line-height:1.5;}
+.beta-badge{display:inline-block;padding:4px 12px;background:#fff3cd;color:#92400e;border:1px solid #fbbf24;border-radius:20px;font-size:11px;font-weight:600;margin-bottom:18px;text-transform:uppercase;letter-spacing:.05em;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;text-align:left;}
+label{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;}
+input{padding:11px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:16px;font-family:inherit;background:#fff;color:#223548;width:100%;transition:border-color .15s;}
+input:focus{outline:none;border-color:#7fbf3f;}
+.btn{width:100%;padding:11px;background:#7fbf3f;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;margin-top:6px;}
+.btn:hover{background:#5a9a25;}
+.error{color:#dc2626;font-size:13px;margin-top:10px;display:none;background:#fee2e2;padding:8px;border-radius:6px;border:1px solid #fecaca;}
+.footer{margin-top:20px;font-size:11px;color:#9ca3af;line-height:1.5;}
+</style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-RDBRZY77BD");
+</script>
+</head>
+<body>
+<div class="gate-card">
+  <div class="gate-logo"><img id="gate-logo" src="logo.png" alt="Kitchen Control"></div>
+  <div class="beta-badge">Private Beta</div>
+  <h1>Welcome to Kitchen Control</h1>
+  <p class="subtitle">This site is in private testing. Please enter your site access code to continue.</p>
+  <div class="fg"><label>Access Code</label><input type="password" id="access-code" placeholder="Enter access code" autofocus></div>
+  <button class="btn" onclick="checkAccess()">Continue</button>
+  <div class="error" id="error">Incorrect access code. Please try again.</div>
+  <div class="footer">Kitchen Control &copy; 2026<br>Beta access by invitation only</div>
+</div>
+<script>
+// Check for auth tokens BEFORE gate check
+(function(){
+  var h = window.location.hash;
+  if(!h) return;
+  if(h.indexOf('type=recovery') >= 0){ window.location.replace('/reset-password.html' + h); }
+  else if(h.indexOf('type=invite') >= 0){ window.location.replace('/accept-invite.html' + h); }
+  else if(h.indexOf('type=signup') >= 0){ window.location.replace('/accept-invite.html' + h); }
+})();
+
+var ACCESS_CODE = 'KitchenTest2026!';
+if(localStorage.getItem('kc_gate_pass') === 'yes'){ window.location.replace('login.html'); }
+function checkAccess(){
+  var code = document.getElementById('access-code').value;
+  var err = document.getElementById('error');
+  if(code === ACCESS_CODE){  err.style.display='none'; window.location.replace('login.html'); }
+  else { err.style.display='block'; document.getElementById('access-code').value=''; document.getElementById('access-code').focus(); }
+}
+document.addEventListener('keydown', function(e){ if(e.key==='Enter') checkAccess(); });
+</script>
+</body>
+</html>

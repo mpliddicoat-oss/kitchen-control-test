@@ -1,0 +1,26 @@
+{
+  "name": "Kitchen Control",
+  "short_name": "Kitchen Control",
+  "description": "Back of house management for professional kitchens",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#16222c",
+  "theme_color": "#16222c",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "categories": ["food", "business", "productivity"]
+}

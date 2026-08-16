@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page Not Found — Kitchen Control</title>
+<meta name="robots" content="noindex">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:#16222c;
+  color:#fff;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  text-align:center;
+}
+.wrap{max-width:480px;}
+.logo{margin-bottom:32px;}
+.logo img{height:36px;width:auto;}
+.code{
+  font-family:'Playfair Display',serif;
+  font-weight:900;
+  font-size:clamp(64px,12vw,110px);
+  color:#7fbf3f;
+  line-height:1;
+  margin-bottom:16px;
+}
+h1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(22px,4vw,28px);
+  margin-bottom:14px;
+}
+p{
+  color:rgba(255,255,255,0.65);
+  font-size:15px;
+  line-height:1.6;
+  margin-bottom:32px;
+}
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.btn{
+  padding:13px 28px;
+  border-radius:10px;
+  font-size:14px;
+  font-weight:700;
+  text-decoration:none;
+  transition:all .15s;
+}
+.btn-primary{background:#7fbf3f;color:#fff;}
+.btn-primary:hover{background:#5a9a25;}
+.btn-secondary{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,0.25);}
+.btn-secondary:hover{border-color:#7fbf3f;color:#7fbf3f;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo"><img src="/logo.png" alt="Kitchen Control"></div>
+  <div class="code">404</div>
+  <h1>This page isn't on the pass.</h1>
+  <p>The page you're looking for doesn't exist or may have moved. Let's get you back to somewhere useful.</p>
+  <div class="actions">
+    <a href="/" class="btn btn-primary">Back to homepage</a>
+    <a href="/faq.html" class="btn btn-secondary">Help & FAQ</a>
+  </div>
+</div>
+</body>
+</html>

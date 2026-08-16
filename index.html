@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Control — Back of House Management for Professional Kitchens</title>
+<meta name="description" content="Allergen management, recipe costing and invoice scanning built by a working chef. From £12.99/month. Try free for 30 days.">
+
+<!-- Open Graph / Facebook, LinkedIn, Slack, WhatsApp link previews -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.kitchen-control.co.uk/">
+<meta property="og:title" content="Kitchen Control — Back of House Management for Professional Kitchens">
+<meta property="og:description" content="Allergen management, recipe costing and AI invoice scanning — all in one place. Built for professional kitchens. Priced for independent ones. From £12.99/month.">
+<meta property="og:image" content="https://www.kitchen-control.co.uk/social-preview.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="800">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:alt" content="Kitchen Control — built by a chef, for independent kitchens">
+<meta property="og:site_name" content="Kitchen Control">
+<meta property="og:locale" content="en_GB">
+
+<!-- Twitter/X Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Kitchen Control — Back of House Management for Professional Kitchens">
+<meta name="twitter:description" content="Allergen management, recipe costing and AI invoice scanning — all in one place. Built for professional kitchens. Priced for independent ones.">
+<meta name="twitter:image" content="https://www.kitchen-control.co.uk/social-preview.jpg">
+<link rel="icon" href="/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --dark: #16222c;
+  --dark2: #1e3040;
+  --green: #7fbf3f;
+  --green-dark: #5a9a25;
+  --green-light: #a8d96a;
+  --cream: #faf8f4;
+  --text: #1a2332;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(22,34,44,0.95);
+  backdrop-filter: blur(12px);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.nav-logo img { height: 32px; width: auto; }
+.nav-links { display: flex; align-items: center; gap: 24px; }
+.nav-links a { color: rgba(255,255,255,0.7); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: white; }
+.nav-cta { background: var(--green); color: white !important; padding: 8px 20px; border-radius: 8px; font-weight: 600 !important; }
+.nav-cta:hover { background: var(--green-dark) !important; }
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  background: var(--dark);
+  display: flex;
+  align-items: center;
+  padding: 120px 24px 80px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-inner {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 64px;
+  align-items: center;
+  max-width: 1160px;
+  margin: 0 auto;
+  position: relative;
+  width: 100%;
+}
+.hero-copy { text-align: left; }
+.hero-visual { position: relative; }
+.hero-img {
+  width: 100%;
+  height: auto;
+  border-radius: 18px;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08);
+  display: block;
+}
+.hero-visual::before {
+  content: '';
+  position: absolute;
+  inset: -8%;
+  background: radial-gradient(ellipse at center, rgba(127,191,63,0.22) 0%, transparent 65%);
+  z-index: 0;
+  pointer-events: none;
+}
+.hero-img, .hero-chip, .hero-caption { position: relative; z-index: 1; }
+.hero-frame { position: relative; }
+.hero-logo-plate {
+  position: absolute;
+  bottom: -18px;
+  left: -14px;
+  background: rgba(22,34,44,0.94);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px;
+  padding: 12px 18px;
+  box-shadow: 0 14px 36px rgba(0,0,0,0.5);
+  z-index: 2;
+  backdrop-filter: blur(6px);
+}
+.hero-logo-plate img { height: 36px; width: auto; display: block; }
+.hero-chip {
+  position: absolute;
+  top: -16px;
+  right: -10px;
+  background: var(--green);
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 100px;
+  box-shadow: 0 10px 30px rgba(127,191,63,0.45);
+  z-index: 2;
+}
+.hero-caption {
+  margin-top: 34px;
+  font-size: 13px;
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(127,191,63,0.15) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 80%, rgba(127,191,63,0.08) 0%, transparent 50%);
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(127,191,63,0.15);
+  border: 1px solid rgba(127,191,63,0.3);
+  border-radius: 100px;
+  padding: 6px 16px;
+  font-size: 13px;
+  color: var(--green-light);
+  margin-bottom: 28px;
+  position: relative;
+}
+
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(38px, 5vw, 60px);
+  color: white;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  max-width: 800px;
+  position: relative;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--green-light);
+}
+
+.hero-sub {
+  font-size: clamp(16px, 2vw, 20px);
+  color: rgba(255,255,255,0.65);
+  max-width: 560px;
+  line-height: 1.7;
+  margin-bottom: 40px;
+  position: relative;
+  font-weight: 300;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  position: relative;
+  margin-bottom: 28px;
+}
+
+.btn-primary {
+  background: var(--green);
+  color: white;
+  padding: 16px 36px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: inline-block;
+}
+.btn-primary:hover { background: var(--green-dark); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(127,191,63,0.3); }
+
+.btn-secondary {
+  background: rgba(255,255,255,0.1);
+  color: white;
+  padding: 16px 36px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: all 0.2s;
+  display: inline-block;
+}
+.btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+.btn-demo {
+  background: transparent;
+  color: var(--green);
+  padding: 16px 30px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1.5px solid var(--green);
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-demo:hover { background: rgba(127,191,63,0.12); transform: translateY(-2px); }
+.btn-demo svg { width: 18px; height: 18px; }
+.demo-hint { display:flex; align-items:center; gap:6px; color: rgba(255,255,255,0.55); font-size: 13px; margin-top: 10px; }
+.demo-hint svg { width: 14px; height: 14px; flex-shrink:0; color: var(--green); }
+
+.hero-price {
+  color: rgba(255,255,255,0.45);
+  font-size: 14px;
+  position: relative;
+}
+
+/* TRUST BAR */
+.trust-bar {
+  background: var(--dark2);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.5);
+  font-size: 13px;
+  font-weight: 500;
+}
+.trust-item svg { width: 17px; height: 17px; color: var(--green); flex-shrink: 0; }
+
+/* SECTIONS */
+section { padding: 100px 24px; }
+
+.container { max-width: 1100px; margin: 0 auto; }
+
+.section-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--green);
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(32px, 4vw, 48px);
+  color: var(--dark);
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.section-sub {
+  font-size: 17px;
+  color: var(--muted);
+  line-height: 1.7;
+  max-width: 560px;
+  font-weight: 300;
+}
+
+/* PROBLEM */
+.problem { background: white; }
+.problem-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-top: 56px;
+}
+.problem-card {
+  background: #fff8f8;
+  border: 1px solid #fee2e2;
+  border-radius: 14px;
+  padding: 28px;
+}
+.problem-card .icon {
+  width: 48px; height: 48px;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+}
+.problem-card .icon svg { width: 24px; height: 24px; }
+.problem-card h3 { font-size: 17px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
+.problem-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+/* FEATURES */
+.features { background: var(--cream); }
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 28px;
+  margin-top: 56px;
+}
+.feature-card {
+  background: white;
+  border-radius: 16px;
+  padding: 32px;
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.08); }
+.feature-icon {
+  width: 52px; height: 52px;
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-bottom: 20px;
+}
+.feature-icon svg { width: 26px; height: 26px; }
+.feature-card h3 { font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
+.feature-card p { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+/* SHOWCASE */
+.showcase { background: var(--dark); }
+.showcase .section-title { color: white; }
+.showcase .section-sub { color: rgba(255,255,255,0.6); }
+.showcase-laptop { max-width: 780px; margin: 64px auto 0; }
+.showcase-row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 48px;
+  align-items: end;
+  max-width: 820px;
+  margin: 56px auto 0;
+}
+.device { position: relative; }
+.device img { width: 100%; height: auto; display: block; }
+.device-caption {
+  text-align: center;
+  color: rgba(255,255,255,0.45);
+  font-size: 13px;
+  margin-top: 18px;
+}
+/* laptop */
+.device-laptop .screen {
+  border: 12px solid #0d151d;
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  background: #0d151d;
+  box-shadow: 0 30px 70px rgba(0,0,0,0.5);
+}
+.device-laptop .base {
+  height: 16px;
+  background: linear-gradient(180deg, #1b2733, #0d151d);
+  border-radius: 0 0 14px 14px;
+  margin: 0 -34px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+}
+.device-laptop .base::after {
+  content: '';
+  display: block;
+  width: 110px; height: 5px;
+  background: #060b10;
+  border-radius: 0 0 8px 8px;
+  margin: 0 auto;
+}
+/* tablet */
+.device-tablet .screen {
+  border: 13px solid #0d151d;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #0d151d;
+  box-shadow: 0 26px 60px rgba(0,0,0,0.5);
+}
+/* phone */
+.device-phone .screen {
+  border: 10px solid #0d151d;
+  border-radius: 34px;
+  overflow: hidden;
+  background: #0d151d;
+  box-shadow: 0 26px 60px rgba(0,0,0,0.5);
+  position: relative;
+}
+.device-phone .screen::before {
+  content: '';
+  position: absolute;
+  top: 8px; left: 50%;
+  transform: translateX(-50%);
+  width: 74px; height: 18px;
+  background: #0d151d;
+  border-radius: 100px;
+  z-index: 2;
+}
+@media (max-width: 700px) {
+  .showcase-row { grid-template-columns: 1fr; gap: 44px; align-items: center; }
+  .device-phone { max-width: 230px; margin: 0 auto; }
+}
+
+/* HOW IT WORKS */
+.how { background: white; }
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 32px;
+  margin-top: 56px;
+}
+.step { text-align: center; }
+.step-num {
+  width: 52px; height: 52px;
+  background: var(--dark);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 22px;
+  color: var(--green-light);
+  margin: 0 auto 16px;
+}
+.step h3 { font-size: 16px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
+.step p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+/* PRICING */
+.pricing { background: var(--dark); }
+.pricing .section-title { color: white; }
+.pricing .section-sub { color: rgba(255,255,255,0.6); }
+.pricing-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 48px;
+  max-width: 520px;
+  margin: 56px auto 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.pricing-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--green), var(--green-light));
+}
+.price-amount {
+  font-family: 'Playfair Display', serif;
+  font-size: 64px;
+  color: white;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.price-amount sup { font-size: 28px; vertical-align: top; margin-top: 14px; }
+.price-amount span { font-size: 20px; color: rgba(255,255,255,0.4); font-family: 'DM Sans', sans-serif; font-weight: 300; }
+.price-period { color: rgba(255,255,255,0.5); font-size: 14px; margin-bottom: 32px; }
+.price-features { list-style: none; margin-bottom: 36px; }
+.price-features li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255,255,255,0.8);
+  font-size: 15px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.price-features li:last-child { border-bottom: none; }
+.price-features li::before { content: '✓'; color: var(--green); font-weight: 700; font-size: 16px; }
+.price-trial {
+  background: rgba(127,191,63,0.1);
+  border: 1px solid rgba(127,191,63,0.3);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--green-light);
+  font-size: 13px;
+  margin-bottom: 24px;
+}
+
+/* BUILT BY */
+.built-by { background: var(--cream); }
+.built-by-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+.built-by-text p {
+  font-size: 16px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin-bottom: 16px;
+  font-weight: 300;
+}
+.built-by-text strong { color: var(--dark); }
+.chef-sig {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 22px;
+  color: var(--dark);
+  margin-top: 24px;
+}
+.built-by-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.stat-card {
+  background: white;
+  border-radius: 14px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.stat-number {
+  font-family: 'Playfair Display', serif;
+  font-size: 40px;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.stat-label { font-size: 13px; color: var(--muted); }
+
+/* CTA */
+.cta-section {
+  background: var(--green);
+  padding: 80px 24px;
+  text-align: center;
+}
+.cta-section h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(28px, 4vw, 44px);
+  color: white;
+  margin-bottom: 16px;
+}
+.cta-section p {
+  color: rgba(255,255,255,0.8);
+  font-size: 17px;
+  margin-bottom: 36px;
+  font-weight: 300;
+}
+.btn-white {
+  background: white;
+  color: var(--green-dark);
+  padding: 16px 40px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-block;
+  transition: all 0.2s;
+}
+.btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
+
+/* FOOTER */
+footer {
+  background: var(--dark);
+  padding: 48px 24px;
+  text-align: center;
+}
+footer img { height: 32px; margin-bottom: 20px; }
+footer p { color: rgba(255,255,255,0.4); font-size: 13px; line-height: 1.8; }
+footer a { color: rgba(255,255,255,0.4); text-decoration: none; }
+footer a:hover { color: var(--green-light); }
+
+/* REVEAL */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.in { opacity: 1; transform: none; }
+.hero-copy > * { opacity: 0; transform: translateY(18px); animation: heroUp 0.7s ease forwards; }
+.hero-copy > *:nth-child(1) { animation-delay: 0.05s; }
+.hero-copy > *:nth-child(2) { animation-delay: 0.15s; }
+.hero-copy > *:nth-child(3) { animation-delay: 0.25s; }
+.hero-copy > *:nth-child(4) { animation-delay: 0.35s; }
+.hero-copy > *:nth-child(5) { animation-delay: 0.45s; }
+.hero-visual { opacity: 0; transform: translateY(24px) scale(0.98); animation: heroUp 0.9s ease 0.3s forwards; }
+@keyframes heroUp { to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .hero-copy > *, .hero-visual { opacity: 1 !important; transform: none !important; animation: none !important; transition: none !important; }
+}
+
+/* MOBILE */
+@media (max-width: 900px) {
+  .hero { padding-top: 100px; }
+  .hero-inner { grid-template-columns: 1fr; gap: 44px; }
+  .hero-copy { text-align: center; }
+  .hero-actions { justify-content: center; }
+  .hero-chip { right: 8px; top: -14px; font-size: 12px; padding: 8px 14px; }
+  .hero-logo-plate { left: 8px; bottom: -14px; padding: 10px 14px; }
+  .hero-logo-plate img { height: 28px; }
+}
+@media (max-width: 768px) {
+  .nav-links { display: none; }
+  .built-by-inner { grid-template-columns: 1fr; gap: 40px; }
+  .trust-bar { gap: 14px 22px; }
+  section { padding: 64px 20px; }
+}
+</style>
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-RDBRZY77BD");
+</script>
+<!-- Schema.org structured data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Kitchen Control",
+  "applicationCategory": "BusinessApplication",
+  "applicationSubCategory": "Restaurant Management Software",
+  "operatingSystem": "Web-based, iOS, Android",
+  "description": "Allergen management, recipe costing and AI invoice scanning for professional kitchens. Built by a working chef for independent hospitality businesses.",
+  "url": "https://www.kitchen-control.co.uk/",
+  "image": "https://www.kitchen-control.co.uk/images/hero-allergen.jpg",
+  "offers": {
+    "@type": "Offer",
+    "price": "12.99",
+    "priceCurrency": "GBP",
+    "priceValidUntil": "2027-12-31",
+    "availability": "https://schema.org/InStock",
+    "url": "https://www.kitchen-control.co.uk/signup.html",
+    "eligibleDuration": {
+      "@type": "QuantitativeValue",
+      "value": "30",
+      "unitCode": "DAY"
+    }
+  },
+  "provider": {
+    "@type": "Organization",
+    "name": "Kitchen Control Ltd",
+    "url": "https://www.kitchen-control.co.uk/",
+    "logo": "https://www.kitchen-control.co.uk/logo.png",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Ocean View, Carclaze",
+      "addressLocality": "St Austell",
+      "postalCode": "PL25 3SU",
+      "addressCountry": "GB"
+    }
+  }
+}
+</script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/">
+    <img src="logo.png" alt="Kitchen Control">
+  </a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#showcase">See it in action</a>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="https://www.facebook.com/profile.php?id=61590153583631" target="_blank" rel="noopener">Facebook</a>
+    <a href="demo.html">Live demo</a>
+    <a href="login.html">Log in</a>
+    <a href="signup.html" class="nav-cta">Start Free Trial</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-copy">
+      <div class="hero-badge">Built by a chef with 32 years in professional kitchens</div>
+      <h1>Your kitchen.<br><em>Under control.</em></h1>
+      <p class="hero-sub">The kitchen management software for allergen tracking, recipe costing and AI invoice scanning — all in one place. Built for professional kitchens. Priced for independent ones.</p>
+      <div class="hero-actions">
+        <a href="signup.html" class="btn-primary">Start Free 30-Day Trial →</a>
+        <a href="demo.html" class="btn-demo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Try the live demo</a>
+        <a href="login.html" class="btn-secondary">Log in</a>
+        <div class="demo-hint" style="width:100%;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Best on a phone — snap a real invoice or label to see the scanning work</div>
+      </div>
+      <p class="hero-price">£12.99/month after trial &middot; Cancel anytime &middot; Up to 5 users included</p>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-frame">
+        <div class="hero-chip">14 allergens &middot; tracked automatically</div>
+        <img class="hero-img" src="/images/hero-allergen.jpg" alt="Kitchen Control allergen matrix on a tablet in a professional kitchen" width="1200" height="1007" fetchpriority="high">
+        <div class="hero-logo-plate"><img src="logo.png" alt="Kitchen Control"></div>
+      </div>
+      <p class="hero-caption">The allergen matrix, generated automatically from your live recipe data.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Food Information Regulations 2014</div>
+  <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> GDPR compliant</div>
+  <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg> Works on any device</div>
+  <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Built &amp; hosted in the UK</div>
+  <div class="trust-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> UK Ltd company &middot; No. 17239504</div>
+</div>
+
+<!-- PROBLEM -->
+<section class="problem" id="problem">
+  <div class="container">
+    <p class="section-label">Sound familiar?</p>
+    <h2 class="section-title">The back of house headaches<br>every kitchen knows</h2>
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h4"/></svg></div>
+        <h3>Allergen sheets on scraps of paper</h3>
+        <p>Handwritten, out of date, impossible to share with staff. One change to a recipe means rewriting everything.</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg></div>
+        <h3>Recipe costs calculated on receipts</h3>
+        <p>You know your food costs are too high but working out where is a full afternoon's job. GP% calculated on guesswork.</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+        <h3>Invoice data entered by hand</h3>
+        <p>Every delivery brings another stack of invoices to type up. Prices change and your recipe costs are instantly wrong.</p>
+      </div>
+      <div class="problem-card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg></div>
+        <h3>Software that costs more than a commis</h3>
+        <p>Enterprise kitchen systems charge £100-500/month. Designed for restaurant groups, not independent kitchens.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="container">
+    <p class="section-label">What Kitchen Control does</p>
+    <h2 class="section-title">Everything your kitchen needs.<br>Nothing it doesn't.</h2>
+    <p class="section-sub">Built around how professional kitchens actually work — not how software companies think they do.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3>Allergen Management</h3>
+        <p>Kitchen Control's allergen management software scans ingredient labels with your phone. Allergens are captured automatically and flow through every recipe, dish and menu. Full compliance with the Food Information Regulations 2014.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg></div>
+        <h3>Live Recipe Costing</h3>
+        <p>Every recipe shows live cost price and GP%. Scan a supplier invoice and ingredient prices update automatically across every recipe that uses them.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg></div>
+        <h3>AI Invoice Scanning</h3>
+        <p>Photograph a delivery invoice and Kitchen Control reads it — extracting every line item, updating costs and adding new suppliers automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
+        <h3>Yield Tracking</h3>
+        <p>Record true yield after trimming and cooking. Your recipe costs reflect what actually goes on the plate, not what comes off the delivery truck.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></div>
+        <h3>Order List Generation</h3>
+        <p>Build menus, set covers and Kitchen Control generates your order list automatically. No more working backwards from a menu at midnight.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <h3>Multi-User & Real-Time</h3>
+        <p>Your whole team works from the same data in real time. Role-based permissions mean everyone sees exactly what they need to.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SHOWCASE -->
+<section class="showcase" id="showcase">
+  <div class="container" style="text-align:center;">
+    <p class="section-label" style="color:var(--green-light);">See it in action</p>
+    <h2 class="section-title">Real screens. Real kitchen data.</h2>
+    <p class="section-sub" style="margin:0 auto;">This is the actual product — not mock-ups. The same screens your team will use on the pass, in the office and on the go.</p>
+    <div class="showcase-laptop device device-laptop">
+      <div class="screen"><img src="/images/app-laptop.png" alt="Kitchen Control dashboard on a laptop" loading="lazy"></div>
+      <div class="base"></div>
+      <div class="device-caption">The dashboard — suppliers, ingredients, recipes and menus in one place</div>
+    </div>
+    <div class="showcase-row">
+      <div class="device device-phone">
+        <div class="screen"><img src="/images/app-phone.png" alt="Kitchen Control on a phone" loading="lazy"></div>
+        <div class="device-caption">Scan invoices &amp; labels from your phone</div>
+      </div>
+      <div class="device device-tablet">
+        <div class="screen"><img src="/images/app-tablet.png" alt="Kitchen Control allergen matrix on a tablet" loading="lazy"></div>
+        <div class="device-caption">The allergen matrix, ready for front of house</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:48px;">
+      <p style="color:rgba(255,255,255,0.7);font-size:16px;margin:0 0 20px;">Don't take our word for it — try it yourself with your own invoice. No signup needed.</p>
+      <a href="demo.html" class="btn-demo" style="font-size:17px;padding:16px 34px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Try the live demo</a>
+      <div class="demo-hint" style="justify-content:center;margin-top:14px;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Best on a phone — snap a real invoice or label to see the scanning work</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how" id="how">
+  <div class="container">
+    <p class="section-label">Getting started</p>
+    <h2 class="section-title">Up and running in an afternoon</h2>
+    <p class="section-sub">No training courses. No implementation consultants. No data migration headaches.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Add your suppliers</h3>
+        <p>Enter your suppliers manually or scan an invoice to import everything automatically.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Scan your ingredients</h3>
+        <p>Photograph ingredient labels with your phone. Allergens, units and prices are captured automatically.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Build your recipes</h3>
+        <p>Add ingredients, quantities and methods. Live cost and GP% calculate as you type.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Print your allergen sheet</h3>
+        <p>One click generates a complete allergen matrix for your whole menu — compliant with the Food Information Regulations 2014.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="container" style="text-align:center;">
+    <p class="section-label" style="color:var(--green-light);">Pricing</p>
+    <h2 class="section-title">One plan. Everything included.</h2>
+    <p class="section-sub" style="margin:0 auto;">No hidden fees. No per-user charges. No feature tiers. Just one straightforward price for everything Kitchen Control does.</p>
+    <div class="pricing-card">
+      <div class="price-amount"><sup>£</sup>12.99<span>/mo</span></div>
+      <p class="price-period">Per kitchen. Billed monthly. Cancel anytime.</p>
+      <div class="price-trial">Full 30-day free trial included — cancel anytime before it ends and pay nothing</div>
+      <ul class="price-features">
+        <li>Up to 5 team members</li>
+        <li>Unlimited recipes, dishes & menus</li>
+        <li>1,000 AI scans per month</li>
+        <li>Full allergen management</li>
+        <li>Live recipe costing & GP%</li>
+        <li>Yield tracking</li>
+        <li>Order list generation</li>
+        <li>Real-time multi-user sync</li>
+        <li>Works on any device</li>
+      </ul>
+      <a href="signup.html" class="btn-primary" style="width:100%;display:block;text-align:center;">Start Free 30-Day Trial →</a>
+      <p style="color:rgba(255,255,255,0.35);font-size:12px;margin-top:14px;">Card required. Cancel before trial ends and pay nothing.</p>
+    </div>
+  </div>
+</section>
+
+<!-- BUILT BY -->
+<section class="built-by">
+  <div class="container">
+    <div class="built-by-inner">
+      <div class="built-by-text">
+        <p class="section-label">Why Kitchen Control exists</p>
+        <h2 class="section-title" style="margin-bottom:24px;">Built in a working kitchen.<br>For working kitchens.</h2>
+        <p>I'm a head chef. I built Kitchen Control — commercial kitchen software I'd actually want to use myself — because I was sick of the same problems every kitchen faces: allergen compliance done on scraps of paper, recipe costs that never reflected reality, and hours spent on admin that should take minutes.</p>
+        <p>The systems that existed were either <strong>too expensive</strong> for independent kitchens or <strong>too complicated</strong> for people who spend their days on the pass, not behind a desk.</p>
+        <p>So I built what I always wished existed. Simple enough to use during service prep. Powerful enough to keep you compliant and profitable.</p>
+        <p class="chef-sig">— Matt, Head Chef &amp; Founder<br><span style="font-size:14px;font-family:'DM Sans',sans-serif;font-style:normal;color:var(--muted);">Mevagissey, Cornwall</span></p>
+      </div>
+      <div class="built-by-stats">
+        <div class="stat-card">
+          <div class="stat-number">14</div>
+          <div class="stat-label">Allergens tracked automatically</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">32</div>
+          <div class="stat-label">Years in professional kitchens</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">5</div>
+          <div class="stat-label">Team members included</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">£0</div>
+          <div class="stat-label">For the first 30 days</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <h2>Ready to get your kitchen under control?</h2>
+    <p>Join professional kitchens across the UK already using Kitchen Control.</p>
+    <a href="signup.html" class="btn-white">Start Your Free 30-Day Trial →</a>
+    <p style="margin-top:16px;font-size:13px;color:rgba(255,255,255,0.6);">£12.99/month after trial &middot; Cancel anytime &middot; No hidden fees</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <img src="logo.png" alt="Kitchen Control">
+  <p>
+    <a href="login.html">Log in</a> &middot;
+    <a href="signup.html">Start free trial</a> &middot;
+    <a href="userguide.html">Help &amp; Guides</a> &middot;
+    <a href="privacy.html">Privacy Policy</a> &middot;
+    <a href="mailto:hello@kitchen-control.co.uk">hello@kitchen-control.co.uk</a> &middot;
+    <a href="https://www.facebook.com/profile.php?id=61590153583631" target="_blank" rel="noopener">&#128100; Facebook</a>
+  </p>
+  <p style="margin-top:12px;">Kitchen Control Ltd &middot; Company No. 17239504<br>Ocean View, Carclaze, St Austell, PL25 3SU</p>
+  <p style="margin-top:12px;">&copy; 2026 Kitchen Control Ltd. All rights reserved.</p>
+</footer>
+
+<script>
+(function(){
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var els = document.querySelectorAll('.problem-card, .feature-card, .step, .pricing-card, .stat-card, .built-by-text, .section-title, .section-label, .section-sub, .device');
+  els.forEach(function(el){ el.classList.add('reveal'); });
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>

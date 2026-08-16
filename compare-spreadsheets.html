@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Control vs Spreadsheets — For Independent Kitchens | Kitchen Control</title>
+<meta name="description" content="Honest comparison: running your kitchen on a spreadsheet vs Kitchen Control. Built by a working head chef for independent UK hospitality businesses.">
+<link rel="canonical" href="https://www.kitchen-control.co.uk/compare-spreadsheets.html">
+<meta property="og:title" content="Kitchen Control vs Spreadsheets">
+<meta property="og:description" content="Honest comparison of running your kitchen on a spreadsheet vs Kitchen Control.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.kitchen-control.co.uk/compare-spreadsheets.html">
+<meta property="og:image" content="https://www.kitchen-control.co.uk/images/og-image.png">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-RDBRZY77BD');
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper: #F7F5F1;
+    --paper-dim: #EFEBE2;
+    --navy: #2A3950;
+    --navy-soft: #5B6779;
+    --green: #97C25A;
+    --green-dark: #75973F;
+    --grey: #8C9199;
+    --line: #DAD5C9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--navy);
+    font-family:'DM Mono', monospace;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+  }
+  .mono{font-family:'DM Mono', monospace;}
+  .display{font-family:'Oswald', sans-serif; font-weight:700; letter-spacing:-0.01em; text-transform:uppercase;}
+
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px;}
+
+  /* ===== Header ===== */
+  header{
+    border-bottom:1px solid var(--line);
+    padding:20px 0;
+  }
+  header .wrap{display:flex; justify-content:space-between; align-items:center;}
+  .logo{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:1.05rem;
+    letter-spacing:0.02em;
+    text-transform:uppercase;
+    color:var(--navy);
+    text-decoration:none;
+  }
+  .logo span{color:var(--green-dark);}
+  .header-cta{
+    font-family:'DM Mono', monospace;
+    font-size:0.75rem;
+    font-weight:500;
+    color:var(--navy);
+    text-decoration:none;
+    border:1px solid var(--navy);
+    padding:9px 14px;
+    border-radius:2px;
+  }
+
+  /* ===== Hero: the docket ===== */
+  .hero{
+    padding:60px 0 40px;
+  }
+  .eyebrow{
+    font-family:'DM Mono', monospace;
+    font-size:0.74rem;
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    color:var(--green-dark);
+    margin-bottom:16px;
+    display:flex;
+    align-items:center;
+    gap:9px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:7px; height:7px;
+    background:var(--green-dark);
+    border-radius:50%;
+    display:inline-block;
+  }
+  h1{
+    font-size:clamp(1.9rem, 4.4vw, 2.9rem);
+    line-height:1.08;
+    margin-bottom:20px;
+    max-width:15ch;
+    color:var(--navy);
+  }
+  .lede{
+    font-size:1.02rem;
+    color:var(--navy-soft);
+    max-width:58ch;
+    margin-bottom:32px;
+  }
+  .lede strong{color:var(--navy);}
+
+  .cta-row{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:48px;}
+  .btn-primary{
+    font-family:'DM Mono', monospace;
+    font-weight:500;
+    font-size:0.82rem;
+    background:var(--navy);
+    color:var(--paper);
+    padding:13px 22px;
+    text-decoration:none;
+    border-radius:2px;
+    display:inline-block;
+  }
+  .btn-secondary{
+    font-family:'DM Mono', monospace;
+    font-size:0.82rem;
+    color:var(--navy);
+    padding:13px 6px;
+    text-decoration:underline;
+    text-underline-offset:4px;
+    display:inline-block;
+  }
+
+  /* ===== Docket visual ===== */
+  .docket{
+    background:#fff;
+    border:1px solid var(--line);
+    max-width:420px;
+    padding:0;
+    box-shadow:0 4px 0 var(--line);
+    position:relative;
+  }
+  .docket-top{
+    padding:20px 22px 16px;
+    border-bottom:1px dashed var(--grey);
+  }
+  .docket-top .mono{font-size:0.72rem; color:var(--grey); text-transform:uppercase; letter-spacing:0.08em;}
+  .docket-title{font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; font-size:1rem; margin-top:6px;}
+  .docket-body{padding:18px 22px;}
+  .docket-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:'DM Mono', monospace;
+    font-size:0.84rem;
+    padding:9px 0;
+    border-bottom:1px dotted var(--line);
+  }
+  .docket-row:last-child{border-bottom:none;}
+  .docket-row .tick{color:var(--green-dark); font-weight:700;}
+  .docket-row .cross{color:var(--grey); font-weight:700;}
+  .docket-foot{
+    padding:16px 22px 22px;
+    font-family:'DM Mono', monospace;
+    font-size:0.74rem;
+    color:var(--grey);
+    border-top:1px dashed var(--grey);
+  }
+  .docket-serrate{
+    height:10px;
+    background:
+      radial-gradient(circle at 6px 0, transparent 6px, #fff 6px) repeat-x;
+    background-size:12px 10px;
+    margin-top:-1px;
+  }
+
+  /* ===== Section framing ===== */
+  section{padding:52px 0;}
+  .section-line{border-top:1px solid var(--line);}
+  h2{
+    font-size:clamp(1.4rem, 2.6vw, 1.9rem);
+    margin-bottom:14px;
+    max-width:20ch;
+    color:var(--navy);
+  }
+  .section-intro{
+    color:var(--navy-soft);
+    max-width:60ch;
+    margin-bottom:32px;
+    font-size:0.96rem;
+  }
+
+  /* ===== Comparison table ===== */
+  .compare-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:0.86rem;
+  }
+  .compare-table th{
+    font-family:'Oswald', sans-serif;
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    text-align:left;
+    padding:11px 13px;
+    color:var(--grey);
+    border-bottom:2px solid var(--navy);
+    font-weight:600;
+  }
+  .compare-table th.col-highlight{color:var(--navy); font-weight:700;}
+  .compare-table td{
+    padding:13px;
+    border-bottom:1px solid var(--line);
+    vertical-align:top;
+  }
+  .compare-table td:first-child{
+    font-weight:500;
+    color:var(--navy);
+    width:26%;
+  }
+  .compare-table td.win{
+    background:rgba(151,194,90,0.10);
+  }
+  .yes{color:var(--green-dark); font-weight:600;}
+  .no{color:var(--grey); font-weight:600;}
+  .part{color:var(--grey); font-style:italic;}
+  .col-highlight-cell{font-weight:600;}
+
+  /* mobile table -> stacked cards */
+  @media (max-width:640px){
+    .compare-table thead{display:none;}
+    .compare-table, .compare-table tbody, .compare-table tr, .compare-table td{display:block; width:100%;}
+    .compare-table tr{
+      border:1px solid var(--line);
+      margin-bottom:14px;
+      padding:14px;
+    }
+    .compare-table td{border-bottom:none; padding:6px 0;}
+    .compare-table td:first-child{
+      font-family:'Oswald', sans-serif;
+      font-size:0.7rem;
+      text-transform:uppercase;
+      letter-spacing:0.05em;
+      color:var(--grey);
+      font-weight:500;
+    }
+    .compare-table td:nth-child(2)::before{content:'Spreadsheet — '; color:var(--grey); font-weight:400;}
+    .compare-table td:nth-child(3)::before{content:'Kitchen Control — '; color:var(--grey); font-weight:400;}
+  }
+
+  /* ===== Honesty callout ===== */
+  .honest-box{
+    background:var(--paper-dim);
+    border-left:3px solid var(--navy);
+    padding:20px 22px;
+    margin:32px 0;
+    font-size:0.9rem;
+  }
+  .honest-box .mono{
+    display:block;
+    font-family:'Oswald', sans-serif;
+    font-size:0.7rem;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--navy);
+    margin-bottom:8px;
+    font-weight:600;
+  }
+
+  /* ===== How to choose ===== */
+  .choose-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+  .choose-item{
+    background:var(--paper);
+    padding:24px;
+  }
+  .choose-num{
+    font-family:'DM Mono', monospace;
+    font-size:0.78rem;
+    color:var(--green-dark);
+    margin-bottom:10px;
+  }
+  .choose-item h3{
+    font-family:'Oswald', sans-serif;
+    text-transform:uppercase;
+    font-size:0.95rem;
+    margin-bottom:8px;
+    color:var(--navy);
+  }
+  .choose-item p{color:var(--navy-soft); font-size:0.88rem;}
+  @media (max-width:640px){.choose-grid{grid-template-columns:1fr;}}
+
+  /* ===== Closing CTA ===== */
+  .closer{
+    background:var(--navy);
+    color:var(--paper);
+    padding:56px 0;
+  }
+  .closer h2{color:var(--paper); max-width:16ch;}
+  .closer .section-intro{color:#B7BFC9;}
+  .closer .btn-primary{background:var(--green); color:var(--navy);}
+  .closer .btn-secondary{color:var(--paper);}
+  .price-tag{
+    font-family:'DM Mono', monospace;
+    font-size:0.82rem;
+    color:#B7BFC9;
+    margin-top:16px;
+  }
+  .price-tag strong{color:var(--paper); font-size:1.05rem;}
+
+  footer{
+    padding:28px 0;
+    font-family:'DM Mono', monospace;
+    font-size:0.72rem;
+    color:var(--grey);
+    border-top:1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a href="/" class="logo">Kitchen<span>·</span>Control</a>
+    <a href="https://www.kitchen-control.co.uk/" class="header-cta">FIND OUT MORE</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap" style="display:grid; grid-template-columns:1.2fr 1fr; gap:48px; align-items:start;">
+    <div>
+      <div class="eyebrow">Kitchen Control vs Spreadsheets</div>
+      <h1 class="display">Your spreadsheet isn't broken. It's just doing a second job.</h1>
+      <p class="lede">Most independent kitchens run stock, prep and supplier orders out of a workbook someone built in a rush two years ago. It works <strong>until</strong> it's 7pm on a Friday and nobody can find the version with today's counts in it.</p>
+      <div class="cta-row">
+        <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
+        <a href="#table" class="btn-secondary">See the comparison ↓</a>
+      </div>
+    </div>
+
+    <div class="docket">
+      <div class="docket-top">
+        <div class="mono">ORDER TICKET — TABLE: KITCHEN OPS</div>
+        <div class="docket-title">What's actually on the pass</div>
+      </div>
+      <div class="docket-body">
+        <div class="docket-row"><span>Stock count, live on tablet</span><span class="tick">✓</span></div>
+        <div class="docket-row"><span>One version, everyone sees it</span><span class="tick">✓</span></div>
+        <div class="docket-row"><span>Works when Kirsty's on the till</span><span class="tick">✓</span></div>
+        <div class="docket-row"><span>Formula someone broke in March</span><span class="cross">✗</span></div>
+        <div class="docket-row"><span>"Can you send me the file"</span><span class="cross">✗</span></div>
+      </div>
+      <div class="docket-foot">BUILT BY A WORKING HEAD CHEF. NOT A SOFTWARE COMPANY.</div>
+      <div class="docket-serrate"></div>
+    </div>
+  </div>
+</section>
+
+<section class="section-line" id="table">
+  <div class="wrap">
+    <h2 class="display">Spreadsheet vs Kitchen Control, straight up</h2>
+    <p class="section-intro">No feature-matrix theatre. Here's where a spreadsheet genuinely holds its own, and where it starts costing you time you didn't notice you were spending.</p>
+
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Spreadsheet</th>
+          <th class="col-highlight">Kitchen Control</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Upfront cost</td>
+          <td class="col-highlight-cell"><span class="yes">Free</span> — you likely have it already</td>
+          <td>£12.99/month, 30-day free trial</td>
+        </tr>
+        <tr>
+          <td>Total customisation</td>
+          <td class="col-highlight-cell"><span class="yes">Unlimited</span> — build it however you like</td>
+          <td>Built for kitchen workflows, less freeform</td>
+        </tr>
+        <tr class="win">
+          <td>Multiple people editing during service</td>
+          <td><span class="no">Risky</span> — overwrites, no live sync</td>
+          <td><span class="yes">Yes</span> — everyone sees the same live data</td>
+        </tr>
+        <tr class="win">
+          <td>Access from the pass on a phone/tablet</td>
+          <td><span class="part">Awkward</span> on small screens</td>
+          <td><span class="yes">Built for it</span> — mobile-first</td>
+        </tr>
+        <tr class="win">
+          <td>What happens if the formula breaks</td>
+          <td><span class="no">Silent</span> — wrong numbers, no warning</td>
+          <td><span class="yes">Can't break</span> — no formulas to maintain</td>
+        </tr>
+        <tr class="win">
+          <td>New starter can use it same shift</td>
+          <td><span class="part">Depends</span> on who trained them</td>
+          <td><span class="yes">Minutes</span> — built for kitchen staff, not analysts</td>
+        </tr>
+        <tr class="win">
+          <td>What happens when you leave</td>
+          <td><span class="no">Walks out with you</span> — tribal knowledge</td>
+          <td><span class="yes">Stays with the business</span></td>
+        </tr>
+        <tr class="win">
+          <td>Backup if a laptop dies</td>
+          <td><span class="part">Only if you remembered</span> to save it somewhere else</td>
+          <td><span class="yes">Cloud-based</span> — nothing to lose</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="honest-box">
+      <span class="mono">Fair's fair</span>
+      If you're a one-person kitchen who's genuinely on top of your own spreadsheet, and nobody else ever needs to touch it, you may not need to change anything. Kitchen Control earns its keep the moment more than one person needs the same numbers at the same time — which for most sites, is every shift.
+    </div>
+  </div>
+</section>
+
+<section class="section-line">
+  <div class="wrap">
+    <h2 class="display">How to know if it's time to switch</h2>
+    <p class="section-intro">Three honest signs, not a sales pitch.</p>
+    <div class="choose-grid">
+      <div class="choose-item">
+        <div class="choose-num mono">01</div>
+        <h3>More than one person touches the numbers</h3>
+        <p>The moment stock, prep or ordering needs two people looking at the same data on the same day, a shared spreadsheet starts fighting you instead of helping.</p>
+      </div>
+      <div class="choose-item">
+        <div class="choose-num mono">02</div>
+        <h3>You've had a "which version is right" moment</h3>
+        <p>If you've ever asked "is this the one from Tuesday or the one Dave edited," that's the tell. It's not a training problem, it's a tooling problem.</p>
+      </div>
+      <div class="choose-item">
+        <div class="choose-num mono">03</div>
+        <h3>Onboarding someone new takes longer than a shift</h3>
+        <p>A spreadsheet built by one person, for one person, takes explaining. Kitchen software built for kitchens shouldn't need a manual.</p>
+      </div>
+      <div class="choose-item">
+        <div class="choose-num mono">04</div>
+        <h3>You're paying for it in time, not money</h3>
+        <p>Spreadsheets are free to open and expensive to maintain. If you're the only one who can fix it when it breaks, that's a cost — it's just not on an invoice.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="closer" id="trial">
+  <div class="wrap">
+    <h2 class="display">Try it for 30 days. Cancel any time.</h2>
+    <p class="section-intro">Built for independent UK hospitality businesses — not enterprise chains with an IT department. Set up in an afternoon, not a project plan.</p>
+    <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
+    <div class="price-tag">Then <strong>£12.99/month</strong>. Cancel any time.</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap" style="margin-bottom:12px;">
+    <a href="/compare-spreadsheets.html">vs Spreadsheets</a> · <a href="/compare-menuiq.html">vs MenuIQ</a> · <a href="/compare-jelly.html">vs Jelly</a> · <a href="/for-independent-businesses.html">For Independent Businesses</a> · <a href="/guide-allergen-law.html">Allergen Law Guide</a>
+  </div>
+  <div class="wrap">KITCHEN CONTROL LTD · COMPANIES HOUSE NO. 17239504 · KITCHEN-CONTROL.CO.UK</div>
+</footer>
+
+</body>
+</html>

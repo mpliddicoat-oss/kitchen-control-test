@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Control — Full User Guide</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f3f4f6;color:#1a2332;line-height:1.7;}
+.top-bar{background:linear-gradient(135deg,#16222c,#223548);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,0.2);}
+.top-bar-logo{display:flex;align-items:center;gap:10px;}
+
+.top-bar-name{color:white;font-weight:700;font-size:15px;}
+.back-btn{padding:7px 14px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:white;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s;font-family:inherit;}
+.back-btn:hover{background:rgba(255,255,255,0.2);}
+.container{max-width:860px;margin:0 auto;padding:32px 20px;}
+.hero{background:linear-gradient(135deg,#16222c,#223548);color:white;border-radius:16px;padding:40px;margin-bottom:28px;box-shadow:0 4px 20px rgba(0,0,0,0.15);}
+.hero h1{font-size:2rem;font-weight:700;margin-bottom:8px;}
+.hero p{color:rgba(255,255,255,0.7);font-size:15px;}
+.card{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.card h2{font-size:1.1rem;font-weight:700;color:#16222c;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #7fbf3f;display:flex;align-items:center;gap:8px;}
+.card h3{font-size:0.95rem;font-weight:700;color:#7fbf3f;margin:16px 0 8px;}
+.card p{font-size:14px;color:#4b5563;margin-bottom:10px;}
+.card ol,.card ul{padding-left:20px;margin-bottom:12px;}
+.card li{font-size:14px;color:#4b5563;margin-bottom:6px;}
+.tip{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-top:12px;font-size:13px;color:#166534;}
+.tip strong{color:#15803d;}
+.step-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:16px;}
+.step-card{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:16px;}
+.step-num{width:28px;height:28px;background:#7fbf3f;color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-bottom:10px;}
+.step-card h4{font-size:13px;font-weight:700;color:#16222c;margin-bottom:6px;}
+.step-card p{font-size:12px;color:#6b7280;margin:0;}
+.nav-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;}
+.nav-card{background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;text-decoration:none;color:inherit;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,0.04);}
+.nav-card:hover{border-color:#7fbf3f;transform:translateY(-2px);box-shadow:0 4px 12px rgba(127,191,63,0.15);}
+.nav-card h3{font-size:15px;font-weight:700;color:#16222c;margin-bottom:6px;}
+.nav-card p{font-size:13px;color:#6b7280;margin:0;}
+.badge{display:inline-block;background:#7fbf3f;color:white;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:10px;}
+footer{text-align:center;padding:32px 20px;color:#9ca3af;font-size:13px;}
+@media(max-width:600px){.hero{padding:24px;} .hero h1{font-size:1.5rem;}}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+  gtag("config", "G-RDBRZY77BD");
+</script>
+</head>
+<body>
+<div class="top-bar">
+  <div class="top-bar-logo">
+    <img src="logo.png" alt="Kitchen Control" style="height:32px;width:auto;">
+  </div>
+  <a href="userguide.html" class="back-btn">&#8592; Back</a>
+</div>
+<div class="container">
+  <div class="hero">
+    <h1>&#128218; Full User Guide</h1>
+    <p>Complete documentation for every feature in Kitchen Control.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#128666; Suppliers</h2>
+    <p>Suppliers are the foundation of your ingredient costing and ordering system.</p>
+    <h3>Adding a Supplier</h3>
+    <ol>
+      <li>Go to <strong>Suppliers → Add Supplier</strong></li>
+      <li>Enter supplier name, contact details, account number and delivery days</li>
+      <li>Set an order cut-off time if applicable</li>
+      <li>Save the supplier</li>
+    </ol>
+    <h3>Multiple Suppliers per Ingredient</h3>
+    <p>Ingredients can be linked to multiple suppliers. Kitchen Control automatically uses the cheapest cost per unit when calculating recipe costs.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#129346; Ingredients</h2>
+    <p>Ingredients are the core of the Kitchen Control system. Every recipe, dish and allergen flows from accurate ingredient data.</p>
+    <h3>Pack Size &amp; Costing</h3>
+    <p>Enter the pack size and pack cost to get an accurate cost per unit. If you buy by the case, enter the case size and case cost and Kitchen Control calculates the pack cost automatically.</p>
+    <h3>Allergen Scanning</h3>
+    <p>Click <strong>Scan Ingredients Label</strong> to photograph the product packaging. Kitchen Control reads the ingredients list and automatically detects all 14 major allergens.</p>
+    <h3>Invoice Scanning</h3>
+    <p>Scan supplier invoices to automatically update ingredient prices. Go to <strong>Dashboard → Import Invoice</strong>.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#9878; Yields</h2>
+    <p>Yields calculate the true cost of a prepared ingredient by accounting for trim loss, cooking loss or portioning.</p>
+    <h3>Examples</h3>
+    <ul>
+      <li>Whole salmon → filleted portions</li>
+      <li>Chicken → trimmed breast</li>
+      <li>Vegetables → prepped and trimmed</li>
+      <li>Stock reductions</li>
+    </ul>
+    <p>A yield takes a base ingredient and calculates the true cost per usable unit — giving significantly more accurate GP calculations.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#128214; Recipes</h2>
+    <p>Recipes combine ingredients, yields and other recipes into fully costed preparations.</p>
+    <h3>Components</h3>
+    <p>Add ingredients, yields or sub-recipes as components. Enter quantities and units. Kitchen Control calculates the total cost and cost per yield unit automatically.</p>
+    <h3>Yield Units</h3>
+    <p>Set the recipe yield quantity and unit (portions, grams, litres etc.) so cost per unit displays correctly throughout the system.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#127869; Dishes</h2>
+    <p>Dishes combine recipes into customer-facing menu items with live GP% tracking.</p>
+    <h3>GP% Calculation</h3>
+    <p>Enter your sell price (inc. VAT) and Kitchen Control calculates gross profit percentage automatically. A target GP% is shown for reference.</p>
+    <h3>Allergen Cascade</h3>
+    <p>Allergens flow automatically from ingredients → recipes → dishes. No manual allergen entry needed at dish level.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#128203; Menus</h2>
+    <p>Menus organise dishes for service. Dishes can be manually ordered using the ▲▼ arrows.</p>
+    <h3>Course Ordering</h3>
+    <p>Dishes automatically group by category — Starters, Mains, Sides, Desserts, Children's Menu etc. Use the arrow buttons to fine-tune the order within each course.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#9888; Allergen Sheet</h2>
+    <p>The allergen sheet generates a Natasha's Law compliant allergen matrix automatically from your ingredient data.</p>
+    <h3>Views</h3>
+    <ul>
+      <li><strong>By Dish</strong> — allergen matrix for a specific dish showing all components</li>
+      <li><strong>By Recipe</strong> — allergen breakdown for a specific recipe</li>
+      <li><strong>By Ingredient</strong> — full allergen matrix for all ingredients</li>
+      <li><strong>By Menu</strong> — complete menu allergen matrix for printing</li>
+    </ul>
+    <h3>Manual Allergens</h3>
+    <p>Click any grey dot to manually add an allergen. Click an orange ringed dot to remove a manually added allergen. Auto-detected allergens cannot be removed.</p>
+    <div class="tip"><strong>Important:</strong> Always verify allergen information independently before serving customers.</div>
+  </div>
+
+  <div class="card">
+    <h2>&#128230; Ordering</h2>
+    <p>Generate ingredient order lists from your menus based on expected covers.</p>
+    <ol>
+      <li>Select a menu</li>
+      <li>Enter expected covers or portions</li>
+      <li>Generate order list</li>
+      <li>Ingredients are grouped by supplier automatically</li>
+      <li>Print or export your order sheet</li>
+    </ol>
+  </div>
+
+</div>
+<footer><p>Kitchen Control &copy; 2026 &middot; Built by chefs, for chefs.</p></footer>
+</body>
+</html>

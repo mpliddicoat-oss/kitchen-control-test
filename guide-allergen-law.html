@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UK Allergen Law for Restaurants: What It Actually Requires | Kitchen Control</title>
+<meta name="description" content="A plain-English guide to UK allergen law for restaurants, cafes and pubs — what the Food Information Regulations 2014 actually require, and how most kitchens get caught out.">
+<link rel="canonical" href="https://www.kitchen-control.co.uk/guide-allergen-law.html">
+<meta property="og:title" content="UK Allergen Law for Restaurants: What It Actually Requires">
+<meta property="og:description" content="A plain-English guide to UK allergen law for independent kitchens.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.kitchen-control.co.uk/guide-allergen-law.html">
+<meta property="og:image" content="https://www.kitchen-control.co.uk/images/og-image.png">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-RDBRZY77BD');
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper: #F7F5F1;
+    --paper-dim: #EFEBE2;
+    --navy: #2A3950;
+    --navy-soft: #5B6779;
+    --green: #97C25A;
+    --green-dark: #75973F;
+    --grey: #8C9199;
+    --line: #DAD5C9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--navy);
+    font-family:'DM Mono', monospace;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+  }
+  .mono{font-family:'DM Mono', monospace;}
+  .display{font-family:'Oswald', sans-serif; font-weight:700; letter-spacing:-0.01em; text-transform:uppercase;}
+  a{color:inherit;}
+
+  .wrap{max-width:820px; margin:0 auto; padding:0 24px;}
+
+  /* ===== Header ===== */
+  header{border-bottom:1px solid var(--line); padding:20px 0;}
+  header .wrap{display:flex; justify-content:space-between; align-items:center; max-width:820px;}
+  .logo{
+    font-family:'Oswald', sans-serif; font-weight:700; font-size:1.05rem; letter-spacing:0.02em;
+    text-transform:uppercase; color:var(--navy); text-decoration:none;
+  }
+  .logo span{color:var(--green-dark);}
+  .header-cta{
+    font-family:'DM Mono', monospace; font-size:0.75rem; font-weight:500; color:var(--navy);
+    text-decoration:none; border:1px solid var(--navy); padding:9px 14px; border-radius:2px;
+  }
+
+  /* ===== Hero ===== */
+  .hero{padding:56px 0 36px;}
+  .eyebrow{
+    font-family:'DM Mono', monospace; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--green-dark); margin-bottom:16px; display:flex; align-items:center; gap:9px;
+  }
+  .eyebrow::before{content:''; width:7px; height:7px; background:var(--green-dark); border-radius:50%; display:inline-block;}
+  h1{
+    font-family:'Oswald', sans-serif; font-weight:700; text-transform:uppercase;
+    font-size:clamp(1.8rem, 4.2vw, 2.6rem); line-height:1.1; margin-bottom:18px; max-width:18ch; color:var(--navy);
+  }
+  .lede{font-size:1.02rem; color:var(--navy-soft); max-width:60ch; margin-bottom:12px;}
+  .byline{font-family:'DM Mono', monospace; font-size:0.76rem; color:var(--grey); margin-top:20px;}
+
+  /* ===== Article body ===== */
+  article{padding:8px 0 48px;}
+  article h2{
+    font-family:'Oswald', sans-serif; font-weight:700; text-transform:uppercase;
+    font-size:1.3rem; margin:44px 0 14px; color:var(--navy);
+  }
+  article h2:first-child{margin-top:0;}
+  article p{font-size:0.94rem; color:var(--navy-soft); margin-bottom:16px; max-width:66ch;}
+  article strong{color:var(--navy);}
+
+  /* ===== Self-check box ===== */
+  .check-box{background:#fff; border:1px solid var(--line); padding:24px 26px; margin:28px 0;}
+  .check-box .tag{
+    font-family:'Oswald', sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--green-dark); margin-bottom:12px; font-weight:600; display:block;
+  }
+  .check-row{display:flex; gap:10px; align-items:flex-start; padding:8px 0; font-size:0.9rem; color:var(--navy-soft);}
+  .check-row .tick{color:var(--green-dark); font-weight:700; flex-shrink:0;}
+
+  /* ===== Allergen docket ===== */
+  .docket{background:#fff; border:1px solid var(--line); box-shadow:0 4px 0 var(--line); margin:28px 0;}
+  .docket-top{padding:18px 22px 14px; border-bottom:1px dashed var(--grey);}
+  .docket-top .mono{font-size:0.7rem; color:var(--grey); text-transform:uppercase; letter-spacing:0.08em;}
+  .docket-title{font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; font-size:0.95rem; margin-top:6px;}
+  .allergen-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:0;
+    padding:6px 22px 18px;
+  }
+  .allergen-item{
+    font-family:'DM Mono', monospace; font-size:0.82rem; padding:8px 0;
+    border-bottom:1px dotted var(--line); color:var(--navy-soft);
+  }
+  .allergen-item strong{color:var(--navy); font-weight:500;}
+  @media (max-width:560px){.allergen-grid{grid-template-columns:1fr;}}
+
+  /* ===== Enforcement note ===== */
+  .honest-box{background:var(--paper-dim); border-left:3px solid var(--navy); padding:20px 22px; margin:28px 0; font-size:0.9rem;}
+  .honest-box .tag{display:block; font-family:'Oswald', sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--navy); margin-bottom:8px; font-weight:600;}
+
+  /* ===== Soft product mention ===== */
+  .product-note{
+    background:#fff; border:1px solid var(--line); border-left:3px solid var(--green-dark);
+    padding:22px 24px; margin:36px 0 8px;
+  }
+  .product-note .tag{
+    font-family:'Oswald', sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--green-dark); margin-bottom:10px; font-weight:600; display:block;
+  }
+  .product-note p{margin-bottom:14px;}
+  .btn-primary{
+    font-family:'DM Mono', monospace; font-weight:500; font-size:0.82rem;
+    background:var(--navy); color:var(--paper);
+    padding:12px 20px; text-decoration:none; border-radius:2px; display:inline-block;
+  }
+  .product-note .price-tag{font-family:'DM Mono', monospace; font-size:0.78rem; color:var(--grey); margin-top:12px;}
+
+  footer{padding:28px 0; font-family:'DM Mono', monospace; font-size:0.72rem; color:var(--grey); border-top:1px solid var(--line);}
+  footer .wrap{max-width:820px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a href="/" class="logo">Kitchen<span>·</span>Control</a>
+    <a href="https://www.kitchen-control.co.uk/" class="header-cta">FIND OUT MORE</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Guide — Allergen Compliance</div>
+    <h1>UK Allergen Law: What It Actually Requires Of Your Kitchen</h1>
+    <p class="lede">Not Natasha's Law — that's for pre-packaged food. This is the law that governs every UK restaurant, cafe and pub serving food to a customer, whether it's plated, packaged, or handed over the counter.</p>
+    <div class="byline mono">Kitchen Control · Guides</div>
+  </div>
+</section>
+
+<article>
+  <div class="wrap">
+
+    <h2>The law, in plain terms</h2>
+    <p><strong>The Food Information Regulations 2014 (FIR)</strong> enforce the retained EU rules on food information — commonly referred to as the "FIC" — which require every UK food business to declare any of 14 major allergens present in the food they serve. This applies to non-prepacked food (a meal cooked and served to a table), prepacked food, and food packaged on-site for direct sale. In practice: if you cook it and someone eats it, this law applies to you.</p>
+    <p>It came into force in December 2014 and it's not optional guidance — it's enforced by your local authority, usually via Environmental Health, and non-compliance can lead to an improvement notice and, in some cases, prosecution.</p>
+
+    <div class="check-box">
+      <span class="tag">Does this apply to you?</span>
+      <div class="check-row"><span class="tick">✓</span><span>You cook or prepare food that a customer eats on-site or takes away</span></div>
+      <div class="check-row"><span class="tick">✓</span><span>You run a restaurant, cafe, pub, takeaway, or catering business</span></div>
+      <div class="check-row"><span class="tick">✓</span><span>You serve food at events, pop-ups, or markets</span></div>
+      <p style="margin-top:14px; margin-bottom:0; font-size:0.88rem;">If any of these are true, this law applies to you today — regardless of whether you package or pre-wrap anything.</p>
+    </div>
+
+    <h2>The 14 allergens</h2>
+    <p>These must be declared whenever present as an ingredient, including in additives, processing aids, and anything used in a stock, sauce, or garnish — not just the obvious main ingredient.</p>
+
+    <div class="docket">
+      <div class="docket-top">
+        <div class="mono">FSA REGULATED ALLERGENS — 14 TOTAL</div>
+        <div class="docket-title">What you're declaring</div>
+      </div>
+      <div class="allergen-grid">
+        <div class="allergen-item"><strong>Celery</strong> — inc. celeriac, stock cubes</div>
+        <div class="allergen-item"><strong>Cereals w/ gluten</strong> — wheat, rye, barley, oats</div>
+        <div class="allergen-item"><strong>Crustaceans</strong> — prawns, crab, lobster</div>
+        <div class="allergen-item"><strong>Eggs</strong></div>
+        <div class="allergen-item"><strong>Fish</strong></div>
+        <div class="allergen-item"><strong>Lupin</strong></div>
+        <div class="allergen-item"><strong>Milk</strong></div>
+        <div class="allergen-item"><strong>Molluscs</strong> — mussels, oysters</div>
+        <div class="allergen-item"><strong>Mustard</strong></div>
+        <div class="allergen-item"><strong>Peanuts</strong></div>
+        <div class="allergen-item"><strong>Sesame</strong></div>
+        <div class="allergen-item"><strong>Soybeans</strong></div>
+        <div class="allergen-item"><strong>Sulphur dioxide/sulphites</strong> — over 10ppm</div>
+        <div class="allergen-item"><strong>Tree nuts</strong> — almonds, hazelnuts, walnuts, etc.</div>
+      </div>
+    </div>
+
+    <h2>How you're allowed to provide it</h2>
+    <p>The FSA gives you three acceptable routes, and you can choose whichever fits how your kitchen runs:</p>
+    <p><strong>1. Written up front</strong> — allergens marked directly on the menu or menu board, so a customer sees the information without asking.</p>
+    <p><strong>2. Signposted to written information</strong> — a note on the menu pointing to an allergen matrix or folder available on request.</p>
+    <p><strong>3. Signposted to verbal information</strong> — a note telling the customer to ask a member of staff, provided that staff member gives accurate, consistent answers backed by something written.</p>
+
+    <div class="honest-box">
+      <span class="tag">Where kitchens get caught out</span>
+      Verbal-only answers are technically allowed, but the FSA is explicit that they need to be backed up by accurate written information behind the scenes — not memory. The most common compliance failure isn't a missing menu note, it's a staff member giving a confident, wrong answer because the allergen data lived in someone's head rather than somewhere checkable. A supplier changing an ingredient without anyone updating the sheet is the other repeat offender.</p>
+    </div>
+
+    <h2>What good practice actually looks like</h2>
+    <p>In practice, most independent kitchens land on a combination: allergens marked or flagged on the menu for common ones, plus a written allergen matrix — a simple grid of dishes against the 14 allergens — kept up to date and available the moment a customer or an EHO asks for it. The matrix only stays useful if it's rebuilt every time a recipe or supplier changes, which is where most manual, spreadsheet-based versions quietly go out of date.</p>
+
+    <div class="product-note">
+      <span class="tag">Where Kitchen Control fits</span>
+      <p>Kitchen Control's allergen management tracks the 14 allergens against every ingredient and recipe, so the information updates automatically when an ingredient changes rather than relying on someone remembering to update a separate sheet. It's not a label printer or a PPDS solution — it's built to keep the allergen data behind your menu accurate, which is the part the FSA actually cares about.</p>
+      <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
+      <div class="price-tag">Then £12.99/month. Cancel any time.</div>
+    </div>
+
+  </div>
+</article>
+
+<footer>
+  <div class="wrap" style="margin-bottom:12px;">
+    <a href="/compare-spreadsheets.html">vs Spreadsheets</a> · <a href="/compare-menuiq.html">vs MenuIQ</a> · <a href="/compare-jelly.html">vs Jelly</a> · <a href="/for-independent-businesses.html">For Independent Businesses</a> · <a href="/guide-allergen-law.html">Allergen Law Guide</a>
+  </div>
+  <div class="wrap">
+    KITCHEN CONTROL LTD · COMPANIES HOUSE NO. 17239504 · KITCHEN-CONTROL.CO.UK<br>
+    This guide is provided for general information and is not legal advice. For your specific obligations, refer to Food Standards Agency guidance or speak to your local authority's Environmental Health department.
+  </div>
+</footer>
+
+</body>
+</html>

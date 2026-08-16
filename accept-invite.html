@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kitchen Control — Accept Invite</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#223548,#16222c);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+.card{background:#fff;border-radius:14px;padding:40px 32px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.logo{text-align:center;margin-bottom:24px;}
+.logo img{max-width:180px;height:auto;}
+h1{font-size:20px;font-weight:700;color:#16222c;margin-bottom:6px;text-align:center;}
+.subtitle{font-size:13px;color:#6b7280;margin-bottom:28px;text-align:center;line-height:1.5;}
+.invite-badge{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:24px;text-align:center;}
+.invite-badge .from{font-size:12px;color:#6b7280;margin-bottom:4px;}
+.invite-badge .company{font-size:15px;font-weight:700;color:#16222c;}
+.invite-badge .role{font-size:12px;color:#7fbf3f;font-weight:600;margin-top:4px;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+label{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;}
+input{padding:11px 14px;border:1px solid #e2e8f0;border-radius:8px;font-size:15px;font-family:inherit;width:100%;transition:border-color .15s;}
+input:focus{outline:none;border-color:#7fbf3f;}
+.btn{width:100%;padding:12px;background:#7fbf3f;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:8px;}
+.btn:hover{background:#5a9a25;}
+.btn:disabled{background:#9ca3af;cursor:not-allowed;}
+.error{color:#dc2626;font-size:13px;margin-top:10px;display:none;background:#fee2e2;padding:10px;border-radius:6px;border:1px solid #fecaca;}
+.success{color:#065f46;font-size:13px;margin-top:10px;display:none;background:#d1fae5;padding:10px;border-radius:6px;border:1px solid #6ee7b7;}
+.footer{margin-top:20px;text-align:center;font-size:11px;color:#9ca3af;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo"><img src="logo.png" alt="Kitchen Control"></div>
+
+  <div id="loading-view">
+    <h1>Setting up your account...</h1>
+    <p class="subtitle">Please wait a moment.</p>
+  </div>
+
+  <div id="form-view" style="display:none">
+    <h1>Welcome to Kitchen Control</h1>
+    <p class="subtitle">You've been invited to join a team. Set your password to get started.</p>
+
+    <div class="invite-badge" id="invite-badge" style="display:none">
+      <div class="from">You've been invited by</div>
+      <div class="company" id="badge-company"></div>
+      <div class="role" id="badge-role"></div>
+    </div>
+
+    <div class="fg">
+      <label>Your Name</label>
+      <input type="text" id="full-name" placeholder="e.g. Sarah Jones" autocomplete="name">
+    </div>
+    <div class="fg">
+      <label>Password</label>
+      <input type="password" id="new-pass" placeholder="Minimum 6 characters" autocomplete="new-password">
+    </div>
+    <div class="fg">
+      <label>Confirm Password</label>
+      <input type="password" id="confirm-pass" placeholder="Repeat your password" autocomplete="new-password">
+    </div>
+    <button class="btn" id="submit-btn" onclick="acceptInvite()">Create Account &amp; Join Team</button>
+    <div class="error" id="err-msg"></div>
+    <div class="success" id="ok-msg"></div>
+  </div>
+
+  <div id="invalid-view" style="display:none">
+    <h1>Invalid Invite Link</h1>
+    <p class="subtitle">This invite link is invalid or has expired. Please ask your team owner to send a new invite.</p>
+    <div style="margin-top:20px;text-align:center">
+      <a href="/login.html" style="color:#7fbf3f;font-size:14px;text-decoration:none;">← Back to login</a>
+    </div>
+  </div>
+
+  <div class="footer">Kitchen Control &copy; 2026</div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://qdvektbnhyfzxuxjhorw.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkdmVrdGJuaHlmenh1eGpob3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MTA2OTMsImV4cCI6MjA5MzQ4NjY5M30.DOo4wLbkQ-uU5ZdOtdRWGWUr3eOJQ7vEutLubCop1Nw';
+var kcSupa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+var _inviteSession = null;
+var _inviteMeta = {};
+
+function showErr(msg){ var e=document.getElementById('err-msg'); e.textContent=msg; e.style.display='block'; document.getElementById('ok-msg').style.display='none'; }
+function showOk(msg){ var e=document.getElementById('ok-msg'); e.textContent=msg; e.style.display='block'; document.getElementById('err-msg').style.display='none'; }
+function show(id){ document.getElementById(id).style.display='block'; }
+function hide(id){ document.getElementById(id).style.display='none'; }
+
+window.addEventListener('load', async function(){
+  var hash = window.location.hash;
+
+  // Check for invite token in hash
+  if(!hash || hash.indexOf('access_token') < 0){
+    hide('loading-view');
+    show('invalid-view');
+    return;
+  }
+
+  // Let Supabase process the token
+  kcSupa.auth.onAuthStateChange(async function(event, session){
+    if(event === 'SIGNED_IN' && session){
+      _inviteSession = session;
+
+      // Extract metadata from user
+      var meta = (session.user && session.user.user_metadata) || {};
+      _inviteMeta = {
+        role: meta.role || 'chef',
+        company_name: meta.company_name || '',
+        company_id: meta.company_id || '',
+        invited_by_name: meta.invited_by_name || ''
+      };
+
+      // Show invite badge
+      if(_inviteMeta.company_name || _inviteMeta.invited_by_name){
+        var roleLabels = {owner:'Owner',head_chef:'Head Chef',sous_chef:'Sous Chef',chef:'Chef'};
+        document.getElementById('badge-company').textContent = _inviteMeta.company_name || 'Kitchen Control';
+        document.getElementById('badge-role').textContent = 'Your role: ' + (roleLabels[_inviteMeta.role]||_inviteMeta.role);
+        document.getElementById('invite-badge').style.display = 'block';
+      }
+
+      hide('loading-view');
+      show('form-view');
+    }
+  });
+});
+
+async function acceptInvite(){
+  var fullName = document.getElementById('full-name').value.trim();
+  var pass = document.getElementById('new-pass').value;
+  var confirm = document.getElementById('confirm-pass').value;
+  var btn = document.getElementById('submit-btn');
+
+  if(!fullName){ showErr('Please enter your name.'); return; }
+  if(!pass || pass.length < 6){ showErr('Password must be at least 6 characters.'); return; }
+  if(pass !== confirm){ showErr('Passwords do not match.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Setting up...';
+
+  try{
+    // Set password
+    var pwRes = await kcSupa.auth.updateUser({ password: pass });
+    if(pwRes.error) throw pwRes.error;
+
+    var userId = (_inviteSession && _inviteSession.user && _inviteSession.user.id) || '';
+
+    // Create or update profile using company_id from invite metadata
+    await kcSupa.from('profiles').upsert({
+      user_id: userId,
+      full_name: fullName,
+      company_name: _inviteMeta.company_name || '',
+      company_id: _inviteMeta.company_id || null,
+      role: _inviteMeta.role || 'chef',
+      scans_used: 0,
+      billing_start_date: new Date().toISOString().split('T')[0]
+    }, {onConflict: 'user_id'});
+
+    // Mark invite as accepted
+    await kcSupa.from('invites').update({accepted: true})
+      .eq('email', _inviteSession.user.email);
+
+    showOk('Account created! Taking you to Kitchen Control...');
+    setTimeout(function(){ window.location.href = '/'; }, 1500);
+
+  }catch(e){
+    console.error('Accept invite error:', e);
+    showErr(e.message || 'Could not create account. Please try again.');
+    btn.disabled = false;
+    btn.textContent = 'Create Account & Join Team';
+  }
+}
+</script>
+</body>
+</html>
