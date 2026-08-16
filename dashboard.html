@@ -1853,7 +1853,10 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   <div id="rec-list">
     <div class="ph"><div><button class="btn btn-grey btn-sm" onclick="go('home')" style="font-size:11px;padding:4px 10px;margin-bottom:4px">&#8592; Back</button></div>
       <div><h1>Recipes</h1><div class="ph-sub">Scalable recipes with live costing and allergens</div></div>
-      <button class="btn btn-green" onclick="recNew()">+ New Recipe</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="openRecipeScanModal()">&#128248; Import Recipe</button>
+        <button class="btn btn-green" onclick="recNew()">+ New Recipe</button>
+      </div>
     </div>
     <input class="search-bar" placeholder="Search recipes..." oninput="recRender(this.value)">
     <div id="rec-items"></div>
@@ -3659,7 +3662,7 @@ function compRender(ctx){
       var onUnitI=arrNm+'['+i+'].unit=this.value;'+calcNm+'()';
       html+='<div class="comp-row" style="grid-template-columns:auto 2fr 70px 90px auto 28px">';
       html+='<span class="badge bg-green">Ingredient</span>';
-      html+='<div id="comp-ing-sel-'+ctx+'-'+i+'"></div>';
+      html+='<div><div id="comp-ing-sel-'+ctx+'-'+i+'"></div>'+(comp._scannedName?'<div style="font-size:11px;color:#b45309;margin-top:2px">Scanned as: "'+comp._scannedName+'" — pick a match &darr;</div>':'')+'</div>';
       html+='<input type="number" step="any" min="0" value="'+(comp.qty||'')+'" placeholder="Qty" oninput="'+onQty+'">';
       html+='<select onchange="'+onUnitI+'">'+['g','kg','ml','litre','each','portion','bunch','sprig','tbsp','tsp','slice'].map(function(u){return'<option'+(comp.unit===u?' selected':'')+'>'+u+'</option>';}).join('')+'</select>';
       html+=costStr+'<button class="btn btn-red btn-sm" onclick="'+onRm+'">X</button></div>';
@@ -6376,6 +6379,244 @@ function detectAllergens(text) {
 }
 
 // ============================================================
+// RECIPE IMPORT - Gemini Vision via Vercel serverless function
+// Parses a photo/PDF/pasted-text recipe, matches ingredients against
+// DB.ingredients, then hands the whole thing to the normal recipe form
+// (recNew / _recComps / _recSteps / compRender / recSave) for review+save.
+// ============================================================
+
+function openRecipeScanModal(){
+  resetRecipeScanModal();
+  var m = el('recipe-scan-modal');
+  if (m) m.style.display = 'flex';
+}
+function closeRecipeScanModal(){
+  var m = el('recipe-scan-modal');
+  if (m) m.style.display = 'none';
+  resetRecipeScanModal();
+}
+function resetRecipeScanModal(){
+  var img = el('recipe-scan-img-preview');
+  var placeholder = el('recipe-scan-placeholder');
+  var proc = el('recipe-scan-processing');
+  var actInit = el('recipe-scan-actions-initial');
+  var actText = el('recipe-scan-actions-text');
+  var textInput = el('recipe-scan-text-input');
+  var fileInput = el('recipe-scan-file-input');
+  if (img) { img.style.display = 'none'; img.src = ''; }
+  if (placeholder) placeholder.style.display = 'block';
+  if (proc) proc.style.display = 'none';
+  if (actInit) actInit.style.display = 'flex';
+  if (actText) actText.style.display = 'none';
+  if (textInput) { textInput.style.display = 'none'; textInput.value = ''; }
+  if (fileInput) fileInput.value = '';
+}
+function toggleRecipeScanTextInput(){
+  var textInput = el('recipe-scan-text-input');
+  var placeholder = el('recipe-scan-placeholder');
+  var actInit = el('recipe-scan-actions-initial');
+  var actText = el('recipe-scan-actions-text');
+  if (textInput) textInput.style.display = 'block';
+  if (placeholder) placeholder.style.display = 'none';
+  if (actInit) actInit.style.display = 'none';
+  if (actText) actText.style.display = 'flex';
+  if (textInput) textInput.focus();
+}
+
+function submitRecipeScanText(){
+  if (window.KC_DEMO && !demoScanAllowed('recipe')) return;
+  var textInput = el('recipe-scan-text-input');
+  var text = textInput ? textInput.value.trim() : '';
+  if (!text) { alert('Paste some recipe text first.'); return; }
+  runRecipeScan({ text: text });
+}
+
+function handleRecipeScanUpload(input){
+  var file = input.files[0];
+  if (!file) return;
+  if (window.KC_DEMO && !demoScanAllowed('recipe')) { input.value=''; return; }
+  input.value = '';
+
+  var img = el('recipe-scan-img-preview');
+  var placeholder = el('recipe-scan-placeholder');
+
+  if (file.type.indexOf('image') >= 0) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      if (img) { img.src = e.target.result; img.style.display = 'block'; }
+      if (placeholder) placeholder.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  } else if (placeholder) {
+    placeholder.innerHTML = '<div>&#128196;</div><p>' + file.name + '</p>';
+  }
+
+  (async function(){
+    var base64, isPDF = file.type === 'application/pdf';
+    try {
+      base64 = isPDF
+        ? await new Promise(function(resolve, reject) {
+            var fr = new FileReader();
+            fr.onload = function(e) { resolve(e.target.result.split(',')[1]); };
+            fr.onerror = reject;
+            fr.readAsDataURL(file);
+          })
+        : await compressImage(file, 2400, 0.90);
+    } catch(e) {
+      base64 = await new Promise(function(resolve, reject) {
+        var fr = new FileReader();
+        fr.onload = function(e) { resolve(e.target.result.split(',')[1]); };
+        fr.onerror = reject;
+        fr.readAsDataURL(file);
+      });
+    }
+    runRecipeScan({ image: base64, mimeType: file.type || 'image/jpeg' });
+  })();
+}
+
+async function runRecipeScan(payload){
+  var placeholder = el('recipe-scan-placeholder');
+  var proc = el('recipe-scan-processing');
+  var procText = el('recipe-scan-processing-text');
+  var actInit = el('recipe-scan-actions-initial');
+  var actText = el('recipe-scan-actions-text');
+
+  if (proc) proc.style.display = 'flex';
+  if (actInit) actInit.style.display = 'none';
+  if (actText) actText.style.display = 'none';
+
+  var steps = ['Reading recipe...','Splitting out ingredients...','Matching to your ingredients...','Almost done...'];
+  var step = 0;
+  var stepInterval = setInterval(function(){
+    step = (step+1) % steps.length;
+    if (procText) procText.textContent = steps[step];
+  }, 1500);
+
+  try {
+    payload.demo = !!window.KC_DEMO;
+    var response;
+    for (var attempt=1; attempt<=3; attempt++){
+      response = await fetch('/api/recipe-scan', {
+        method: 'POST',
+        headers: window.KC_DEMO ? { 'Content-Type':'application/json', 'x-kc-demo':'1' } : await getAuthHeaders(),
+        body: JSON.stringify(payload)
+      });
+      if (response.status !== 503) break;
+      if (attempt < 3){
+        if (procText) procText.textContent = 'Busy, retrying... (' + attempt + '/3)';
+        await new Promise(function(r){ setTimeout(r, 3000); });
+      }
+    }
+    clearInterval(stepInterval);
+
+    if (!response.ok) {
+      var err = await response.json().catch(function(){ return { error: 'Server error ' + response.status }; });
+      throw new Error(err.error || 'Server error');
+    }
+
+    var data = await response.json();
+    if (!data.name && (!data.ingredients || !data.ingredients.length)) {
+      throw new Error('No recipe could be read from this.');
+    }
+
+    if (window.KC_DEMO) {
+      if (typeof demoScanUsed === 'function') demoScanUsed('recipe');
+    } else if (typeof incrementScanCount === 'function') {
+      incrementScanCount('recipe');
+    }
+
+    closeRecipeScanModal();
+    applyRecipeScanResults(data);
+
+  } catch(err) {
+    clearInterval(stepInterval);
+    if (proc) proc.style.display = 'none';
+    if (actInit) actInit.style.display = 'flex';
+    alert('Recipe scan failed: ' + err.message);
+  }
+}
+
+// Fuzzy-match one parsed line name against DB.ingredients, DB.recipes, and
+// DB.yields — in that priority order — so a line like "200g Beer Batter"
+// resolves to a sub-recipe and "150ml Fish Stock Reduction" can resolve to
+// a yield, not just a raw ingredient. Mirrors the matching approach used
+// for invoice line items, extended across all three component types.
+function matchComponentByName(name){
+  var target = (name || '').toLowerCase().trim();
+  if (!target) return null;
+  var singular = target.replace(/s$/, '');
+
+  function exactIn(arr){
+    return arr.find(function(x){
+      var xn = x.name.toLowerCase().trim();
+      return xn === target || xn === singular ||
+             xn.replace(/s$/, '') === target || xn.replace(/s$/, '') === singular;
+    }) || null;
+  }
+  function containsIn(arr){
+    if (target.length <= 3) return null; // guard against short-name noise
+    return arr.find(function(x){
+      var xn = x.name.toLowerCase().trim();
+      return xn.indexOf(target) >= 0 || target.indexOf(xn) >= 0;
+    }) || null;
+  }
+
+  // Exact/singular matches first, checked ingredient -> recipe -> yield
+  var m = exactIn(DB.ingredients); if (m) return { type: 'ingredient', item: m };
+  m = exactIn(DB.recipes);         if (m) return { type: 'recipe', item: m };
+  m = exactIn(DB.yields);          if (m) return { type: 'yield', item: m };
+
+  // Then loose contains-matches, same priority order
+  m = containsIn(DB.ingredients); if (m) return { type: 'ingredient', item: m };
+  m = containsIn(DB.recipes);     if (m) return { type: 'recipe', item: m };
+  m = containsIn(DB.yields);      if (m) return { type: 'yield', item: m };
+
+  return null;
+}
+
+function applyRecipeScanResults(data){
+  // Reset into a fresh recipe form, same as clicking "+ New Recipe"
+  recNew();
+
+  el('rec-name').value = data.name || '';
+  var catEl = el('rec-cat');
+  if (catEl && data.category) catEl.value = data.category;
+  el('rec-portions').value = data.yieldQty || 1;
+  var yuEl = el('rec-yield-unit');
+  if (yuEl && data.yieldUnit) yuEl.value = data.yieldUnit;
+
+  _recSteps = (data.steps || []).slice();
+  recRenderSteps();
+
+  var matchedCount = 0;
+  _recComps = (data.ingredients || []).map(function(line){
+    var match = matchComponentByName(line.name);
+    if (match) matchedCount++;
+
+    if (!match) {
+      return { type: 'ingredient', id: '', qty: line.quantity || '', unit: line.unit || 'g', _scannedName: line.name };
+    }
+    if (match.type === 'recipe') {
+      return { type: 'recipe', id: match.item.id, qty: line.quantity || 1, unit: match.item.yieldUnit || line.unit || 'portions' };
+    }
+    if (match.type === 'yield') {
+      return { type: 'yield', id: match.item.id, qty: line.quantity || '', unit: line.unit || match.item.unit || 'g' };
+    }
+    return { type: 'ingredient', id: match.item.id, qty: line.quantity || '', unit: match.item.unit || line.unit || 'g' };
+  });
+  compRender('rec');
+  recCalc();
+
+  var total = (data.ingredients || []).length;
+  var unmatched = total - matchedCount;
+  var msg = total
+    ? ('Matched ' + matchedCount + ' of ' + total + ' ingredients automatically.' +
+       (unmatched ? ' Check the ' + unmatched + ' unmatched line' + (unmatched===1?'':'s') + ' below — search to pick the right ingredient, or remove the row.' : ' Review and save when ready.'))
+    : 'No ingredient lines were found — you can add components manually below.';
+  alert(msg);
+}
+
+// ============================================================
 // LABEL SCANNING - Gemini Vision via Vercel serverless function
 // Clean implementation - matches actual modal element IDs
 // ============================================================
@@ -6557,6 +6798,37 @@ async function scanIngredientText(file) {
       <button class="btn btn-green" onclick="applyInvoiceResults()">✓ Apply to Ingredients</button>
       <button class="btn btn-outline" onclick="applyInvoiceResultsAndScanAnother()">📷 Scan Another</button>
       <button class="btn btn-grey" onclick="closeInvoiceModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECIPE SCAN MODAL -->
+<div class="invoice-modal" id="recipe-scan-modal" onclick="if(event.target===this)closeRecipeScanModal()">
+  <div class="invoice-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h2 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">📖 Import Recipe</h2>
+      <button onclick="closeRecipeScanModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>
+    </div>
+    <div id="recipe-scan-placeholder" style="text-align:center;padding:20px 0;">
+      <div style="font-size:48px;margin-bottom:12px;">📷</div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Take a photo of a recipe card, page, or printout — or paste the text below. Kitchen Control will pull out the name, quantities, and method, and match ingredients to your database.</p>
+    </div>
+    <img id="recipe-scan-img-preview" style="display:none;width:100%;border-radius:8px;margin-bottom:16px;max-height:200px;object-fit:contain;" alt="Recipe preview">
+    <textarea id="recipe-scan-text-input" placeholder="Or paste recipe text here instead of a photo..." style="display:none;width:100%;min-height:140px;margin-bottom:12px;padding:10px;border:1px solid var(--border,#ddd);border-radius:8px;font:inherit;resize:vertical"></textarea>
+    <div id="recipe-scan-processing" style="display:none;text-align:center;padding:20px 0;">
+      <div style="font-size:36px;margin-bottom:8px;">⏳</div>
+      <p id="recipe-scan-processing-text" style="color:var(--muted);font-size:14px;">Reading recipe...</p>
+    </div>
+    <input type="file" id="recipe-scan-file-input" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="handleRecipeScanUpload(this)">
+    <div id="recipe-scan-actions-initial" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+      <button class="btn btn-green" onclick="document.getElementById('recipe-scan-file-input').click()">📷 Scan Recipe</button>
+      <button class="btn btn-outline" onclick="document.getElementById('recipe-scan-file-input').click()">📄 Upload PDF / Image</button>
+      <button class="btn btn-outline" onclick="toggleRecipeScanTextInput()">✎ Paste Text Instead</button>
+      <button class="btn btn-grey" onclick="closeRecipeScanModal()">Cancel</button>
+    </div>
+    <div id="recipe-scan-actions-text" style="display:none;gap:8px;flex-wrap:wrap;margin-top:8px;">
+      <button class="btn btn-green" onclick="submitRecipeScanText()">Read Recipe</button>
+      <button class="btn btn-grey" onclick="closeRecipeScanModal()">Cancel</button>
     </div>
   </div>
 </div>
