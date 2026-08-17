@@ -60,7 +60,7 @@ Return ONLY valid JSON, no markdown, no explanation, in this exact shape:
   "yieldQty": number,
   "yieldUnit": "one of: portions, g, kg, ml, litre, each",
   "ingredients": [
-    { "name": "ingredient name with product form kept (e.g. 'lime juice', 'onion') but prep instructions removed — see rules below", "quantity": number, "unit": "g, kg, ml, litre, each, tbsp, tsp, bunch, sprig, slice, or portion — copied exactly from the page, never converted" }
+    { "name": "ingredient name with product form kept (e.g. 'lime juice', 'onion') but prep instructions removed — see rules below", "quantity": number, "unit": "must be exactly one of these lowercase strings: g, kg, ml, litre, each, tbsp, tsp, bunch, sprig, slice, portion — pick whichever this maps to, do not invent abbreviations like 'l' or use alternate spellings like 'liter'" }
   ],
   "steps": [ "step 1 text", "step 2 text" ]
 }
@@ -117,18 +117,41 @@ Important:
     const VALID_UNITS = ['portions', 'g', 'kg', 'ml', 'litre', 'each'];
     const VALID_ING_UNITS = ['g', 'kg', 'ml', 'litre', 'each', 'tbsp', 'tsp', 'bunch', 'sprig', 'slice', 'portion'];
 
+    // Gemini won't always return the exact strings above even when it read
+    // the unit correctly — map common variants/abbreviations/spellings to
+    // the canonical form before validating, rather than silently collapsing
+    // anything unrecognized to 'g' (which was quietly turning litres/ml
+    // into grams whenever the raw output didn't match byte-for-byte).
+    const UNIT_ALIASES = {
+      'gram': 'g', 'grams': 'g', 'gramme': 'g', 'grammes': 'g',
+      'kilogram': 'kg', 'kilograms': 'kg', 'kgs': 'kg',
+      'millilitre': 'ml', 'millilitres': 'ml', 'milliliter': 'ml', 'milliliters': 'ml', 'mls': 'ml',
+      'litre': 'litre', 'litres': 'litre', 'liter': 'litre', 'liters': 'litre', 'l': 'litre', 'ltr': 'litre', 'ltrs': 'litre',
+      'tablespoon': 'tbsp', 'tablespoons': 'tbsp', 'tbsps': 'tbsp',
+      'teaspoon': 'tsp', 'teaspoons': 'tsp', 'tsps': 'tsp',
+      'bunches': 'bunch', 'sprigs': 'sprig', 'slices': 'slice',
+      'portions': 'portion', 'ea': 'each', 'pc': 'each', 'pcs': 'each', 'piece': 'each', 'pieces': 'each'
+    };
+    function normalizeUnit(u){
+      var raw = String(u || '').trim().toLowerCase();
+      return UNIT_ALIASES[raw] || raw;
+    }
+
     const result = {
       name: (parsed.name || '').trim(),
       category: VALID_CATEGORIES.includes(parsed.category) ? parsed.category : 'Main',
       yieldQty: parseFloat(parsed.yieldQty) || 1,
-      yieldUnit: VALID_UNITS.includes(parsed.yieldUnit) ? parsed.yieldUnit : 'portions',
+      yieldUnit: (function(){ var n=normalizeUnit(parsed.yieldUnit); return VALID_UNITS.includes(n) ? n : 'portions'; })(),
       ingredients: (Array.isArray(parsed.ingredients) ? parsed.ingredients : [])
         .filter(i => i && i.name)
-        .map(i => ({
-          name: String(i.name).trim(),
-          quantity: parseFloat(i.quantity) || 0,
-          unit: VALID_ING_UNITS.includes(i.unit) ? i.unit : 'g'
-        })),
+        .map(i => {
+          var n = normalizeUnit(i.unit);
+          return {
+            name: String(i.name).trim(),
+            quantity: parseFloat(i.quantity) || 0,
+            unit: VALID_ING_UNITS.includes(n) ? n : 'g'
+          };
+        }),
       steps: (Array.isArray(parsed.steps) ? parsed.steps : []).map(s => String(s).trim()).filter(s => s)
     };
 
