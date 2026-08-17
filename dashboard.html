@@ -3743,7 +3743,12 @@ function compRender(ctx){
           function(newId){
             comps[i].id=newId;
             var ing=byId(DB.ingredients,newId);
-            if(ing) comps[i].unit=ing.unit||'g';
+            // Only default to the ingredient's own unit for a fresh manual
+            // row. If this row came from a recipe scan, its unit is what
+            // was actually printed on the recipe — keep it, don't let the
+            // newly-picked ingredient's costing unit silently override it.
+            if(ing && !comps[i]._scannedName) comps[i].unit=ing.unit||'g';
+            delete comps[i]._scannedName;
             compRender(ctx);
           },
           '-- Search ingredients --'
@@ -3759,6 +3764,7 @@ function compRender(ctx){
             comps[i].id=newId;
             var rec=byId(DB.recipes,newId);
             if(rec) comps[i].unit=rec.yieldUnit||'portions';
+            delete comps[i]._scannedName;
             compRender(ctx);
           },
           '-- Search recipes --'
@@ -3773,6 +3779,7 @@ function compRender(ctx){
             comps[i].id=newId;
             var yld=byId(DB.yields,newId);
             if(yld) comps[i].unit=yld.unit||'g';
+            delete comps[i]._scannedName;
             compRender(ctx);
           },
           '-- Search yields --'
@@ -6666,7 +6673,7 @@ function applyRecipeScanResults(data){
     if (match.type === 'yield') {
       return { type: 'yield', id: match.item.id, qty: line.quantity || '', unit: line.unit || match.item.unit || 'g' };
     }
-    return { type: 'ingredient', id: match.item.id, qty: line.quantity || '', unit: match.item.unit || line.unit || 'g' };
+    return { type: 'ingredient', id: match.item.id, qty: line.quantity || '', unit: line.unit || match.item.unit || 'g' };
   });
   compRender('rec');
   recCalc();
