@@ -6631,6 +6631,26 @@ function matchComponentByName(name){
       return xn.indexOf(target) >= 0 || target.indexOf(xn) >= 0;
     }) || null;
   }
+  // Word-overlap fallback: catches cases where a recipe's natural word
+  // order ("lemon juice") doesn't appear as a substring of an invoice-style
+  // database name ("Juice - Lemon"), and cases like "garlic" vs
+  // "Garlic - Peeled" where the DB name carries an extra spec word.
+  function tokenize(s){
+    return (s || '').toLowerCase().replace(/[-,()]/g, ' ').split(/\s+/).filter(function(w){ return w.length > 1; });
+  }
+  function tokenIn(arr){
+    var targetWords = tokenize(target);
+    if (!targetWords.length) return null;
+    return arr.find(function(x){
+      var xWords = tokenize(x.name);
+      if (!xWords.length) return false;
+      var xSet = {}; xWords.forEach(function(w){ xSet[w] = true; });
+      var tSet = {}; targetWords.forEach(function(w){ tSet[w] = true; });
+      var allTargetInX = targetWords.every(function(w){ return xSet[w]; });
+      var allXInTarget = xWords.every(function(w){ return tSet[w]; });
+      return allTargetInX || allXInTarget;
+    }) || null;
+  }
 
   // Exact/singular matches first, checked ingredient -> recipe -> yield
   var m = exactIn(DB.ingredients); if (m) return { type: 'ingredient', item: m };
@@ -6641,6 +6661,11 @@ function matchComponentByName(name){
   m = containsIn(DB.ingredients); if (m) return { type: 'ingredient', item: m };
   m = containsIn(DB.recipes);     if (m) return { type: 'recipe', item: m };
   m = containsIn(DB.yields);      if (m) return { type: 'yield', item: m };
+
+  // Then word-overlap, same priority order
+  m = tokenIn(DB.ingredients); if (m) return { type: 'ingredient', item: m };
+  m = tokenIn(DB.recipes);     if (m) return { type: 'recipe', item: m };
+  m = tokenIn(DB.yields);      if (m) return { type: 'yield', item: m };
 
   return null;
 }
