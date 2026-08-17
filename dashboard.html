@@ -6636,7 +6636,7 @@ function matchComponentByName(name){
   // database name ("Juice - Lemon"), and cases like "garlic" vs
   // "Garlic - Peeled" where the DB name carries an extra spec word.
   function tokenize(s){
-    return (s || '').toLowerCase().replace(/[-,()]/g, ' ').split(/\s+/).filter(function(w){ return w.length > 1; });
+    return (s || '').toLowerCase().replace(/[-,()]/g, ' ').split(/\s+/).filter(function(w){ return w.length > 1 && !/^\d/.test(w); });
   }
   function tokenIn(arr){
     var targetWords = tokenize(target);
