@@ -6612,14 +6612,20 @@ async function runRecipeScan(payload){
 // resolves to a sub-recipe and "150ml Fish Stock Reduction" can resolve to
 // a yield, not just a raw ingredient. Mirrors the matching approach used
 // for invoice line items, extended across all three component types.
+// Shared text normalization for ingredient/recipe/yield matching — strips
+// apostrophes (straight and curly) so plurals like "chilli's" match "chillis"
+// as an exact string, not just a fuzzy fallback.
+function normalizeMatchText(s){
+  return (s || '').toLowerCase().replace(/['’]/g, '').trim();
+}
 function matchComponentByName(name){
-  var target = (name || '').toLowerCase().trim();
+  var target = normalizeMatchText(name);
   if (!target) return null;
   var singular = target.replace(/s$/, '');
 
   function exactIn(arr){
     return arr.find(function(x){
-      var xn = x.name.toLowerCase().trim();
+      var xn = normalizeMatchText(x.name);
       return xn === target || xn === singular ||
              xn.replace(/s$/, '') === target || xn.replace(/s$/, '') === singular;
     }) || null;
@@ -6627,7 +6633,7 @@ function matchComponentByName(name){
   function containsIn(arr){
     if (target.length <= 3) return null; // guard against short-name noise
     return arr.find(function(x){
-      var xn = x.name.toLowerCase().trim();
+      var xn = normalizeMatchText(x.name);
       return xn.indexOf(target) >= 0 || target.indexOf(xn) >= 0;
     }) || null;
   }
@@ -6636,7 +6642,7 @@ function matchComponentByName(name){
   // database name ("Juice - Lemon"), and cases like "garlic" vs
   // "Garlic - Peeled" where the DB name carries an extra spec word.
   function tokenize(s){
-    return (s || '').toLowerCase().replace(/[-,()]/g, ' ').split(/\s+/).filter(function(w){ return w.length > 1 && !/^\d/.test(w); });
+    return normalizeMatchText(s).replace(/[-,()]/g, ' ').split(/\s+/).filter(function(w){ return w.length > 1 && !/^\d/.test(w); });
   }
   function tokenIn(arr){
     var targetWords = tokenize(target);
