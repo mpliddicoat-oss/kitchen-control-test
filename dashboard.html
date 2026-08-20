@@ -5589,7 +5589,14 @@ function searchableSelect(containerId, items, selectedId, labelFn, onSelect, pla
     });
     dd.appendChild(opt);
   });
-  input.addEventListener('focus', function(){ dd.classList.add('open'); ssFilterEl(input,dd); });
+  input.addEventListener('focus', function(){
+    dd.classList.add('open');
+    // Show the full list on focus instead of filtering by the pre-filled
+    // current value — that was making it look like the dropdown couldn't
+    // be changed (it silently narrowed to just the already-selected item).
+    dd.querySelectorAll('.search-option').forEach(function(opt){ opt.style.display=''; });
+    input.select();
+  });
   input.addEventListener('input', function(){ ssFilterEl(input,dd); dd.classList.add('open'); });
   input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.remove('open'); }, 200); });
   wrap.appendChild(input);
