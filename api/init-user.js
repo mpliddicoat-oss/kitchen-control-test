@@ -63,6 +63,11 @@ export default async function handler(req, res) {
       `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&select=user_id,company_id,stripe_customer_id`,
       { headers: serviceHeaders }
     );
+    if (!checkRes.ok) {
+      const errText = await checkRes.text();
+      console.error('init-user: failed to check existing profile', checkRes.status, errText);
+      return res.status(502).json({ error: 'Could not verify account. Please try again or contact support.' });
+    }
     const existing = await checkRes.json();
 
     if (existing && existing.length > 0 && existing[0].company_id) {
@@ -72,11 +77,15 @@ export default async function handler(req, res) {
       if (!existing[0].stripe_customer_id) {
         const stripeId = await findStripeCustomerId(user.id, user.email);
         if (stripeId) {
-          await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+          const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
             method: 'PATCH',
             headers: serviceHeaders,
             body: JSON.stringify({ stripe_customer_id: stripeId })
-          }).catch(e => console.error('Failed to backfill stripe_customer_id:', e.message));
+          });
+          if (!patchRes.ok) {
+            const errText = await patchRes.text();
+            console.error('init-user: failed to backfill stripe_customer_id', patchRes.status, errText);
+          }
         }
       }
       return res.status(200).json({ company_id: existing[0].company_id, created: false });
@@ -88,22 +97,34 @@ export default async function handler(req, res) {
       headers: { ...serviceHeaders, 'Prefer': 'return=representation' },
       body: JSON.stringify({ name: companyName, owner_id: user.id })
     });
+    if (!compRes.ok) {
+      const errText = await compRes.text();
+      console.error('init-user: failed to create company', compRes.status, errText, {
+        userId: user.id, companyName
+      });
+      return res.status(502).json({ error: 'Could not set up your account. Please try again or contact support.' });
+    }
     const compData = await compRes.json();
     const companyId = Array.isArray(compData) ? compData[0]?.id : compData?.id;
+
+    if (!companyId) {
+      console.error('init-user: company created but no id returned', compData, { userId: user.id });
+      return res.status(502).json({ error: 'Could not set up your account. Please try again or contact support.' });
+    }
 
     // Look up the Stripe customer created during checkout so the link is saved
     // on the very first write — this is the piece that was previously missing.
     const stripeCustomerId = await findStripeCustomerId(user.id, user.email);
 
     // Create or update profile
-    await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+    const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
       method: 'POST',
-      headers: { ...serviceHeaders, 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      headers: { ...serviceHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
       body: JSON.stringify({
         user_id: user.id,
         full_name: fullName,
         company_name: companyName,
-        company_id: companyId || null,
+        company_id: companyId,
         role: 'owner',
         scans_used: 0,
         subscription_status: 'trialing',
@@ -112,6 +133,19 @@ export default async function handler(req, res) {
         billing_start_date: new Date().toISOString().split('T')[0]
       })
     });
+
+    if (!profileRes.ok) {
+      const errText = await profileRes.text();
+      console.error('init-user: failed to create profile', profileRes.status, errText, {
+        userId: user.id, companyId, email: user.email
+      });
+      // Clean up the orphaned company record so retries don't pile up duplicates
+      await fetch(`${SUPABASE_URL}/rest/v1/companies?id=eq.${companyId}`, {
+        method: 'DELETE',
+        headers: serviceHeaders
+      }).catch(e => console.error('init-user: failed to roll back orphaned company', e.message));
+      return res.status(502).json({ error: 'Could not finish setting up your account. Please try again or contact support.' });
+    }
 
     return res.status(200).json({ company_id: companyId, created: true });
   } catch (e) {
