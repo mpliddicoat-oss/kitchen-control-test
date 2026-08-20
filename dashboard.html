@@ -1853,10 +1853,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   <div id="rec-list">
     <div class="ph"><div><button class="btn btn-grey btn-sm" onclick="go('home')" style="font-size:11px;padding:4px 10px;margin-bottom:4px">&#8592; Back</button></div>
       <div><h1>Recipes</h1><div class="ph-sub">Scalable recipes with live costing and allergens</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-outline" onclick="openRecipeScanModal()">&#128248; Import Recipe</button>
-        <button class="btn btn-green" onclick="recNew()">+ New Recipe</button>
-      </div>
+      <button class="btn btn-green" onclick="recNew()">+ New Recipe</button>
     </div>
     <input class="search-bar" placeholder="Search recipes..." oninput="recRender(this.value)">
     <div id="rec-items"></div>
@@ -3178,39 +3175,6 @@ function ingSave(){
     }
     _promotingAwaitingId=null;
   }
-
-  // If this ingredient was created from an unmatched recipe-import row,
-  // skip the normal ingredient-list return and drop straight back into
-  // the recipe form with this slot filled in.
-  if(_recImportReturnSlot!==null && _recImportReturnSlot!==undefined){
-    var returnSlot=_recImportReturnSlot;
-    _recImportReturnSlot=null;
-    _ingId=null; _ingA={}; _ingExtraSups=[]; save(); dashUpdate();
-    if (typeof cascadeAllergenUpdate === 'function') cascadeAllergenUpdate(ingToSync.id);
-    if(ingToSync && typeof saveIngredientToSupabase==='function'){
-      saveIngredientToSupabase(ingToSync).then(function(newId){
-        if(newId && newId!==ingToSync.id){
-          var oldId=ingToSync.id;
-          ingToSync.id=newId; save();
-          // If the recipe slot still points at the temp local id, update it
-          if(_recComps[returnSlot] && _recComps[returnSlot].id===oldId){
-            _recComps[returnSlot].id=newId;
-            compRender('rec');
-          }
-        }
-      });
-    }
-    go('recipes', document.querySelector('.nav-btn[onclick*="recipes"]'));
-    showOnly('rec-form','rec-list','rec-detail');
-    if(_recComps[returnSlot]){
-      _recComps[returnSlot].id=ingToSync.id;
-      _recComps[returnSlot].unit=ingToSync.unit||_recComps[returnSlot].unit||'g';
-      delete _recComps[returnSlot]._scannedName;
-    }
-    compRender('rec');
-    recCalc();
-    return;
-  }
   var savedIngId = _ingId;
   _ingId=null; _ingA={}; _ingExtraSups=[]; save(); dashUpdate(); ingList();
   // Cascade allergen changes to recipes, dishes, allergen sheet
@@ -3470,7 +3434,6 @@ function yldDelIdx(i,ev){ if(window._yldRenderItems&&window._yldRenderItems[i]) 
 // RECIPES
 // ================================================================
 var _recId=null, _recComps=[];
-var _recImportReturnSlot=null; // index in _recComps awaiting a newly-created ingredient
 function recList(){ _recId=null; showOnly('rec-list','rec-form','rec-detail'); recRender(); }
 function recNew(){
   _recId=null; _recComps=[]; _recSteps=[];
@@ -3483,20 +3446,6 @@ function recNew(){
   showOnly('rec-form','rec-list','rec-detail');
 }
 function recAddComp(type){ _recComps.push({type:type,id:'',qty:type==='recipe'?1:'',unit:'g'}); compRender('rec'); }
-
-// Called from the "+ create new ingredient" link on an unmatched recipe-import
-// row. Jumps to a pre-filled ingredient form; ingSave() below routes back
-// here and fills in the slot once the new ingredient is saved.
-function addNewIngredientForRecipeSlot(i){
-  var comp = _recComps[i];
-  if (!comp) return;
-  _recImportReturnSlot = i;
-  var scannedName = comp._scannedName || '';
-  go('ingredients', document.querySelector('.nav-btn[onclick*="ingredients"]'));
-  ingNew();
-  var nameEl = el('ing-name');
-  if (nameEl) nameEl.value = scannedName;
-}
 function recEdit(id){
   if(id===undefined) id=_recId; var r=byId(DB.recipes,id); if(!r) return;
   _recId=id; el('rec-name').value=r.name; el('rec-cat').value=r.category; el('rec-portions').value=r.yieldQty||r.portions||1; var ryuEdit=el('rec-yield-unit'); if(ryuEdit) ryuEdit.value=r.yieldUnit||'portions'; // Load steps
@@ -3513,7 +3462,7 @@ function recDel(id){
 }
 function recSave(){
   var name=el('rec-name').value.trim(); if(!name){ alert('Recipe name required.'); return; }
-  var data={name:tc(name),category:val('rec-cat'),portions:parseFloat(val('rec-portions'))||1,yieldQty:parseFloat(val('rec-portions'))||1,yieldUnit:(el('rec-yield-unit')?el('rec-yield-unit').value:'portions'),steps:_recSteps.filter(function(s){return s.trim();}),method:_recSteps.filter(function(s){return s.trim();}).join('\n'),components:_recComps.filter(function(c){ return !!c.id || !!c._scannedName; })};
+  var data={name:tc(name),category:val('rec-cat'),portions:parseFloat(val('rec-portions'))||1,yieldQty:parseFloat(val('rec-portions'))||1,yieldUnit:(el('rec-yield-unit')?el('rec-yield-unit').value:'portions'),steps:_recSteps.filter(function(s){return s.trim();}),method:_recSteps.filter(function(s){return s.trim();}).join('\n'),components:_recComps.filter(function(c){ return !!c.id; })};
   var savedRecId = _recId;
   if(_recId) Object.assign(byId(DB.recipes,_recId),data); else { var newRec=Object.assign({id:uid()},data); DB.recipes.push(newRec); savedRecId=newRec.id; }
   _recId=null; _recSteps=[]; save(); dashUpdate(); recList();
@@ -3529,9 +3478,7 @@ function recCalc(){
   var p=parseFloat(val('rec-portions'))||1; var ryuEl=el('rec-yield-unit'); var yUnit=ryuEl?ryuEl.value:'portions';
   el('rec-total').innerHTML=fmt(t); el('rec-port-disp').textContent=p+' '+yUnit; if(el('rec-yield-label')) el('rec-yield-label').textContent='Yield ('+yUnit+')'; el('rec-cpp').innerHTML=fmt(t/p); var cpp2=document.getElementById('rec-cpp2'); if(cpp2) cpp2.innerHTML=fmt(t/p);
   var a={}; _recComps.forEach(function(c){ Object.assign(a,compAllergens(c)); });
-  var missingCount=_recComps.filter(function(c){ return !c.id; }).length;
-  var warning=missingCount?('<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:12px;font-weight:600">&#9888; '+missingCount+' ingredient'+(missingCount===1?'':'s')+' not yet linked — cost and allergens below are incomplete until '+(missingCount===1?'it\'s':'they\'re')+' resolved.</div>'):'';
-  el('rec-live-allergens').innerHTML=warning+(chipHTML(a,true)||'<span style="font-size:12px;color:var(--muted)">No allergens yet</span>');
+  el('rec-live-allergens').innerHTML=chipHTML(a,true)||'<span style="font-size:12px;color:var(--muted)">No allergens yet</span>';
 }
 function recShowDetail(id){
   _recId=id;
@@ -3543,16 +3490,9 @@ function recShowDetail(id){
   el('rec-detail-sub').textContent=r.category+' · Yields: '+yQty+' '+yUnit;
 
   // Build ingredients table
-  var t=0, tbody='', ingRows=[], missingCount=0;
+  var t=0, tbody='', ingRows=[];
   (r.components||[]).forEach(function(comp){
     var name='',cost=0,qty=comp.qty,unit=comp.unit||'',printName='';
-    if(!comp.id){
-      missingCount++;
-      var label=comp._scannedName || (comp.type==='recipe'?'Unresolved sub-recipe':comp.type==='yield'?'Unresolved yield':'Unresolved ingredient');
-      name='<span class="badge" style="background:#fef3c7;color:#92400e;margin-right:4px">&#9888; Missing</span>'+label;
-      tbody+='<tr style="background:#fffbeb"><td>'+name+'</td><td>'+(qty||'--')+'</td><td>'+(unit||'--')+'</td><td>--</td></tr>';
-      return;
-    }
     if(comp.type==='recipe'){
       var sub=byId(DB.recipes,comp.id); if(!sub) return;
       name='<span class="badge bg-teal" style="margin-right:4px">Recipe</span>'+sub.name;
@@ -3570,10 +3510,7 @@ function recShowDetail(id){
     ingRows.push({name:printName,qty:qty,unit:unit});
   });
 
-  var missingBanner=missingCount?('<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;font-weight:600">&#9888; '+missingCount+' ingredient'+(missingCount===1?'':'s')+' not yet linked — cost and allergens below are incomplete. Edit this recipe to resolve '+(missingCount===1?'it':'them')+'.</div>'):'';
-
   el('rec-detail-table').innerHTML=
-    missingBanner+
     '<h3 style="margin-bottom:10px">Ingredients (Yields '+yQty+' '+yUnit+')</h3>'+
     '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table class="dt"><thead><tr><th>Ingredient</th><th>Qty</th><th>Unit</th><th>Cost</th></tr></thead>'+
     '<tbody>'+tbody+'</tbody></table></div>'+
@@ -3652,11 +3589,7 @@ function recScale(){
 }
 function recRender(f){
   var items=DB.recipes.filter(function(r){ return r.name.toLowerCase().indexOf((f||'').toLowerCase())>=0; }).sort(function(a,b){ return a.name.localeCompare(b.name); });
-  el('rec-items').innerHTML=items.length?items.map(function(r){
-    var missingCount=(r.components||[]).filter(function(c){ return !c.id; }).length;
-    var missingTag=missingCount?' <span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px">&#9888; '+missingCount+' missing</span>':'';
-    return '<div class="card-row"><div onclick="recShowDetail(\''+r.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+r.name+missingTag+'</div><div class="cr-sub">'+r.category+' &middot; '+(r.yieldQty||r.portions||1)+' '+(r.yieldUnit||'portions')+' &middot; '+fmt(recCostPer(r))+'/'+(r.yieldUnit||'portion')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="recEdit(\''+r.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="recDel(\''+r.id+'\')">Del</button></div></div>';
-  }).join(''):'<p style="color:var(--muted);text-align:center;padding:30px">No recipes yet.</p>';
+  el('rec-items').innerHTML=items.length?items.map(function(r){ return '<div class="card-row"><div onclick="recShowDetail(\''+r.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+r.name+'</div><div class="cr-sub">'+r.category+' &middot; '+(r.yieldQty||r.portions||1)+' '+(r.yieldUnit||'portions')+' &middot; '+fmt(recCostPer(r))+'/'+(r.yieldUnit||'portion')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="recEdit(\''+r.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="recDel(\''+r.id+'\')">Del</button></div></div>'; }).join(''):'<p style="color:var(--muted);text-align:center;padding:30px">No recipes yet.</p>';
 }
 
 // ================================================================
@@ -3725,8 +3658,8 @@ function compRender(ctx){
       var onIChg=arrNm+'['+i+'].id=this.value;'+arrNm+'['+i+'].unit=byId(DB.ingredients,this.value)?byId(DB.ingredients,this.value).unit:'+q+'g'+q+';compRender('+q+ctx+q+')';
       var onUnitI=arrNm+'['+i+'].unit=this.value;'+calcNm+'()';
       html+='<div class="comp-row" style="grid-template-columns:auto 2fr 70px 90px auto 28px">';
-      html+=comp._scannedName?'<span class="badge" style="background:#fef3c7;color:#92400e">&#9888; Missing</span>':'<span class="badge bg-green">Ingredient</span>';
-      html+='<div><div id="comp-ing-sel-'+ctx+'-'+i+'"></div>'+(comp._scannedName?'<div style="font-size:11px;color:#b45309;margin-top:2px">Scanned as: "'+comp._scannedName+'" — pick a match, or '+(ctx==='rec'?'<a href="javascript:void(0)" onclick="addNewIngredientForRecipeSlot('+i+')" style="color:#b45309;text-decoration:underline">create new ingredient</a>':'create a new ingredient first')+'</div>':'')+'</div>';
+      html+='<span class="badge bg-green">Ingredient</span>';
+      html+='<div id="comp-ing-sel-'+ctx+'-'+i+'"></div>';
       html+='<input type="number" step="any" min="0" value="'+(comp.qty||'')+'" placeholder="Qty" oninput="'+onQty+'">';
       html+='<select onchange="'+onUnitI+'">'+['g','kg','ml','litre','each','portion','bunch','sprig','tbsp','tsp','slice'].map(function(u){return'<option'+(comp.unit===u?' selected':'')+'>'+u+'</option>';}).join('')+'</select>';
       html+=costStr+'<button class="btn btn-red btn-sm" onclick="'+onRm+'">X</button></div>';
@@ -3743,12 +3676,7 @@ function compRender(ctx){
           function(newId){
             comps[i].id=newId;
             var ing=byId(DB.ingredients,newId);
-            // Only default to the ingredient's own unit for a fresh manual
-            // row. If this row came from a recipe scan, its unit is what
-            // was actually printed on the recipe — keep it, don't let the
-            // newly-picked ingredient's costing unit silently override it.
-            if(ing && !comps[i]._scannedName) comps[i].unit=ing.unit||'g';
-            delete comps[i]._scannedName;
+            if(ing) comps[i].unit=ing.unit||'g';
             compRender(ctx);
           },
           '-- Search ingredients --'
@@ -3764,7 +3692,6 @@ function compRender(ctx){
             comps[i].id=newId;
             var rec=byId(DB.recipes,newId);
             if(rec) comps[i].unit=rec.yieldUnit||'portions';
-            delete comps[i]._scannedName;
             compRender(ctx);
           },
           '-- Search recipes --'
@@ -3779,7 +3706,6 @@ function compRender(ctx){
             comps[i].id=newId;
             var yld=byId(DB.yields,newId);
             if(yld) comps[i].unit=yld.unit||'g';
-            delete comps[i]._scannedName;
             compRender(ctx);
           },
           '-- Search yields --'
@@ -6336,6 +6262,20 @@ supabaseClient.auth.getSession().then(async function(res){
           body: JSON.stringify({fullName: metaName, companyName: metaBiz})
         });
         var initD = await initR.json();
+        if(!initR.ok){
+          // Profile creation failed server-side. Do not silently continue into
+          // startDataLoad() - that would show a blank/broken dashboard with no
+          // explanation. Surface it clearly and stop here so the user (and us,
+          // via console/support) knows something needs attention.
+          console.error('Profile init failed:', initR.status, initD && initD.error);
+          document.body.innerHTML = '<div style="max-width:480px;margin:80px auto;padding:32px;text-align:center;font-family:sans-serif;">' +
+            '<h2 style="margin-bottom:12px;">We couldn\'t finish setting up your account</h2>' +
+            '<p style="color:#555;margin-bottom:20px;">' + (initD && initD.error ? initD.error : 'Something went wrong loading your account.') + '</p>' +
+            '<button onclick="location.reload()" style="padding:10px 20px;margin-right:8px;cursor:pointer;">Try again</button>' +
+            '<a href="mailto:support@kitchen-control.co.uk" style="padding:10px 20px;display:inline-block;">Contact support</a>' +
+            '</div>';
+          return;
+        }
         if(initD.company_id) _companyId = initD.company_id;
         // Refresh sidebar after profile created
         supabaseClient.from('profiles').select('full_name,company_name,logo_url,company_id,role').eq('user_id', userId).maybeSingle().then(function(pr){
@@ -6348,7 +6288,16 @@ supabaseClient.auth.getSession().then(async function(res){
           if(pr.data.company_id) _companyId = pr.data.company_id;
         });
       }
-    }catch(e){ console.error('Profile init error:', e); }
+    }catch(e){
+      console.error('Profile init error:', e);
+      document.body.innerHTML = '<div style="max-width:480px;margin:80px auto;padding:32px;text-align:center;font-family:sans-serif;">' +
+        '<h2 style="margin-bottom:12px;">We couldn\'t finish setting up your account</h2>' +
+        '<p style="color:#555;margin-bottom:20px;">Something went wrong loading your account.</p>' +
+        '<button onclick="location.reload()" style="padding:10px 20px;margin-right:8px;cursor:pointer;">Try again</button>' +
+        '<a href="mailto:support@kitchen-control.co.uk" style="padding:10px 20px;display:inline-block;">Contact support</a>' +
+        '</div>';
+      return;
+    }
 
     // Session exists - load data
     startDataLoad();
@@ -6447,275 +6396,6 @@ function detectAllergens(text) {
     }
   }
   return found;
-}
-
-// ============================================================
-// RECIPE IMPORT - Gemini Vision via Vercel serverless function
-// Parses a photo/PDF/pasted-text recipe, matches ingredients against
-// DB.ingredients, then hands the whole thing to the normal recipe form
-// (recNew / _recComps / _recSteps / compRender / recSave) for review+save.
-// ============================================================
-
-function openRecipeScanModal(){
-  resetRecipeScanModal();
-  var m = el('recipe-scan-modal');
-  if (m) m.style.display = 'flex';
-}
-function closeRecipeScanModal(){
-  var m = el('recipe-scan-modal');
-  if (m) m.style.display = 'none';
-  resetRecipeScanModal();
-}
-function resetRecipeScanModal(){
-  var img = el('recipe-scan-img-preview');
-  var placeholder = el('recipe-scan-placeholder');
-  var proc = el('recipe-scan-processing');
-  var actInit = el('recipe-scan-actions-initial');
-  var actText = el('recipe-scan-actions-text');
-  var textInput = el('recipe-scan-text-input');
-  var fileInput = el('recipe-scan-file-input');
-  if (img) { img.style.display = 'none'; img.src = ''; }
-  if (placeholder) placeholder.style.display = 'block';
-  if (proc) proc.style.display = 'none';
-  if (actInit) actInit.style.display = 'flex';
-  if (actText) actText.style.display = 'none';
-  if (textInput) { textInput.style.display = 'none'; textInput.value = ''; }
-  if (fileInput) fileInput.value = '';
-}
-function toggleRecipeScanTextInput(){
-  var textInput = el('recipe-scan-text-input');
-  var placeholder = el('recipe-scan-placeholder');
-  var actInit = el('recipe-scan-actions-initial');
-  var actText = el('recipe-scan-actions-text');
-  if (textInput) textInput.style.display = 'block';
-  if (placeholder) placeholder.style.display = 'none';
-  if (actInit) actInit.style.display = 'none';
-  if (actText) actText.style.display = 'flex';
-  if (textInput) textInput.focus();
-}
-
-function submitRecipeScanText(){
-  if (window.KC_DEMO && !demoScanAllowed('recipe')) return;
-  var textInput = el('recipe-scan-text-input');
-  var text = textInput ? textInput.value.trim() : '';
-  if (!text) { alert('Paste some recipe text first.'); return; }
-  runRecipeScan({ text: text });
-}
-
-function handleRecipeScanUpload(input){
-  var file = input.files[0];
-  if (!file) return;
-  if (window.KC_DEMO && !demoScanAllowed('recipe')) { input.value=''; return; }
-  input.value = '';
-
-  var img = el('recipe-scan-img-preview');
-  var placeholder = el('recipe-scan-placeholder');
-
-  if (file.type.indexOf('image') >= 0) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      if (img) { img.src = e.target.result; img.style.display = 'block'; }
-      if (placeholder) placeholder.style.display = 'none';
-    };
-    reader.readAsDataURL(file);
-  } else if (placeholder) {
-    placeholder.innerHTML = '<div>&#128196;</div><p>' + file.name + '</p>';
-  }
-
-  (async function(){
-    var base64, isPDF = file.type === 'application/pdf';
-    try {
-      base64 = isPDF
-        ? await new Promise(function(resolve, reject) {
-            var fr = new FileReader();
-            fr.onload = function(e) { resolve(e.target.result.split(',')[1]); };
-            fr.onerror = reject;
-            fr.readAsDataURL(file);
-          })
-        : await compressImage(file, 2400, 0.90);
-    } catch(e) {
-      base64 = await new Promise(function(resolve, reject) {
-        var fr = new FileReader();
-        fr.onload = function(e) { resolve(e.target.result.split(',')[1]); };
-        fr.onerror = reject;
-        fr.readAsDataURL(file);
-      });
-    }
-    runRecipeScan({ image: base64, mimeType: file.type || 'image/jpeg' });
-  })();
-}
-
-async function runRecipeScan(payload){
-  var placeholder = el('recipe-scan-placeholder');
-  var proc = el('recipe-scan-processing');
-  var procText = el('recipe-scan-processing-text');
-  var actInit = el('recipe-scan-actions-initial');
-  var actText = el('recipe-scan-actions-text');
-
-  if (proc) proc.style.display = 'flex';
-  if (actInit) actInit.style.display = 'none';
-  if (actText) actText.style.display = 'none';
-
-  var steps = ['Reading recipe...','Splitting out ingredients...','Matching to your ingredients...','Almost done...'];
-  var step = 0;
-  var stepInterval = setInterval(function(){
-    step = (step+1) % steps.length;
-    if (procText) procText.textContent = steps[step];
-  }, 1500);
-
-  try {
-    payload.demo = !!window.KC_DEMO;
-    var response;
-    for (var attempt=1; attempt<=3; attempt++){
-      response = await fetch('/api/recipe-scan', {
-        method: 'POST',
-        headers: window.KC_DEMO ? { 'Content-Type':'application/json', 'x-kc-demo':'1' } : await getAuthHeaders(),
-        body: JSON.stringify(payload)
-      });
-      if (response.status !== 503) break;
-      if (attempt < 3){
-        if (procText) procText.textContent = 'Busy, retrying... (' + attempt + '/3)';
-        await new Promise(function(r){ setTimeout(r, 3000); });
-      }
-    }
-    clearInterval(stepInterval);
-
-    if (!response.ok) {
-      var err = await response.json().catch(function(){ return { error: 'Server error ' + response.status }; });
-      throw new Error(err.error || 'Server error');
-    }
-
-    var data = await response.json();
-    if (!data.name && (!data.ingredients || !data.ingredients.length)) {
-      throw new Error('No recipe could be read from this.');
-    }
-
-    if (window.KC_DEMO) {
-      if (typeof demoScanUsed === 'function') demoScanUsed('recipe');
-    } else if (typeof incrementScanCount === 'function') {
-      incrementScanCount('recipe');
-    }
-
-    closeRecipeScanModal();
-    applyRecipeScanResults(data);
-
-  } catch(err) {
-    clearInterval(stepInterval);
-    if (proc) proc.style.display = 'none';
-    if (actInit) actInit.style.display = 'flex';
-    alert('Recipe scan failed: ' + err.message);
-  }
-}
-
-// Fuzzy-match one parsed line name against DB.ingredients, DB.recipes, and
-// DB.yields — in that priority order — so a line like "200g Beer Batter"
-// resolves to a sub-recipe and "150ml Fish Stock Reduction" can resolve to
-// a yield, not just a raw ingredient. Mirrors the matching approach used
-// for invoice line items, extended across all three component types.
-// Shared text normalization for ingredient/recipe/yield matching — strips
-// apostrophes (straight and curly) so plurals like "chilli's" match "chillis"
-// as an exact string, not just a fuzzy fallback.
-function normalizeMatchText(s){
-  return (s || '').toLowerCase().replace(/['’]/g, '').trim();
-}
-function matchComponentByName(name){
-  var target = normalizeMatchText(name);
-  if (!target) return null;
-  var singular = target.replace(/s$/, '');
-
-  function exactIn(arr){
-    return arr.find(function(x){
-      var xn = normalizeMatchText(x.name);
-      return xn === target || xn === singular ||
-             xn.replace(/s$/, '') === target || xn.replace(/s$/, '') === singular;
-    }) || null;
-  }
-  function containsIn(arr){
-    if (target.length <= 3) return null; // guard against short-name noise
-    return arr.find(function(x){
-      var xn = normalizeMatchText(x.name);
-      return xn.indexOf(target) >= 0 || target.indexOf(xn) >= 0;
-    }) || null;
-  }
-  // Word-overlap fallback: catches cases where a recipe's natural word
-  // order ("lemon juice") doesn't appear as a substring of an invoice-style
-  // database name ("Juice - Lemon"), and cases like "garlic" vs
-  // "Garlic - Peeled" where the DB name carries an extra spec word.
-  function tokenize(s){
-    return normalizeMatchText(s).replace(/[-,()]/g, ' ').split(/\s+/).filter(function(w){ return w.length > 1 && !/^\d/.test(w); });
-  }
-  function tokenIn(arr){
-    var targetWords = tokenize(target);
-    if (!targetWords.length) return null;
-    return arr.find(function(x){
-      var xWords = tokenize(x.name);
-      if (!xWords.length) return false;
-      var xSet = {}; xWords.forEach(function(w){ xSet[w] = true; });
-      var tSet = {}; targetWords.forEach(function(w){ tSet[w] = true; });
-      var allTargetInX = targetWords.every(function(w){ return xSet[w]; });
-      var allXInTarget = xWords.every(function(w){ return tSet[w]; });
-      return allTargetInX || allXInTarget;
-    }) || null;
-  }
-
-  // Exact/singular matches first, checked ingredient -> recipe -> yield
-  var m = exactIn(DB.ingredients); if (m) return { type: 'ingredient', item: m };
-  m = exactIn(DB.recipes);         if (m) return { type: 'recipe', item: m };
-  m = exactIn(DB.yields);          if (m) return { type: 'yield', item: m };
-
-  // Then loose contains-matches, same priority order
-  m = containsIn(DB.ingredients); if (m) return { type: 'ingredient', item: m };
-  m = containsIn(DB.recipes);     if (m) return { type: 'recipe', item: m };
-  m = containsIn(DB.yields);      if (m) return { type: 'yield', item: m };
-
-  // Then word-overlap, same priority order
-  m = tokenIn(DB.ingredients); if (m) return { type: 'ingredient', item: m };
-  m = tokenIn(DB.recipes);     if (m) return { type: 'recipe', item: m };
-  m = tokenIn(DB.yields);      if (m) return { type: 'yield', item: m };
-
-  return null;
-}
-
-function applyRecipeScanResults(data){
-  // Reset into a fresh recipe form, same as clicking "+ New Recipe"
-  recNew();
-
-  el('rec-name').value = data.name || '';
-  var catEl = el('rec-cat');
-  if (catEl && data.category) catEl.value = data.category;
-  el('rec-portions').value = data.yieldQty || 1;
-  var yuEl = el('rec-yield-unit');
-  if (yuEl && data.yieldUnit) yuEl.value = data.yieldUnit;
-
-  _recSteps = (data.steps || []).slice();
-  recRenderSteps();
-
-  var matchedCount = 0;
-  _recComps = (data.ingredients || []).map(function(line){
-    var match = matchComponentByName(line.name);
-    if (match) matchedCount++;
-
-    if (!match) {
-      return { type: 'ingredient', id: '', qty: line.quantity || '', unit: line.unit || 'g', _scannedName: line.name };
-    }
-    if (match.type === 'recipe') {
-      return { type: 'recipe', id: match.item.id, qty: line.quantity || 1, unit: match.item.yieldUnit || line.unit || 'portions' };
-    }
-    if (match.type === 'yield') {
-      return { type: 'yield', id: match.item.id, qty: line.quantity || '', unit: line.unit || match.item.unit || 'g' };
-    }
-    return { type: 'ingredient', id: match.item.id, qty: line.quantity || '', unit: line.unit || match.item.unit || 'g' };
-  });
-  compRender('rec');
-  recCalc();
-
-  var total = (data.ingredients || []).length;
-  var unmatched = total - matchedCount;
-  var msg = total
-    ? ('Matched ' + matchedCount + ' of ' + total + ' ingredients automatically.' +
-       (unmatched ? ' Check the ' + unmatched + ' unmatched line' + (unmatched===1?'':'s') + ' below — search to pick the right ingredient, or remove the row.' : ' Review and save when ready.'))
-    : 'No ingredient lines were found — you can add components manually below.';
-  alert(msg);
 }
 
 // ============================================================
@@ -6900,37 +6580,6 @@ async function scanIngredientText(file) {
       <button class="btn btn-green" onclick="applyInvoiceResults()">✓ Apply to Ingredients</button>
       <button class="btn btn-outline" onclick="applyInvoiceResultsAndScanAnother()">📷 Scan Another</button>
       <button class="btn btn-grey" onclick="closeInvoiceModal()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- RECIPE SCAN MODAL -->
-<div class="invoice-modal" id="recipe-scan-modal" onclick="if(event.target===this)closeRecipeScanModal()">
-  <div class="invoice-box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-      <h2 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">📖 Import Recipe</h2>
-      <button onclick="closeRecipeScanModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>
-    </div>
-    <div id="recipe-scan-placeholder" style="text-align:center;padding:20px 0;">
-      <div style="font-size:48px;margin-bottom:12px;">📷</div>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Take a photo of a recipe card, page, or printout — or paste the text below. Kitchen Control will pull out the name, quantities, and method, and match ingredients to your database.</p>
-    </div>
-    <img id="recipe-scan-img-preview" style="display:none;width:100%;border-radius:8px;margin-bottom:16px;max-height:200px;object-fit:contain;" alt="Recipe preview">
-    <textarea id="recipe-scan-text-input" placeholder="Or paste recipe text here instead of a photo..." style="display:none;width:100%;min-height:140px;margin-bottom:12px;padding:10px;border:1px solid var(--border,#ddd);border-radius:8px;font:inherit;resize:vertical"></textarea>
-    <div id="recipe-scan-processing" style="display:none;text-align:center;padding:20px 0;">
-      <div style="font-size:36px;margin-bottom:8px;">⏳</div>
-      <p id="recipe-scan-processing-text" style="color:var(--muted);font-size:14px;">Reading recipe...</p>
-    </div>
-    <input type="file" id="recipe-scan-file-input" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="handleRecipeScanUpload(this)">
-    <div id="recipe-scan-actions-initial" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-      <button class="btn btn-green" onclick="document.getElementById('recipe-scan-file-input').click()">📷 Scan Recipe</button>
-      <button class="btn btn-outline" onclick="document.getElementById('recipe-scan-file-input').click()">📄 Upload PDF / Image</button>
-      <button class="btn btn-outline" onclick="toggleRecipeScanTextInput()">✎ Paste Text Instead</button>
-      <button class="btn btn-grey" onclick="closeRecipeScanModal()">Cancel</button>
-    </div>
-    <div id="recipe-scan-actions-text" style="display:none;gap:8px;flex-wrap:wrap;margin-top:8px;">
-      <button class="btn btn-green" onclick="submitRecipeScanText()">Read Recipe</button>
-      <button class="btn btn-grey" onclick="closeRecipeScanModal()">Cancel</button>
     </div>
   </div>
 </div>
