@@ -6578,6 +6578,8 @@ function handleRecipeDocUpload(input){
   var name = file.name.toLowerCase();
   var isDocx = name.endsWith('.docx');
   var isSpreadsheet = name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.ods');
+  var isTxt = name.endsWith('.txt');
+  var isRtf = name.endsWith('.rtf');
 
   function fail(msg){
     if (proc) proc.style.display = 'none';
@@ -6585,8 +6587,8 @@ function handleRecipeDocUpload(input){
     alert(msg);
   }
 
-  if (!isDocx && !isSpreadsheet) {
-    fail('That file type isn\'t supported — please upload a .docx, .xlsx, .xls, or .ods file.');
+  if (!isDocx && !isSpreadsheet && !isTxt && !isRtf) {
+    fail('That file type isn\'t supported — please upload a .docx, .xlsx, .xls, .ods, .rtf, or .txt file.');
     return;
   }
   if (isDocx && typeof mammoth === 'undefined') {
@@ -6595,6 +6597,37 @@ function handleRecipeDocUpload(input){
   }
   if (isSpreadsheet && typeof XLSX === 'undefined') {
     fail('Excel/ODS import isn\'t available right now (couldn\'t load the file reader). Try "Paste Text Instead" or check your connection.');
+    return;
+  }
+
+  // Lightweight RTF-to-text stripper. RTF has no simple client-side library
+  // equivalent to mammoth/SheetJS, so this is a best-effort regex strip of
+  // control words/groups rather than a full parser. Good enough for typical
+  // recipe RTFs (mostly plain text, few embedded objects) — the downstream
+  // Gemini extraction already tolerates messy/imperfect raw text by design.
+  function rtfToText(rtf){
+    var t = String(rtf || '');
+    t = t.replace(/\{\\(?:fonttbl|colortbl|stylesheet|info|generator|\*)[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, '');
+    t = t.replace(/\\par[d]?\b/g, '\n');
+    t = t.replace(/\\tab\b/g, '\t');
+    t = t.replace(/\\'([0-9a-fA-F]{2})/g, function(_, hex){ return String.fromCharCode(parseInt(hex, 16)); });
+    t = t.replace(/\\u(-?\d+)\??/g, function(_, code){ return String.fromCharCode(parseInt(code, 10) & 0xFFFF); });
+    t = t.replace(/\\[a-zA-Z]+-?\d* ?/g, '');
+    t = t.replace(/[{}]/g, '');
+    t = t.replace(/\\\\/g, '\\').replace(/\\\{/g, '{').replace(/\\\}/g, '}');
+    return t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+  }
+
+  if (isTxt || isRtf) {
+    var txtReader = new FileReader();
+    txtReader.onerror = function(){ fail('Couldn\'t read that file.'); };
+    txtReader.onload = function(e){
+      var raw = String(e.target.result || '');
+      var text = (isRtf ? rtfToText(raw) : raw).trim();
+      if (!text) { fail('That file appears to be empty.'); return; }
+      runRecipeScan({ text: text });
+    };
+    txtReader.readAsText(file);
     return;
   }
 
@@ -7008,7 +7041,7 @@ async function scanIngredientText(file) {
       <p id="recipe-scan-processing-text" style="color:var(--muted);font-size:14px;">Reading recipe...</p>
     </div>
     <input type="file" id="recipe-scan-file-input" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="handleRecipeScanUpload(this)">
-    <input type="file" id="recipe-scan-doc-input" accept=".docx,.xlsx,.xls,.ods" style="display:none" onchange="handleRecipeDocUpload(this)">
+    <input type="file" id="recipe-scan-doc-input" accept=".docx,.xlsx,.xls,.ods,.txt,.rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.spreadsheet,text/plain,application/rtf,text/rtf" style="display:none" onchange="handleRecipeDocUpload(this)">
     <div id="recipe-scan-actions-initial" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
       <button class="btn btn-green" onclick="document.getElementById('recipe-scan-file-input').click()">📷 Scan Recipe</button>
       <button class="btn btn-outline" onclick="document.getElementById('recipe-scan-file-input').click()">📄 Upload PDF / Image</button>
