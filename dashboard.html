@@ -43,6 +43,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
 <script>
 // ============================================================
@@ -6580,6 +6581,7 @@ function handleRecipeDocUpload(input){
   var isSpreadsheet = name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.ods');
   var isTxt = name.endsWith('.txt');
   var isRtf = name.endsWith('.rtf');
+  var isOdt = name.endsWith('.odt');
 
   function fail(msg){
     if (proc) proc.style.display = 'none';
@@ -6587,8 +6589,8 @@ function handleRecipeDocUpload(input){
     alert(msg);
   }
 
-  if (!isDocx && !isSpreadsheet && !isTxt && !isRtf) {
-    fail('That file type isn\'t supported — please upload a .docx, .xlsx, .xls, .ods, .rtf, or .txt file.');
+  if (!isDocx && !isSpreadsheet && !isTxt && !isRtf && !isOdt) {
+    fail('That file type isn\'t supported — please upload a .docx, .odt, .xlsx, .xls, .ods, .rtf, or .txt file.');
     return;
   }
   if (isDocx && typeof mammoth === 'undefined') {
@@ -6597,6 +6599,10 @@ function handleRecipeDocUpload(input){
   }
   if (isSpreadsheet && typeof XLSX === 'undefined') {
     fail('Excel/ODS import isn\'t available right now (couldn\'t load the file reader). Try "Paste Text Instead" or check your connection.');
+    return;
+  }
+  if (isOdt && typeof JSZip === 'undefined') {
+    fail('ODT import isn\'t available right now (couldn\'t load the file reader). Try "Paste Text Instead" or check your connection.');
     return;
   }
 
@@ -6641,6 +6647,21 @@ function handleRecipeDocUpload(input){
         if (isDocx) {
           var result = await mammoth.extractRawText({ arrayBuffer: buf });
           text = (result && result.value) || '';
+        } else if (isOdt) {
+          var zip = await JSZip.loadAsync(buf);
+          var contentFile = zip.file('content.xml');
+          if (!contentFile) throw new Error('not a valid ODT file');
+          var xml = await contentFile.async('string');
+          // ODT paragraphs/headings/line-breaks -> newlines, tabs -> tab, then strip all remaining XML tags
+          var withBreaks = xml
+            .replace(/<\/text:p>/g, '\n')
+            .replace(/<\/text:h[^>]*>/g, '\n')
+            .replace(/<text:line-break\s*\/>/g, '\n')
+            .replace(/<text:tab\s*\/>/g, '\t');
+          var stripped = withBreaks.replace(/<[^>]+>/g, '');
+          var ta = document.createElement('textarea'); // leverage browser's own entity decoder
+          ta.innerHTML = stripped;
+          text = ta.value;
         } else {
           var wb = XLSX.read(buf, { type: 'array' });
           var sheetNames = wb.SheetNames.slice(0, 5); // cap for safety on huge workbooks
@@ -7041,7 +7062,7 @@ async function scanIngredientText(file) {
       <p id="recipe-scan-processing-text" style="color:var(--muted);font-size:14px;">Reading recipe...</p>
     </div>
     <input type="file" id="recipe-scan-file-input" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="handleRecipeScanUpload(this)">
-    <input type="file" id="recipe-scan-doc-input" accept=".docx,.xlsx,.xls,.ods,.txt,.rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.spreadsheet,text/plain,application/rtf,text/rtf" style="display:none" onchange="handleRecipeDocUpload(this)">
+    <input type="file" id="recipe-scan-doc-input" accept=".docx,.odt,.xlsx,.xls,.ods,.txt,.rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.spreadsheet,text/plain,application/rtf,text/rtf" style="display:none" onchange="handleRecipeDocUpload(this)">
     <div id="recipe-scan-actions-initial" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
       <button class="btn btn-green" onclick="document.getElementById('recipe-scan-file-input').click()">📷 Scan Recipe</button>
       <button class="btn btn-outline" onclick="document.getElementById('recipe-scan-file-input').click()">📄 Upload PDF / Image</button>
