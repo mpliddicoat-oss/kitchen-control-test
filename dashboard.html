@@ -41,6 +41,8 @@
 
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
 // ============================================================
@@ -5589,14 +5591,7 @@ function searchableSelect(containerId, items, selectedId, labelFn, onSelect, pla
     });
     dd.appendChild(opt);
   });
-  input.addEventListener('focus', function(){
-    dd.classList.add('open');
-    // Show the full list on focus instead of filtering by the pre-filled
-    // current value — that was making it look like the dropdown couldn't
-    // be changed (it silently narrowed to just the already-selected item).
-    dd.querySelectorAll('.search-option').forEach(function(opt){ opt.style.display=''; });
-    input.select();
-  });
+  input.addEventListener('focus', function(){ dd.classList.add('open'); ssFilterEl(input,dd); });
   input.addEventListener('input', function(){ ssFilterEl(input,dd); dd.classList.add('open'); });
   input.addEventListener('blur', function(){ setTimeout(function(){ dd.classList.remove('open'); }, 200); });
   wrap.appendChild(input);
@@ -6343,20 +6338,6 @@ supabaseClient.auth.getSession().then(async function(res){
           body: JSON.stringify({fullName: metaName, companyName: metaBiz})
         });
         var initD = await initR.json();
-        if(!initR.ok){
-          // Profile creation failed server-side. Do not silently continue into
-          // startDataLoad() - that would show a blank/broken dashboard with no
-          // explanation. Surface it clearly and stop here so the user (and us,
-          // via console/support) knows something needs attention.
-          console.error('Profile init failed:', initR.status, initD && initD.error);
-          document.body.innerHTML = '<div style="max-width:480px;margin:80px auto;padding:32px;text-align:center;font-family:sans-serif;">' +
-            '<h2 style="margin-bottom:12px;">We couldn\'t finish setting up your account</h2>' +
-            '<p style="color:#555;margin-bottom:20px;">' + (initD && initD.error ? initD.error : 'Something went wrong loading your account.') + '</p>' +
-            '<button onclick="location.reload()" style="padding:10px 20px;margin-right:8px;cursor:pointer;">Try again</button>' +
-            '<a href="mailto:support@kitchen-control.co.uk" style="padding:10px 20px;display:inline-block;">Contact support</a>' +
-            '</div>';
-          return;
-        }
         if(initD.company_id) _companyId = initD.company_id;
         // Refresh sidebar after profile created
         supabaseClient.from('profiles').select('full_name,company_name,logo_url,company_id,role').eq('user_id', userId).maybeSingle().then(function(pr){
@@ -6369,16 +6350,7 @@ supabaseClient.auth.getSession().then(async function(res){
           if(pr.data.company_id) _companyId = pr.data.company_id;
         });
       }
-    }catch(e){
-      console.error('Profile init error:', e);
-      document.body.innerHTML = '<div style="max-width:480px;margin:80px auto;padding:32px;text-align:center;font-family:sans-serif;">' +
-        '<h2 style="margin-bottom:12px;">We couldn\'t finish setting up your account</h2>' +
-        '<p style="color:#555;margin-bottom:20px;">Something went wrong loading your account.</p>' +
-        '<button onclick="location.reload()" style="padding:10px 20px;margin-right:8px;cursor:pointer;">Try again</button>' +
-        '<a href="mailto:support@kitchen-control.co.uk" style="padding:10px 20px;display:inline-block;">Contact support</a>' +
-        '</div>';
-      return;
-    }
+    }catch(e){ console.error('Profile init error:', e); }
 
     // Session exists - load data
     startDataLoad();
@@ -6504,6 +6476,7 @@ function resetRecipeScanModal(){
   var actText = el('recipe-scan-actions-text');
   var textInput = el('recipe-scan-text-input');
   var fileInput = el('recipe-scan-file-input');
+  var docInput = el('recipe-scan-doc-input');
   if (img) { img.style.display = 'none'; img.src = ''; }
   if (placeholder) placeholder.style.display = 'block';
   if (proc) proc.style.display = 'none';
@@ -6511,6 +6484,7 @@ function resetRecipeScanModal(){
   if (actText) actText.style.display = 'none';
   if (textInput) { textInput.style.display = 'none'; textInput.value = ''; }
   if (fileInput) fileInput.value = '';
+  if (docInput) docInput.value = '';
 }
 function toggleRecipeScanTextInput(){
   var textInput = el('recipe-scan-text-input');
@@ -6573,6 +6547,88 @@ function handleRecipeScanUpload(input){
     }
     runRecipeScan({ image: base64, mimeType: file.type || 'image/jpeg' });
   })();
+}
+
+// Word (.docx) / Excel (.xlsx, .xls) / ODS import — extracts plain text
+// client-side (mammoth for docx, SheetJS for spreadsheets), then feeds it
+// through the exact same text-based path "Paste Text Instead" already uses.
+// No server changes needed: recipe-scan.js already accepts a `text` field
+// and runs it through the identical Gemini extraction + validation logic
+// as photos and PDFs.
+function handleRecipeDocUpload(input){
+  var file = input.files[0];
+  if (!file) return;
+  if (window.KC_DEMO && !demoScanAllowed('recipe')) { input.value=''; return; }
+  input.value = '';
+
+  var placeholder = el('recipe-scan-placeholder');
+  var img = el('recipe-scan-img-preview');
+  if (img) img.style.display = 'none';
+  if (placeholder) { placeholder.style.display = 'block'; placeholder.innerHTML = '<div>&#128196;</div><p>' + file.name + '</p>'; }
+
+  var proc = el('recipe-scan-processing');
+  var procText = el('recipe-scan-processing-text');
+  var actInit = el('recipe-scan-actions-initial');
+  var actText = el('recipe-scan-actions-text');
+  if (proc) proc.style.display = 'flex';
+  if (procText) procText.textContent = 'Reading document...';
+  if (actInit) actInit.style.display = 'none';
+  if (actText) actText.style.display = 'none';
+
+  var name = file.name.toLowerCase();
+  var isDocx = name.endsWith('.docx');
+  var isSpreadsheet = name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.ods');
+
+  function fail(msg){
+    if (proc) proc.style.display = 'none';
+    if (actInit) actInit.style.display = 'flex';
+    alert(msg);
+  }
+
+  if (!isDocx && !isSpreadsheet) {
+    fail('That file type isn\'t supported — please upload a .docx, .xlsx, .xls, or .ods file.');
+    return;
+  }
+  if (isDocx && typeof mammoth === 'undefined') {
+    fail('Word import isn\'t available right now (couldn\'t load the file reader). Try "Paste Text Instead" or check your connection.');
+    return;
+  }
+  if (isSpreadsheet && typeof XLSX === 'undefined') {
+    fail('Excel/ODS import isn\'t available right now (couldn\'t load the file reader). Try "Paste Text Instead" or check your connection.');
+    return;
+  }
+
+  var reader = new FileReader();
+  reader.onerror = function(){ fail('Couldn\'t read that file — it may be corrupted or password-protected.'); };
+  reader.onload = function(e){
+    var buf = e.target.result;
+    (async function(){
+      try {
+        var text = '';
+        if (isDocx) {
+          var result = await mammoth.extractRawText({ arrayBuffer: buf });
+          text = (result && result.value) || '';
+        } else {
+          var wb = XLSX.read(buf, { type: 'array' });
+          var sheetNames = wb.SheetNames.slice(0, 5); // cap for safety on huge workbooks
+          text = sheetNames.map(function(sn){
+            var ws = wb.Sheets[sn];
+            var sheetText = XLSX.utils.sheet_to_txt ? XLSX.utils.sheet_to_txt(ws) : XLSX.utils.sheet_to_csv(ws);
+            return sheetNames.length > 1 ? ('Sheet: ' + sn + '\n' + sheetText) : sheetText;
+          }).join('\n\n');
+        }
+        text = text.trim();
+        if (!text) {
+          fail('Couldn\'t find any readable text in that file. Try "Paste Text Instead" if you can copy the recipe manually.');
+          return;
+        }
+        runRecipeScan({ text: text });
+      } catch (err) {
+        fail('Couldn\'t read that file: ' + err.message);
+      }
+    })();
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 async function runRecipeScan(payload){
@@ -6952,9 +7008,11 @@ async function scanIngredientText(file) {
       <p id="recipe-scan-processing-text" style="color:var(--muted);font-size:14px;">Reading recipe...</p>
     </div>
     <input type="file" id="recipe-scan-file-input" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="handleRecipeScanUpload(this)">
+    <input type="file" id="recipe-scan-doc-input" accept=".docx,.xlsx,.xls,.ods" style="display:none" onchange="handleRecipeDocUpload(this)">
     <div id="recipe-scan-actions-initial" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
       <button class="btn btn-green" onclick="document.getElementById('recipe-scan-file-input').click()">📷 Scan Recipe</button>
       <button class="btn btn-outline" onclick="document.getElementById('recipe-scan-file-input').click()">📄 Upload PDF / Image</button>
+      <button class="btn btn-outline" onclick="document.getElementById('recipe-scan-doc-input').click()">📝 Upload Word / Excel</button>
       <button class="btn btn-outline" onclick="toggleRecipeScanTextInput()">✎ Paste Text Instead</button>
       <button class="btn btn-grey" onclick="closeRecipeScanModal()">Cancel</button>
     </div>
