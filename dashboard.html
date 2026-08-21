@@ -6578,8 +6578,9 @@ function handleRecipeDocUpload(input){
 
   var name = file.name.toLowerCase();
   var isDocx = name.endsWith('.docx');
-  var isSpreadsheet = name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.ods');
+  var isSpreadsheet = name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.ods') || name.endsWith('.csv');
   var isTxt = name.endsWith('.txt');
+  var isCsv = name.endsWith('.csv');
   var isRtf = name.endsWith('.rtf');
   var isOdt = name.endsWith('.odt');
 
@@ -6589,8 +6590,8 @@ function handleRecipeDocUpload(input){
     alert(msg);
   }
 
-  if (!isDocx && !isSpreadsheet && !isTxt && !isRtf && !isOdt) {
-    fail('That file type isn\'t supported — please upload a .docx, .odt, .xlsx, .xls, .ods, .rtf, or .txt file.');
+  if (!isDocx && !isSpreadsheet && !isTxt && !isCsv && !isRtf && !isOdt) {
+    fail('That file type isn\'t supported — please upload a .docx, .odt, .xlsx, .xls, .ods, .csv, .rtf, or .txt file.');
     return;
   }
   if (isDocx && typeof mammoth === 'undefined') {
@@ -6624,7 +6625,7 @@ function handleRecipeDocUpload(input){
     return t.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
   }
 
-  if (isTxt || isRtf) {
+  if (isTxt || isCsv || isRtf) {
     var txtReader = new FileReader();
     txtReader.onerror = function(){ fail('Couldn\'t read that file.'); };
     txtReader.onload = function(e){
@@ -7062,7 +7063,7 @@ async function scanIngredientText(file) {
       <p id="recipe-scan-processing-text" style="color:var(--muted);font-size:14px;">Reading recipe...</p>
     </div>
     <input type="file" id="recipe-scan-file-input" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="handleRecipeScanUpload(this)">
-    <input type="file" id="recipe-scan-doc-input" accept=".docx,.odt,.xlsx,.xls,.ods,.txt,.rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.spreadsheet,text/plain,application/rtf,text/rtf" style="display:none" onchange="handleRecipeDocUpload(this)">
+    <input type="file" id="recipe-scan-doc-input" accept=".docx,.odt,.xlsx,.xls,.ods,.csv,.txt,.rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.spreadsheet,text/csv,text/plain,application/rtf,text/rtf" style="display:none" onchange="handleRecipeDocUpload(this)">
     <div id="recipe-scan-actions-initial" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
       <button class="btn btn-green" onclick="document.getElementById('recipe-scan-file-input').click()">📷 Scan Recipe</button>
       <button class="btn btn-outline" onclick="document.getElementById('recipe-scan-file-input').click()">📄 Upload PDF / Image</button>
