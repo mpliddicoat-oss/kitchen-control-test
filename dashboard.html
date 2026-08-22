@@ -1189,6 +1189,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   .allergen-main-table tbody tr:nth-child(even) td { background: #f8fafc !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   /* Keep allergen column headers vertical */
   .col-hdr { writing-mode: vertical-rl !important; transform: rotate(180deg) !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  /* Compact row height so ROWS_PER_PAGE rows + sign-off fit together on one page */
+  .as-wrap .dt td { padding: 3px 8px !important; font-size: 11px !important; line-height: 1.25 !important; }
+  .as-wrap .dt td span[style*="font-size:11px"] { font-size: 9px !important; }
+  .a-cell { padding: 2px 3px !important; }
+  .a-dot { width: 11px !important; height: 11px !important; }
   /* Show repeat rows on print */
   .allergen-repeat-footer { display: table-row !important; }
   .allergen-repeat-header { display: table-row !important; }
@@ -4315,7 +4320,7 @@ function aTable(rows,label,clickable){
   if(!rows.length) return '<p style="color:var(--muted);text-align:center;padding:30px">No '+label.toLowerCase()+'s yet.</p>';
   var logo=el('logo-img').src;
   var date=new Date().toLocaleDateString('en-GB');
-  var ROWS_PER_PAGE=10; // matches confirmed real-world print capacity per page
+  var ROWS_PER_PAGE=13; // rows are now more compact -- confirm this still fits, adjust if not
   var colSpan=ALLERGENS.length+1;
 
   function titleBarRow(){
