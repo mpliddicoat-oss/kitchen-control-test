@@ -4308,7 +4308,7 @@ function aTable(rows,label,clickable){
   if(!rows.length) return '<p style="color:var(--muted);text-align:center;padding:30px">No '+label.toLowerCase()+'s yet.</p>';
   var logo=el('logo-img').src;
   var date=new Date().toLocaleDateString('en-GB');
-  var ROWS_PER_PAGE=14; // rows are now more compact -- confirm this still fits, adjust if not
+  var ROWS_PER_PAGE=12; // confirmed via print test to fit cleanly with header + sign-off
   var colSpan=ALLERGENS.length+1;
 
   function titleBarRow(repeatClass){
