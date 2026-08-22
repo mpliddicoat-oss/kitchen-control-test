@@ -4184,7 +4184,7 @@ function aMatrixTable(rows, title, clickable){
   if(!rows.length) return '<p style="color:var(--muted);text-align:center;padding:30px">No components found.</p>';
   var date = new Date().toLocaleDateString('en-GB');
   var companyName = el('sidebar-user-biz') ? el('sidebar-user-biz').textContent : 'Kitchen Control';
-  var ROWS_PER_PAGE = 25;
+  var ROWS_PER_PAGE = 12; // matches confirmed real-world print capacity used for the By Menu sheet
   var colSpan = ALLERGENS.length + 1;
 
   function buildHeaderRow(){
