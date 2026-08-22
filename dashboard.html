@@ -4323,14 +4323,14 @@ function aTable(rows,label,clickable){
   var ROWS_PER_PAGE=13; // rows are now more compact -- confirm this still fits, adjust if not
   var colSpan=ALLERGENS.length+1;
 
-  function titleBarRow(){
-    return '<tr><td colspan="'+colSpan+'" style="padding:0;border:none">'+
+  function titleBarRow(repeatClass){
+    return '<tr'+(repeatClass?' class="print-repeat-row"':'')+'><td colspan="'+colSpan+'" style="padding:0;border:none">'+
       '<div class="as-header">'+(window._companyLogoUrl ? '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px"><img src="'+window._companyLogoUrl+'" style="max-height:28px;width:auto;"><div style="font-size:8px;opacity:0.4">Powered by</div><img src="'+logo+'" style="max-height:18px;width:auto;"></div>' : '<img src="'+logo+'" alt="Kitchen Control">')+
       '<div><h2>Allergen Information &mdash; By '+label+'</h2><p>Generated: '+date+' &middot; Based on user-entered data. Always verify independently.</p></div></div>'+
       '</td></tr>';
   }
-  function columnHeaderRow(){
-    var h='<tr><th style="min-width:160px">'+label+'</th>';
+  function columnHeaderRow(repeatClass){
+    var h='<tr'+(repeatClass?' class="print-repeat-row"':'')+'><th style="min-width:160px">'+label+'</th>';
     ALLERGENS.forEach(function(a){ h+='<th style="width:44px;text-align:center"><div class="col-hdr">'+a.label+'</div></th>'; });
     h+='</tr>';
     return h;
@@ -4349,17 +4349,22 @@ function aTable(rows,label,clickable){
     return '<tr class="print-repeat-row" style="page-break-after:always"><td colspan="'+colSpan+'" style="padding:0;border:none;height:0;"></td></tr>';
   }
 
-  // Title bar + column headers live in a real <thead>, which browsers repeat
-  // automatically on every printed page -- no manual duplication needed.
+  // Title bar + column headers sit in a real <thead> for on-screen display and the
+  // first printed page; explicit duplicates are also inserted after every forced
+  // page break below, so header repetition doesn't depend on the browser's own
+  // (unreliable, in practice) thead-repeat behaviour.
   var html='<div class="as-wrap"><div style="overflow-x:auto"><table class="dt" style="border-radius:0;border:none">';
-  html+='<thead>'+titleBarRow()+columnHeaderRow()+'</thead><tbody>';
+  html+='<thead>'+titleBarRow(false)+columnHeaderRow(false)+'</thead><tbody>';
 
   rows.forEach(function(row,ri){
     // Force a sign-off block + page break every ROWS_PER_PAGE rows so the
-    // verification strip appears at the bottom of every page, not just the last.
+    // verification strip appears at the bottom of every page, not just the last,
+    // then redraw the header for the page that follows.
     if(ri>0 && ri%ROWS_PER_PAGE===0){
       html+=signOffRow();
       html+=pageBreakRow();
+      html+=titleBarRow(true);
+      html+=columnHeaderRow(true);
     }
     html+='<tr><td>'+row.label+'</td>';
     ALLERGENS.forEach(function(a){
