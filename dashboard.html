@@ -4315,7 +4315,7 @@ function aTable(rows,label,clickable){
   if(!rows.length) return '<p style="color:var(--muted);text-align:center;padding:30px">No '+label.toLowerCase()+'s yet.</p>';
   var logo=el('logo-img').src;
   var date=new Date().toLocaleDateString('en-GB');
-  var ROWS_PER_PAGE=20; // tune if pages run long/short in real printouts
+  var ROWS_PER_PAGE=10; // matches confirmed real-world print capacity per page
   var colSpan=ALLERGENS.length+1;
 
   function titleBarRow(){
