@@ -4446,7 +4446,7 @@ function aRenderRecipe(){
   var rows = [];
   (r.components||[]).forEach(function(comp){
     if(!comp.id) return;
-    var name='', auto={};
+    var name='', auto={}, subRows=[];
     if(comp.type==='ingredient'){
       var ing=byId(DB.ingredients,comp.id);
       if(ing){ name=ing.name; aFromIng(ing).forEach(function(a){ auto[a]=true; }); }
@@ -4458,9 +4458,24 @@ function aRenderRecipe(){
       if(sub){
         name=sub.name+' (recipe)';
         var ra=aFromRec(sub); Object.keys(ra).forEach(function(a){ auto[a]=true; });
+        // Collect this sub-recipe's own ingredients so they can be shown
+        // nested underneath it, same as the By Dish view does.
+        (sub.components||[]).forEach(function(sc){
+          if(!sc.id) return;
+          var sname='', sauto={};
+          if(sc.type==='ingredient'){
+            var sing=byId(DB.ingredients,sc.id);
+            if(sing){ sname='\u00a0\u00a0\u21b3 '+sing.name; aFromIng(sing).forEach(function(a){ sauto[a]=true; }); }
+          } else if(sc.type==='yield'){
+            var syld=byId(DB.yields,sc.id);
+            if(syld){ sname='\u00a0\u00a0\u21b3 '+syld.name+' (yield)'; aFromIng(byId(DB.ingredients,syld.ingId)).forEach(function(a){ sauto[a]=true; }); }
+          }
+          if(sname) subRows.push({label:sname, auto:sauto, man:{}, iid:sc.id, sub:true});
+        });
       }
     }
     if(name) rows.push({label:name, auto:auto, man:manualA(comp.id), iid:comp.id});
+    subRows.forEach(function(sr){ rows.push(sr); });
   });
 
   // Totals row
