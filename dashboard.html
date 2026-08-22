@@ -2047,9 +2047,21 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <div class="fs">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <h3>Dishes</h3>
-        <button class="btn btn-green btn-sm" onclick="menuAddDish()">+ Add Dish</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-grey btn-sm" onclick="menuSortByCourse()">&#8645; Sort by Course</button>
+          <button class="btn btn-blue btn-sm" onclick="menuOpenPicker()">&#9745; Add Multiple</button>
+          <button class="btn btn-green btn-sm" onclick="menuAddDish()">+ Add Dish</button>
+        </div>
       </div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Sell price is carried from the dish. You can override it for this menu.</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Sell price is carried from the dish. You can override it for this menu. New dishes are added in course order — use the arrows to set your own running order, or "Sort by Course" to reset.</p>
+      <div id="menu-dish-picker" style="display:none;border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;background:var(--light)">
+        <input class="search-bar" placeholder="Search dishes..." oninput="menuPickerFilter(this.value)" style="margin-bottom:8px">
+        <div id="menu-dish-picker-list" style="max-height:320px;overflow-y:auto"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-green btn-sm" onclick="menuPickerAddSelected()">Add Selected</button>
+          <button class="btn btn-grey btn-sm" onclick="menuClosePicker()">Cancel</button>
+        </div>
+      </div>
       <div id="menu-dish-lines"></div>
       <div class="cost-box" style="margin-top:10px">
         <div class="cr2"><span>Total Food Cost</span><span id="menu-total-cost">&#163;0.00</span></div>
@@ -3927,6 +3939,12 @@ function dishScale(){
 }
 var DISH_COURSE_ORDER=['Snack','Bread / Amuse','Starter','Main','Side','Dessert','Children\'s Menu','Drinks'];
 function dishCourseRank(cat){ var i=DISH_COURSE_ORDER.indexOf(cat); return i<0?DISH_COURSE_ORDER.length:i; }
+function dishCourseCompare(a,b){ var r=dishCourseRank(a.category)-dishCourseRank(b.category); return r!==0?r:a.name.localeCompare(b.name); }
+function menuLineCompare(a,b){
+  var da=byId(DB.dishes,a.dishId), db=byId(DB.dishes,b.dishId);
+  if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
+  return dishCourseCompare(da,db);
+}
 var _dishSearch='', _dishSort='az';
 function dishSetSort(mode){
   _dishSort=mode;
@@ -3948,7 +3966,7 @@ function dishRender(f){
   var items=DB.dishes.filter(function(d){ return d.name.toLowerCase().indexOf(q)>=0; });
   if(!items.length){ el('dish-items').innerHTML='<p style="color:var(--muted);text-align:center;padding:30px">No dishes yet.</p>'; return; }
   if(_dishSort==='course'){
-    items.sort(function(a,b){ var r=dishCourseRank(a.category)-dishCourseRank(b.category); return r!==0?r:a.name.localeCompare(b.name); });
+    items.sort(dishCourseCompare);
     var html='', lastCat=null;
     items.forEach(function(d){
       var cat=d.category||'Uncategorised';
@@ -3968,19 +3986,6 @@ function dishRender(f){
 var _menuId=null, _menuLines=[];
 function menuList(){ _menuId=null; showOnly('menu-list','menu-form','menu-detail'); menuRender(); }
 function menuNew(){ _menuId=null; _menuLines=[]; clr(['menu-name','menu-desc']); el('menu-type').value='A la carte'; el('menu-form-title').textContent='New Menu'; menuLinesRender(); showOnly('menu-form','menu-list','menu-detail'); }
-function menuAddDish(){ _menuLines.push({dishId:'',sell:''}); menuLinesRender(); }
-function menuMoveUp(i){
-  if(i<=0) return;
-  var tmp=_menuLines[i]; _menuLines[i]=_menuLines[i-1]; _menuLines[i-1]=tmp;
-  menuLinesRender();
-}
-
-function menuMoveDown(i){
-  if(i>=_menuLines.length-1) return;
-  var tmp=_menuLines[i]; _menuLines[i]=_menuLines[i+1]; _menuLines[i+1]=tmp;
-  menuLinesRender();
-}
-
 function menuLinesRender(){
   if(!_menuLines.length){ el('menu-dish-lines').innerHTML='<p style="color:var(--muted);font-size:13px;padding:8px 0">No dishes added. Click + Add Dish.</p>'; menuCalc(); return; }
   var html='';
@@ -3989,10 +3994,9 @@ function menuLinesRender(){
     var sv=l.sell!==''?l.sell:(d&&d.actualSell?d.actualSell:'');
     var isFirst=i===0, isLast=i===_menuLines.length-1;
     html+='<div style="display:grid;grid-template-columns:32px 2fr 110px 28px;gap:6px;align-items:center;margin-bottom:6px">';
-    // Up/Down buttons
     html+='<div style="display:flex;flex-direction:column;gap:2px">';
-    html+='<button class="btn btn-grey" style="padding:2px 6px;font-size:11px;min-height:0;line-height:1;opacity:'+(isFirst?'0.3':'1')+';cursor:'+(isFirst?'default':'pointer')+'" '+(isFirst?'disabled':'')+' onclick="menuMoveUp('+i+')">▲</button>';
-    html+='<button class="btn btn-grey" style="padding:2px 6px;font-size:11px;min-height:0;line-height:1;opacity:'+(isLast?'0.3':'1')+';cursor:'+(isLast?'default':'pointer')+'" '+(isLast?'disabled':'')+' onclick="menuMoveDown('+i+')">▼</button>';
+    html+='<button class="btn btn-grey" style="padding:2px 6px;font-size:11px;min-height:0;line-height:1;opacity:'+(isFirst?'0.3':'1')+';cursor:'+(isFirst?'default':'pointer')+'" '+(isFirst?'disabled':'')+' onclick="menuMoveUp('+i+')">&#9650;</button>';
+    html+='<button class="btn btn-grey" style="padding:2px 6px;font-size:11px;min-height:0;line-height:1;opacity:'+(isLast?'0.3':'1')+';cursor:'+(isLast?'default':'pointer')+'" '+(isLast?'disabled':'')+' onclick="menuMoveDown('+i+')">&#9660;</button>';
     html+='</div>';
     // Dish select
     html+='<div id="menu-dish-sel-'+i+'"></div>';
@@ -4014,11 +4018,64 @@ function menuLinesRender(){
           _menuLines[i].sell='';
           menuLinesRender();
         },
-        '-- Search dishes --'
+        '-- Search dishes --',
+        dishCourseCompare
       );
     }
   });
   menuCalc();
+}
+function menuMoveUp(i){
+  if(i<=0) return;
+  var tmp=_menuLines[i]; _menuLines[i]=_menuLines[i-1]; _menuLines[i-1]=tmp;
+  menuLinesRender();
+}
+function menuMoveDown(i){
+  if(i>=_menuLines.length-1) return;
+  var tmp=_menuLines[i]; _menuLines[i]=_menuLines[i+1]; _menuLines[i+1]=tmp;
+  menuLinesRender();
+}
+function menuSortByCourse(){
+  _menuLines.sort(menuLineCompare);
+  menuLinesRender();
+}
+var _menuPickerChecked={}, _menuPickerSearch='';
+function menuOpenPicker(){
+  _menuPickerChecked={};
+  _menuPickerSearch='';
+  el('menu-dish-picker').style.display='block';
+  menuPickerRender();
+}
+function menuClosePicker(){
+  el('menu-dish-picker').style.display='none';
+}
+function menuPickerFilter(v){ _menuPickerSearch=v; menuPickerRender(); }
+function menuPickerToggle(id,checked){
+  if(checked) _menuPickerChecked[id]=true; else delete _menuPickerChecked[id];
+}
+function menuPickerRender(){
+  var q=(_menuPickerSearch||'').toLowerCase();
+  var existingIds={}; _menuLines.forEach(function(l){ if(l.dishId) existingIds[l.dishId]=true; });
+  var items=DB.dishes.filter(function(d){ return d.name.toLowerCase().indexOf(q)>=0; }).sort(dishCourseCompare);
+  var html='', lastCat=null;
+  items.forEach(function(d){
+    var cat=d.category||'Uncategorised';
+    if(cat!==lastCat){ lastCat=cat; html+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:10px 0 4px">'+cat+'</div>'; }
+    var already=!!existingIds[d.id];
+    var checked=_menuPickerChecked[d.id]?'checked':'';
+    html+='<label style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:13px;cursor:'+(already?'default':'pointer')+';opacity:'+(already?'0.5':'1')+'">'+
+      '<input type="checkbox" '+checked+' '+(already?'disabled':'')+' onchange="menuPickerToggle(\''+d.id+'\',this.checked)">'+
+      d.name+(already?' <span style="color:var(--muted)">(already added)</span>':'')+
+      '</label>';
+  });
+  el('menu-dish-picker-list').innerHTML=html || '<p style="color:var(--muted);font-size:13px">No dishes found.</p>';
+}
+function menuPickerAddSelected(){
+  DB.dishes.slice().sort(dishCourseCompare).forEach(function(d){
+    if(_menuPickerChecked[d.id]) _menuLines.push({dishId:d.id,sell:''});
+  });
+  menuClosePicker();
+  menuLinesRender();
 }
 function menuCalc(){
   var tc=0,ts=0;
@@ -5597,7 +5654,7 @@ function currentUserId(){
 // ============================================================
 // SEARCHABLE SELECT
 // ============================================================
-function searchableSelect(containerId, items, selectedId, labelFn, onSelect, placeholder){
+function searchableSelect(containerId, items, selectedId, labelFn, onSelect, placeholder, sortFn){
   var cont = document.getElementById(containerId);
   if(!cont) return;
   var _sel = (selectedId==null) ? '' : String(selectedId);
@@ -5614,7 +5671,7 @@ function searchableSelect(containerId, items, selectedId, labelFn, onSelect, pla
   var dd = document.createElement('div');
   dd.className = 'search-dropdown';
   dd.id = containerId + '-dd';
-  var sorted = items.slice().sort(function(a,b){ return labelFn(a).localeCompare(labelFn(b)); });
+  var sorted = items.slice().sort(sortFn || function(a,b){ return labelFn(a).localeCompare(labelFn(b)); });
   sorted.forEach(function(item){
     var opt = document.createElement('div');
     opt.className = 'search-option' + (String(item.id)===_sel?' selected':'');
