@@ -2128,17 +2128,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     </div>
     <div id="a-menu-matrix"></div>
   </div>
-  <div class="print-only">
-    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
-      <span>Date Printed: <strong id="print-date"></strong></span>
-      <span>Kitchen Control - Allergen Information Sheet</span>
-    </div>
-    <div class="sig-row">
-      <div class="sig-field"><div class="sig-line"></div><div class="sig-label">Verified by (Print Name)</div></div>
-      <div class="sig-field"><div class="sig-line"></div><div class="sig-label">Signature</div></div>
-      <div class="sig-field"><div class="sig-line"></div><div class="sig-label">Date</div></div>
-    </div>
-  </div>
 </div>
 
 
@@ -4162,7 +4151,6 @@ function aTab(tab,btn){ _aTab=tab; document.querySelectorAll('#allergens .tab').
   else if(tab==='byIngredient') aRenderIngredient();
 }
 function aRender(){
-  el('print-date').textContent=new Date().toLocaleDateString('en-GB');
   ['a-by-dish','a-by-recipe','a-by-ingredient','a-by-menu'].forEach(function(id){ el(id).style.display='none'; });
   var activeEl='a-by-'+(_aTab==='byDish'?'dish':_aTab==='byRecipe'?'recipe':_aTab==='byIngredient'?'ingredient':'menu');
   el(activeEl).style.display='block';
@@ -4508,6 +4496,15 @@ function aTableIng(rows){
   // No allergen key note
   html+='<div class="a-key"><strong style="font-size:11px">Note:</strong><span style="font-size:11px;color:var(--muted)">All dots are editable. Changes update the ingredient permanently and flow through to all recipes, dishes, menus and allergen sheets.</span></div>';
   html+='<div class="a-disclaimer">'+ALLERGEN_DISCLAIMER+'</div>';
+  html+='<div class="print-only" style="margin-top:20px">'+
+    '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">'+
+    '<span>Date Printed: <strong>'+new Date().toLocaleDateString('en-GB')+'</strong></span>'+
+    '<span>Kitchen Control - Allergen Information Sheet</span></div>'+
+    '<div class="sig-row">'+
+    '<div class="sig-field"><div class="sig-line"></div><div class="sig-label">Verified by (Print Name)</div></div>'+
+    '<div class="sig-field"><div class="sig-line"></div><div class="sig-label">Signature</div></div>'+
+    '<div class="sig-field"><div class="sig-line"></div><div class="sig-label">Date</div></div>'+
+    '</div></div>';
   html+='</div>';
   return html;
 }
