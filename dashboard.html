@@ -3925,6 +3925,8 @@ function dishScale(){
   html+='<div class="cr2 total" style="margin-top:8px;padding-top:8px;border-top:1px solid #bae6fd"><span>Total Cost</span><span>'+fmt(tc2)+'</span></div></div>';
   el('dish-scale-result').innerHTML=html;
 }
+var DISH_COURSE_ORDER=['Snack','Bread / Amuse','Starter','Main','Side','Dessert','Children\'s Menu','Drinks'];
+function dishCourseRank(cat){ var i=DISH_COURSE_ORDER.indexOf(cat); return i<0?DISH_COURSE_ORDER.length:i; }
 var _dishSearch='', _dishSort='az';
 function dishSetSort(mode){
   _dishSort=mode;
@@ -3946,7 +3948,7 @@ function dishRender(f){
   var items=DB.dishes.filter(function(d){ return d.name.toLowerCase().indexOf(q)>=0; });
   if(!items.length){ el('dish-items').innerHTML='<p style="color:var(--muted);text-align:center;padding:30px">No dishes yet.</p>'; return; }
   if(_dishSort==='course'){
-    items.sort(function(a,b){ var c=(a.category||'').localeCompare(b.category||''); return c!==0?c:a.name.localeCompare(b.name); });
+    items.sort(function(a,b){ var r=dishCourseRank(a.category)-dishCourseRank(b.category); return r!==0?r:a.name.localeCompare(b.name); });
     var html='', lastCat=null;
     items.forEach(function(d){
       var cat=d.category||'Uncategorised';
