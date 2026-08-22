@@ -1015,6 +1015,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .as-header img { height: 22px; width: auto; }
 .as-header h2 { font-size: 11px; }
 .as-header p { font-size: 9px; opacity: 0.6; margin-top: 1px; }
+.print-repeat-row { display: none; }
 .col-hdr { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); writing-mode: vertical-rl; transform: rotate(180deg); padding: 8px 3px; }
 .a-cell { text-align: center; padding: 6px 3px; }
 .a-dot { width: 15px; height: 15px; border-radius: 50%; display: inline-block; transition: all 0.15s; }
@@ -1192,6 +1193,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   .allergen-repeat-footer { display: table-row !important; }
   .allergen-repeat-header { display: table-row !important; }
   .allergen-page-break-row { page-break-after: always !important; }
+  .print-repeat-row { display: table-row !important; }
   /* Force colours */
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   /* All filled allergen dots print red regardless of on-screen colour (manual=orange vs auto=red) */
@@ -4312,11 +4314,48 @@ function aManualRemove(itemId, allergenId){
 function aTable(rows,label,clickable){
   if(!rows.length) return '<p style="color:var(--muted);text-align:center;padding:30px">No '+label.toLowerCase()+'s yet.</p>';
   var logo=el('logo-img').src;
-  var html='<div class="as-wrap"><div class="as-header">'+(window._companyLogoUrl ? '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px"><img src="'+window._companyLogoUrl+'" style="max-height:28px;width:auto;"><div style="font-size:8px;opacity:0.4">Powered by</div><img src="'+logo+'" style="max-height:18px;width:auto;"></div>' : '<img src="'+logo+'" alt="Kitchen Control">')+'<div><h2>Allergen Information &mdash; By '+label+'</h2><p>Generated: '+new Date().toLocaleDateString('en-GB')+' &middot; Based on user-entered data. Always verify independently.</p></div></div>';
-  html+='<div style="overflow-x:auto"><table class="dt" style="border-radius:0;border:none"><thead><tr><th style="min-width:160px">'+label+'</th>';
-  ALLERGENS.forEach(function(a){ html+='<th style="width:44px;text-align:center"><div class="col-hdr">'+a.label+'</div></th>'; });
-  html+='</tr></thead><tbody>';
-  rows.forEach(function(row){
+  var date=new Date().toLocaleDateString('en-GB');
+  var ROWS_PER_PAGE=20; // tune if pages run long/short in real printouts
+  var colSpan=ALLERGENS.length+1;
+
+  function titleBarRow(){
+    return '<tr><td colspan="'+colSpan+'" style="padding:0;border:none">'+
+      '<div class="as-header">'+(window._companyLogoUrl ? '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px"><img src="'+window._companyLogoUrl+'" style="max-height:28px;width:auto;"><div style="font-size:8px;opacity:0.4">Powered by</div><img src="'+logo+'" style="max-height:18px;width:auto;"></div>' : '<img src="'+logo+'" alt="Kitchen Control">')+
+      '<div><h2>Allergen Information &mdash; By '+label+'</h2><p>Generated: '+date+' &middot; Based on user-entered data. Always verify independently.</p></div></div>'+
+      '</td></tr>';
+  }
+  function columnHeaderRow(){
+    var h='<tr><th style="min-width:160px">'+label+'</th>';
+    ALLERGENS.forEach(function(a){ h+='<th style="width:44px;text-align:center"><div class="col-hdr">'+a.label+'</div></th>'; });
+    h+='</tr>';
+    return h;
+  }
+  function signOffRow(){
+    return '<tr class="print-repeat-row"><td colspan="'+colSpan+'" style="border-top:2px solid #16222c;padding:6px 4px 4px;">'+
+      '<div style="display:flex;justify-content:space-between;font-size:10px;color:#374151;margin-bottom:4px;">'+
+      '<span>Date Printed: <strong>'+date+'</strong></span><span>Kitchen Control - Allergen Information Sheet</span></div>'+
+      '<div style="display:flex;gap:30px;">'+
+      '<div style="flex:1"><div style="border-bottom:1px solid #333;margin-bottom:2px;height:18px;"></div><div style="font-size:9px;color:#6b7280;">Verified by (Print Name)</div></div>'+
+      '<div style="flex:1"><div style="border-bottom:1px solid #333;margin-bottom:2px;height:18px;"></div><div style="font-size:9px;color:#6b7280;">Signature</div></div>'+
+      '<div style="flex:1"><div style="border-bottom:1px solid #333;margin-bottom:2px;height:18px;"></div><div style="font-size:9px;color:#6b7280;">Date</div></div>'+
+      '</div></td></tr>';
+  }
+  function pageBreakRow(){
+    return '<tr class="print-repeat-row" style="page-break-after:always"><td colspan="'+colSpan+'" style="padding:0;border:none;height:0;"></td></tr>';
+  }
+
+  // Title bar + column headers live in a real <thead>, which browsers repeat
+  // automatically on every printed page -- no manual duplication needed.
+  var html='<div class="as-wrap"><div style="overflow-x:auto"><table class="dt" style="border-radius:0;border:none">';
+  html+='<thead>'+titleBarRow()+columnHeaderRow()+'</thead><tbody>';
+
+  rows.forEach(function(row,ri){
+    // Force a sign-off block + page break every ROWS_PER_PAGE rows so the
+    // verification strip appears at the bottom of every page, not just the last.
+    if(ri>0 && ri%ROWS_PER_PAGE===0){
+      html+=signOffRow();
+      html+=pageBreakRow();
+    }
     html+='<tr><td>'+row.label+'</td>';
     ALLERGENS.forEach(function(a){
       var auto=row.auto&&row.auto[a.id], manual=row.man&&row.man[a.id], isRed=auto||manual;
@@ -4327,6 +4366,8 @@ function aTable(rows,label,clickable){
     });
     html+='</tr>';
   });
+
+  html+=signOffRow();
   html+='</tbody></table></div><div class="a-key"><strong style="font-size:11px">Key:</strong><div class="a-key-item"><div class="a-dot yes" style="display:inline-block"></div><span>Contains allergen</span></div><div class="a-key-item"><div class="a-dot no" style="display:inline-block"></div><span>Does not contain</span></div></div></div>';
   return html;
 }
