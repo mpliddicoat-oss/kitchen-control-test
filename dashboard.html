@@ -4180,22 +4180,13 @@ function aRender(){
   else aRenderMenu();
 }
 
-function aMatrixTable(rows, title, clickable){
+function aMatrixTable(rows, title, clickable, colLabel){
   if(!rows.length) return '<p style="color:var(--muted);text-align:center;padding:30px">No components found.</p>';
+  colLabel = colLabel || 'Component';
   var date = new Date().toLocaleDateString('en-GB');
   var companyName = el('sidebar-user-biz') ? el('sidebar-user-biz').textContent : 'Kitchen Control';
-  var ROWS_PER_PAGE = 14; // confirmed via print test to fit with room to spare at 12; bumped up
+  var ROWS_PER_PAGE = 16; // confirmed via print test there was still room to spare at 14
   var colSpan = ALLERGENS.length + 1;
-
-  function buildHeaderRow(){
-    var h = '<tr class="allergen-repeat-header">';
-    h += '<th style="min-width:120px;font-size:11px;padding:4px 6px;background:#1e293b;color:white;">Component</th>';
-    ALLERGENS.forEach(function(a){
-      h += '<th style="width:36px;text-align:center;padding:3px 1px;background:#1e293b;color:white;"><div class="col-hdr" style="font-size:8px;">'+a.label+'</div></th>';
-    });
-    h += '</tr>';
-    return h;
-  }
 
   function buildSignOffRow(){
     return '<tr class="allergen-repeat-footer"><td colspan="'+colSpan+'" style="border-top:2px solid #16222c;padding:6px 4px 4px;">' +
@@ -4208,9 +4199,12 @@ function aMatrixTable(rows, title, clickable){
       '</div></td></tr>';
   }
 
+  // The header lives only in a real <thead> -- browsers already repeat this
+  // automatically on every printed page (forced or natural break alike), so
+  // manually re-inserting another copy after each forced break just doubles it up.
   var html = '<div class="as-wrap"><table class="dt allergen-main-table" style="border-radius:0;border:none;width:100%;">';
   html += '<thead><tr>';
-  html += '<th style="min-width:120px;font-size:11px;padding:4px 6px">Component</th>';
+  html += '<th style="min-width:120px;font-size:11px;padding:4px 6px">'+colLabel+'</th>';
   ALLERGENS.forEach(function(a){
     html += '<th style="width:36px;text-align:center;padding:3px 1px"><div class="col-hdr" style="font-size:8px">'+a.label+'</div></th>';
   });
@@ -4220,7 +4214,6 @@ function aMatrixTable(rows, title, clickable){
     if(ri > 0 && ri % ROWS_PER_PAGE === 0){
       html += buildSignOffRow();
       html += '<tr class="allergen-page-break-row"><td colspan="'+colSpan+'" style="padding:0;border:none;height:0;"></td></tr>';
-      html += buildHeaderRow();
     }
     var isTotal = row.total;
     var bgStyle = isTotal ? 'background:#f0fdf4;font-weight:600;' : (row.sub ? 'background:#f8fafc;' : '');
@@ -4492,7 +4485,7 @@ function aRenderIngredient(){
     var supDisp=supObj?supObj.name:'';
     return {label:'<strong>'+i.name+'</strong><br><span style="font-size:11px;color:var(--muted)">'+supDisp+'</span>',auto:s,man:manualA(i.id),iid:i.id};
   });
-  el('a-by-ingredient').innerHTML=aMatrixTable(rows,'All Ingredients — Allergen Matrix',true);
+  el('a-by-ingredient').innerHTML=aMatrixTable(rows,'All Ingredients — Allergen Matrix',true,'Ingredient');
 }
 
 function aTableIng(rows){
