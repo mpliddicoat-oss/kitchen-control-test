@@ -3982,6 +3982,7 @@ function dishRender(f){
 var _menuId=null, _menuLines=[];
 function menuList(){ _menuId=null; showOnly('menu-list','menu-form','menu-detail'); menuRender(); }
 function menuNew(){ _menuId=null; _menuLines=[]; clr(['menu-name','menu-desc']); el('menu-type').value='A la carte'; el('menu-form-title').textContent='New Menu'; menuLinesRender(); showOnly('menu-form','menu-list','menu-detail'); }
+function menuAddDish(){ _menuLines.push({dishId:'',sell:''}); menuLinesRender(); }
 function menuLinesRender(){
   if(!_menuLines.length){ el('menu-dish-lines').innerHTML='<p style="color:var(--muted);font-size:13px;padding:8px 0">No dishes added. Click + Add Dish.</p>'; menuCalc(); return; }
   var html='';
