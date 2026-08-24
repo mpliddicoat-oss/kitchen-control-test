@@ -1,9 +1,2 @@
 User-agent: *
-Allow: /
-Disallow: /login.html
-Disallow: /dashboard.html
-Disallow: /reset-password.html
-Disallow: /accept-invite.html
-Disallow: /api/
-
-Sitemap: https://www.kitchen-control.co.uk/sitemap.xml
+Disallow: /
