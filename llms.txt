@@ -1,0 +1,29 @@
+# Kitchen Control
+
+> Kitchen Control is UK back-of-house management software for independent restaurants, cafes and food businesses — allergen management, recipe costing, and AI invoice/label scanning, plus menu and dish building. Built by a working head chef in Mevagissey, Cornwall. From £12.99/month, 30-day free trial (card required at signup).
+
+Kitchen Control helps single-site, independent hospitality businesses stay compliant with UK allergen law (the Food Information Regulations 2014), cost recipes and dishes accurately (with live GP% tracking), and cut kitchen admin time by scanning supplier invoices and ingredient labels with a phone camera. It also supports importing existing recipes (photographed, or as PDF/Word/Excel/text files) which are automatically parsed into structured, costed recipes. It is priced and built for independent kitchens and small groups, not large restaurant chains or enterprise hospitality groups.
+
+## Product
+
+- [Homepage](https://www.kitchen-control.co.uk/): product overview, features and pricing
+- [Live demo](https://www.kitchen-control.co.uk/demo.html): try the full app with sample Cornwall-themed kitchen data, no signup required, nothing saves
+- [Sign up](https://www.kitchen-control.co.uk/signup.html): start a 30-day free trial, £12.99/month, card required upfront
+- [For independent food businesses](https://www.kitchen-control.co.uk/for-independent-businesses.html): who Kitchen Control is built for and why
+
+## Guides
+
+- [UK allergen law guide](https://www.kitchen-control.co.uk/guide-allergen-law.html): plain-English explanation of what the Food Information Regulations 2014 actually requires of restaurants, cafes and pubs
+- [Quick start guide](https://www.kitchen-control.co.uk/quick.html): the essential workflow from invoices to allergen sheets
+- [Full user guide](https://www.kitchen-control.co.uk/full.html): complete feature documentation
+- [FAQ](https://www.kitchen-control.co.uk/faq.html): common questions about invoice/label scanning, allergens, recipe costing and account settings
+
+## Comparisons
+
+- [Kitchen Control vs Jelly](https://www.kitchen-control.co.uk/compare-jelly.html)
+- [Kitchen Control vs MenuIQ](https://www.kitchen-control.co.uk/compare-menuiq.html)
+- [Kitchen Control vs spreadsheets](https://www.kitchen-control.co.uk/compare-spreadsheets.html)
+
+## Optional
+
+- [Privacy policy](https://www.kitchen-control.co.uk/privacy.html)
