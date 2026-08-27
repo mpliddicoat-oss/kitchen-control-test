@@ -1,7 +1,7 @@
 // /api/cancel-subscription.js
 
 import { requireAuth, getCallerProfile, serviceHeaders } from './_auth.js';
-import { sendEmail, emailHeader, emailFooter, emailButton } from './_email.js';
+import { sendEmail, emailHeader, emailFooter, emailButton, escHtml } from './_email.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
@@ -30,6 +30,9 @@ export default async function handler(req, res) {
         `https://api.stripe.com/v1/subscriptions?customer=${profile.stripe_customer_id}&status=active`,
         { headers: { 'Authorization': `Bearer ${STRIPE_SECRET}` } }
       );
+      if (!subsRes.ok || !activeSubs.ok) {
+        throw new Error('Could not look up your subscriptions with Stripe. Please try again.');
+      }
       const activeData = await activeSubs.json();
       const subs = await subsRes.json();
       // Merge trialing and active subscriptions
@@ -37,7 +40,7 @@ export default async function handler(req, res) {
 
       if (allSubs.length > 0) {
         for (const sub of allSubs) {
-          await fetch(`https://api.stripe.com/v1/subscriptions/${sub.id}`, {
+          const cancelRes = await fetch(`https://api.stripe.com/v1/subscriptions/${sub.id}`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${STRIPE_SECRET}`,
@@ -45,6 +48,9 @@ export default async function handler(req, res) {
             },
             body: 'cancel_at_period_end=true'
           });
+          if (!cancelRes.ok) {
+            throw new Error(`Stripe would not cancel subscription ${sub.id}. Please try again or contact support.`);
+          }
         }
       }
     }
@@ -52,7 +58,7 @@ export default async function handler(req, res) {
     // Mark cancelled in Supabase
     const deletionDate = new Date();
     deletionDate.setDate(deletionDate.getDate() + 90);
-    await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
+    const markRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
       method: 'PATCH',
       headers: serviceHeaders,
       body: JSON.stringify({
@@ -60,8 +66,15 @@ export default async function handler(req, res) {
         deletion_date: deletionDate.toISOString().split('T')[0]
       })
     });
+    if (!markRes.ok) {
+      // Stripe has already been cancelled above at this point — don't tell
+      // the user cancellation failed outright, but don't send the "you're
+      // cancelled" email off an unconfirmed DB write either.
+      console.error('cancel-subscription: Stripe cancelled but Supabase update failed, status', markRes.status);
+      return res.status(500).json({ error: 'Your subscription was cancelled with Stripe, but we could not update your account. Please contact support.' });
+    }
 
-    const name = profile.full_name || 'Chef';
+    const name = escHtml(profile.full_name || 'Chef');
 
     // Send cancellation email directly via shared utility
     await sendEmail(

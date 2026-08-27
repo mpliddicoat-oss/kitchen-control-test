@@ -13,8 +13,7 @@ function getTransporter() {
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
-    },
-    tls: { rejectUnauthorized: false }
+    }
   });
   return _transporter;
 }
@@ -43,6 +42,21 @@ export async function sendEmail(to, subject, html) {
 }
 
 // ── Shared template helpers ──────────────────────────────────────────────────
+
+/**
+ * Escape a value before interpolating it into an email's HTML body. Names
+ * and company names are free text set by the account holder at signup —
+ * without this, a company name containing an <a> tag rides along into
+ * every later transactional email sent from our own domain.
+ */
+export function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 export function emailHeader() {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>

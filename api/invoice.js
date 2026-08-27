@@ -230,12 +230,25 @@ IMPORTANT RULES:
     }
 
     // 3. Increment scan counter (skip entirely for demo — nothing saved)
+    // Awaited, and conditioned on scans_used still matching what we read —
+    // an optimistic-concurrency guard against two concurrent scans both
+    // reading the same starting count and both landing past the limit.
     if (!demo && user) {
-      fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
-        method: 'PATCH',
-        headers: serviceHeaders,
-        body: JSON.stringify({ scans_used: scansUsed + 1 })
-      }).catch(e => console.error('Failed to increment scans_used:', e.message));
+      try {
+        const incRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&scans_used=eq.${scansUsed}`, {
+          method: 'PATCH',
+          headers: { ...serviceHeaders, Prefer: 'return=representation' },
+          body: JSON.stringify({ scans_used: scansUsed + 1 })
+        });
+        if (incRes.ok) {
+          const updated = await incRes.json().catch(() => []);
+          if (!updated.length) console.warn('scans_used increment lost a race for user', user.id);
+        } else {
+          console.error('Failed to increment scans_used:', incRes.status);
+        }
+      } catch (e) {
+        console.error('Failed to increment scans_used:', e.message);
+      }
     }
 
     if (result.items.length > 0) console.log('Invoice scan:', demo ? 'DEMO' : user.id, 'items:', result.items.length);

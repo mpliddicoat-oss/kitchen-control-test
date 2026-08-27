@@ -5097,13 +5097,13 @@ function processInvoiceResults(invoiceData) {
 
   // Try to match each invoice line to an existing ingredient
   (invoiceData.items || []).forEach(function(item) {
-    var productName = (item.productName || '').toLowerCase().trim();
+    var productName = normalizeMatchText(item.productName || '');
     var productCode = item.productCode || '';
     // Match by supplier code first, then by name
     var matched_ing = DB.ingredients.find(function(ing) {
       return productCode && ing.supplierCode && ing.supplierCode === productCode;
     }) || DB.ingredients.find(function(ing) {
-      var ingName = ing.name.toLowerCase().trim();
+      var ingName = normalizeMatchText(ing.name);
       // Only exact match or very close match - avoid false positives like "raspberry" matching "raspberry coulis"
       return ingName === productName ||
              ingName === productName.replace(/s$/, '') ||  // plural: raspberries -> raspberry
@@ -5284,7 +5284,22 @@ async function saveInvoiceResultsData(){
   (_invoiceMatchedItems||[]).forEach(function(m){
     var ing = byId(DB.ingredients, m.ingredient.id);
     if(ing){
-      if(m.item.unitPrice>0){ ing.packCost=m.item.unitPrice; if(m.item.packSize) ing.packSize=parseFloat(m.item.packSize)||ing.packSize; }
+      if(m.item.unitPrice>0){
+        ing.packCost=m.item.unitPrice;
+        var scannedSize=parseFloat(m.item.packSize);
+        if(scannedSize){
+          // A re-scanned invoice can report the pack size in a different unit
+          // than what's stored (e.g. "5000 g" on a re-scan of an ingredient
+          // stored in kg) — convert into the ingredient's own unit rather
+          // than overwriting blindly, which would silently corrupt costing.
+          if(m.item.unit && ing.unit && normalizeUnit(m.item.unit)!==normalizeUnit(ing.unit)){
+            var converted=cvt(scannedSize, m.item.unit, ing.unit);
+            if(!isNaN(converted)) ing.packSize=converted;
+          } else {
+            ing.packSize=scannedSize;
+          }
+        }
+      }
       if(m.item.productCode&&!ing.supplierCode) ing.supplierCode=m.item.productCode;
       if(confirmedSupplierId&&!ing.supplierId) ing.supplierId=confirmedSupplierId;
       if(typeof saveIngredientToSupabase==='function') saveIngredientToSupabase(ing);
@@ -5845,12 +5860,12 @@ function initRealtime(){
 
   // Subscribe to ingredients
   supabaseClient.channel('awaiting-allergens-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'awaiting_allergens' }, function(payload){
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'awaiting_allergens', filter: 'user_id=eq.'+userId }, function(payload){
       if(typeof loadAwaitingFromSupabase === 'function') loadAwaitingFromSupabase();
     }).subscribe();
 
   supabaseClient.channel('ingredients-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients' }, function(payload){
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'ingredients', filter: 'user_id=eq.'+userId }, function(payload){
       loadIngredients().then(function(){ dashUpdate(); if(document.getElementById('ingredients').classList.contains('active')) ingRender(); liveToast('Ingredients updated'); });
     })
     .subscribe();
@@ -5892,7 +5907,7 @@ function initRealtime(){
     }).subscribe();
 
   supabaseClient.channel('profile-scan-counter')
-    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'profiles'}, function(payload){
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'profiles', filter: 'company_id=eq.'+_companyId}, function(payload){
       // Recalculate total company scans when any profile updates
       if(document.getElementById('set-subscription-content') && _settingsProfile && _companyId){
         supabaseClient.from('profiles').select('scans_used').eq('company_id', _companyId).then(function(r){

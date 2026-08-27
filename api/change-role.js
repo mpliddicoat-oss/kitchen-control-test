@@ -1,7 +1,7 @@
 // /api/change-role.js
 
 import { requireAuth, getCallerProfile, requireOwner, requireSameCompany, serviceHeaders, isValidUuid } from './_auth.js';
-import { sendEmail, emailHeader, emailFooter, emailButton } from './_email.js';
+import { sendEmail, emailHeader, emailFooter, emailButton, escHtml } from './_email.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 
@@ -53,8 +53,8 @@ export default async function handler(req, res) {
     const userData = await userRes.json();
     const profile = profiles && profiles[0];
     const email = userData && userData.email;
-    const name = (profile && profile.full_name) || 'there';
-    const company = (profile && profile.company_name) || 'your team';
+    const name = escHtml((profile && profile.full_name) || 'there');
+    const company = escHtml((profile && profile.company_name) || 'your team');
     const roleLabel = roleLabels[newRole] || newRole;
 
     // Send notification directly via shared utility (no self-calling HTTP)

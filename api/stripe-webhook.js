@@ -1,4 +1,4 @@
-import { sendEmail, emailHeader, emailFooter, emailButton } from './_email.js';
+import { sendEmail, emailHeader, emailFooter, emailButton, escHtml } from './_email.js';
 
 export const config = { api: { bodyParser: false } };
 
@@ -119,11 +119,15 @@ export default async function handler(req, res) {
 
   async function updateProfile(userId, data) {
     if(!userId) return;
-    await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${userId}`, {
       method: 'PATCH',
       headers: supabaseHeaders,
       body: JSON.stringify(data)
     });
+    if(!r.ok) {
+      const errText = await r.text().catch(() => '');
+      throw new Error(`updateProfile failed (${r.status}): ${errText}`);
+    }
   }
 
   try {
@@ -133,7 +137,7 @@ export default async function handler(req, res) {
         const customerId = eventObj.customer;
         const email = await getCustomerEmail(customerId);
         const profile = await getProfile(email, customerId);
-        const name = (profile && profile.full_name) || 'Chef';
+        const name = escHtml((profile && profile.full_name) || 'Chef');
         const trialEnd = new Date(eventObj.trial_end * 1000).toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'});
         console.log('Trial ending for:', name, email);
 
@@ -155,7 +159,7 @@ ${emailFooter()}`);
         const customerId = eventObj.customer;
         const email = await getCustomerEmail(customerId);
         const profile = await getProfile(email, customerId);
-        const name = (profile && profile.full_name) || 'Chef';
+        const name = escHtml((profile && profile.full_name) || 'Chef');
         const reason = eventObj.cancellation_details?.reason || 'cancelled';
 
         if(profile && profile.user_id) {
@@ -208,7 +212,7 @@ ${emailFooter()}`);
         const email = invoice.customer_email || await getCustomerEmail(invoice.customer);
         if(!email) break;
         const profile = await getProfile(email, invoice.customer);
-        const name = (profile && profile.full_name) || 'Chef';
+        const name = escHtml((profile && profile.full_name) || 'Chef');
         const amount = `£${(invoice.amount_paid / 100).toFixed(2)}`;
         const date = new Date(invoice.created * 1000).toLocaleDateString('en-GB', {day:'numeric',month:'long',year:'numeric'});
         const invoiceUrl = invoice.hosted_invoice_url || 'https://kitchen-control.co.uk';
@@ -250,7 +254,7 @@ ${emailFooter()}`);
         const invoice = eventObj;
         const email = invoice.customer_email || await getCustomerEmail(invoice.customer);
         const profile = await getProfile(email, invoice.customer);
-        const name = (profile && profile.full_name) || 'Chef';
+        const name = escHtml((profile && profile.full_name) || 'Chef');
         const attempt = invoice.attempt_count || 1;
 
         await sendEmail(email, 'Payment failed — action required', `
@@ -270,7 +274,7 @@ ${emailFooter()}`);
       case 'payment_method.expiring': {
         const email = await getCustomerEmail(eventObj.customer);
         const profile = await getProfile(email, eventObj.customer);
-        const name = (profile && profile.full_name) || 'Chef';
+        const name = escHtml((profile && profile.full_name) || 'Chef');
 
         await sendEmail(email, 'Your card is expiring soon', `
 ${emailHeader()}
@@ -289,8 +293,8 @@ ${emailFooter()}`);
         const session = eventObj;
         const email = session.customer_email || await getCustomerEmail(session.customer);
         const profile = await getProfile(email, session.customer);
-        const name = (profile && profile.full_name) || 'New user';
-        const company = (profile && profile.company_name) || 'Unknown';
+        const name = escHtml((profile && profile.full_name) || 'New user');
+        const company = escHtml((profile && profile.company_name) || 'Unknown');
         console.log('New subscriber:', name, email, company);
 
         if(profile && profile.user_id && session.customer) {
@@ -316,8 +320,11 @@ ${emailFooter()}`);
     }
   } catch(e) {
     console.error('Webhook handler error:', e.message);
+    // Non-2xx tells Stripe to retry — important here, since a failed
+    // Supabase write (caught above) would otherwise permanently desync
+    // subscription_status/scans_used from what Stripe actually did.
+    return res.status(500).json({ error: 'Webhook processing failed' });
   }
 
-  // Return 200 after processing so Vercel doesn't kill the function early
   return res.status(200).json({ received: true });
 }

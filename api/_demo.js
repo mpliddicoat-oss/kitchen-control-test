@@ -8,6 +8,11 @@ const MAX_PER_IP = 20;                  // generous: real demo users need 3+3
 const _hits = new Map(); // ip -> { count, resetAt }
 
 export function isDemoRequest(req) {
+  // An authenticated caller must never be treated as "demo" — that would let
+  // a logged-in user dodge their real per-account quota just by adding this
+  // header. Demo mode is only for genuinely unauthenticated visitors.
+  const hasAuth = !!(req.headers.authorization || '').trim();
+  if (hasAuth) return false;
   const h = req.headers['x-kc-demo'];
   const bodyFlag = req.body && req.body.demo === true;
   return h === '1' || h === 'true' || bodyFlag === true;
