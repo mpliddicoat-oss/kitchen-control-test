@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kitchen Control vs MenuIQ — Allergen & Recipe Software Compared | Kitchen Control</title>
-<meta name="description" content="Honest comparison of Kitchen Control and MenuIQ for independent UK kitchens: pricing, allergen management, recipe costing and who each is actually built for.">
-<link rel="canonical" href="https://www.kitchen-control.co.uk/compare-menuiq">
-<meta property="og:title" content="Kitchen Control vs MenuIQ — Compared">
-<meta property="og:description" content="Honest comparison of Kitchen Control and MenuIQ for independent UK kitchens.">
+<title>Kitchen Control for Cafes — Allergen & Recipe Software | Kitchen Control</title>
+<meta name="description" content="Kitchen Control keeps costing and allergen information accurate through seasonal menu changes and specials boards for busy cafes.">
+<link rel="canonical" href="https://www.kitchen-control.co.uk/for-cafes">
+<meta property="og:title" content="Kitchen Control for Cafes">
+<meta property="og:description" content="Consistent costing and allergens across a menu that changes with the seasons.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://www.kitchen-control.co.uk/compare-menuiq">
+<meta property="og:url" content="https://www.kitchen-control.co.uk/for-cafes">
 <meta property="og:image" content="https://www.kitchen-control.co.uk/images/og-image.png">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
@@ -47,7 +47,6 @@
 
   .wrap{max-width:920px; margin:0 auto; padding:0 24px;}
 
-  /* ===== Header ===== */
   header{border-bottom:1px solid var(--line); padding:20px 0;}
   header .wrap{display:flex; justify-content:space-between; align-items:center;}
   .logo{
@@ -71,7 +70,6 @@
     border-radius:2px;
   }
 
-  /* ===== Hero ===== */
   .hero{padding:60px 0 40px;}
   .eyebrow{
     font-family:'DM Mono', monospace;
@@ -106,18 +104,16 @@
     padding:13px 6px; text-decoration:underline; text-underline-offset:4px; display:inline-block;
   }
 
-  /* ===== Snapshot cards ===== */
   .snapshot{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:8px;}
   @media (max-width:640px){.snapshot{grid-template-columns:1fr;}}
   .snap-card{background:#fff; border:1px solid var(--line); padding:20px 22px;}
-  .snap-card.kc{border-top:3px solid var(--green-dark);}
-  .snap-card.mq{border-top:3px solid var(--grey);}
+  .snap-card.kc{border-top:3px solid var(--grey);}
+  .snap-card.mq{border-top:3px solid var(--green-dark);}
   .snap-name{font-family:'Oswald', sans-serif; font-weight:600; text-transform:uppercase; font-size:0.95rem; margin-bottom:10px;}
   .snap-row{display:flex; justify-content:space-between; font-size:0.82rem; padding:6px 0; border-bottom:1px dotted var(--line);}
   .snap-row:last-child{border-bottom:none;}
   .snap-row .label{color:var(--grey);}
 
-  /* ===== Section framing ===== */
   section{padding:52px 0;}
   .section-line{border-top:1px solid var(--line);}
   h2{
@@ -126,7 +122,6 @@
   }
   .section-intro{color:var(--navy-soft); max-width:60ch; margin-bottom:32px; font-size:0.96rem;}
 
-  /* ===== Comparison table ===== */
   .compare-table{width:100%; border-collapse:collapse; font-size:0.86rem;}
   .compare-table th{
     font-family:'Oswald', sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;
@@ -134,7 +129,7 @@
   }
   .compare-table th.col-highlight{color:var(--navy);}
   .compare-table td{padding:13px; border-bottom:1px solid var(--line); vertical-align:top;}
-  .compare-table td:first-child{font-weight:500; color:var(--navy); width:26%;}
+  .compare-table td:first-child{font-weight:500; color:var(--navy); width:32%;}
   .compare-table td.win{background:rgba(151,194,90,0.10);}
   .yes{color:var(--green-dark); font-weight:600;}
   .no{color:var(--grey); font-weight:600;}
@@ -148,22 +143,18 @@
     .compare-table td:first-child{
       font-family:'Oswald', sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--grey);
     }
-    .compare-table td:nth-child(2)::before{content:'Kitchen Control — '; color:var(--grey); font-weight:400;}
-    .compare-table td:nth-child(3)::before{content:'MenuIQ — '; color:var(--grey); font-weight:400;}
+    .compare-table td:nth-child(2)::before{content:'The reality — '; color:var(--grey); font-weight:400;}
   }
 
-  /* ===== Honesty box ===== */
   .honest-box{background:var(--paper-dim); border-left:3px solid var(--navy); padding:20px 22px; margin:32px 0; font-size:0.9rem;}
   .honest-box .tag{display:block; font-family:'Oswald', sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--navy); margin-bottom:8px; font-weight:600;}
 
-  /* ===== Who it's for ===== */
   .who-grid{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border:1px solid var(--line);}
   .who-item{background:var(--paper); padding:24px;}
   .who-item h3{font-family:'Oswald', sans-serif; text-transform:uppercase; font-size:0.95rem; margin-bottom:10px; color:var(--navy);}
   .who-item p{color:var(--navy-soft); font-size:0.88rem;}
   @media (max-width:640px){.who-grid{grid-template-columns:1fr;}}
 
-  /* ===== Closing CTA ===== */
   .closer{background:var(--navy); color:var(--paper); padding:56px 0;}
   .closer h2{color:var(--paper); max-width:18ch;}
   .closer .section-intro{color:#B7BFC9;}
@@ -186,28 +177,28 @@
 
 <section class="hero">
   <div class="wrap">
-    <div class="eyebrow">Kitchen Control vs MenuIQ</div>
-    <h1>Built for one kitchen. Not a group of them.</h1>
-    <p class="lede">MenuIQ is a genuinely capable allergen and menu platform — but it's built and priced for multi-site groups with a purchasing team behind them. Kitchen Control is built for the kitchen where <strong>you</strong> are the purchasing team.</p>
+    <div class="eyebrow">Kitchen Control for Cafes</div>
+    <h1>Consistent costing and allergens across a menu that changes with the seasons</h1>
+    <p class="lede">Specials boards change weekly, sometimes daily. Whoever's serving needs to answer allergen questions on the spot, and costing needs to keep up without a full rebuild every time the menu shifts.</p>
     <div class="cta-row">
       <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
-      <a href="#table" class="btn-secondary">See the comparison ↓</a>
+      <a href="#table" class="btn-secondary">See how it fits ↓</a>
     </div>
 
     <div class="snapshot">
       <div class="snap-card kc">
-        <div class="snap-name">Kitchen Control</div>
-        <div class="snap-row"><span class="label">Pricing</span><span>£12.99/mo, public</span></div>
-        <div class="snap-row"><span class="label">Sign up</span><span>Self-serve, 30-day trial</span></div>
-        <div class="snap-row"><span class="label">Built for</span><span>Independent single-site kitchens</span></div>
-        <div class="snap-row"><span class="label">Built by</span><span>A working head chef</span></div>
+        <div class="snap-name">Running it without it</div>
+        <div class="snap-row"><span class="label">Specials board</span><span>Written up, costing not checked</span></div>
+        <div class="snap-row"><span class="label">Allergen questions</span><span>Front-of-house asks the kitchen, mid-service</span></div>
+        <div class="snap-row"><span class="label">Menu updates</span><span>New document each time it changes</span></div>
+        <div class="snap-row"><span class="label">Staff training</span><span>Allergen knowledge passed on verbally</span></div>
       </div>
       <div class="snap-card mq">
-        <div class="snap-name">MenuIQ</div>
-        <div class="snap-row"><span class="label">Pricing</span><span>Not public, demo required</span></div>
-        <div class="snap-row"><span class="label">Sign up</span><span>Book a demo, sales process</span></div>
-        <div class="snap-row"><span class="label">Built for</span><span>Multi-site groups, leisure & catering</span></div>
-        <div class="snap-row"><span class="label">Built by</span><span>Hospitality software company</span></div>
+        <div class="snap-name">With Kitchen Control</div>
+        <div class="snap-row"><span class="label">Specials board</span><span>Costed properly before it goes up</span></div>
+        <div class="snap-row"><span class="label">Allergen questions</span><span>Printed sheet at the counter, answer instantly</span></div>
+        <div class="snap-row"><span class="label">Menu updates</span><span>Reorder and republish in the same document</span></div>
+        <div class="snap-row"><span class="label">Staff training</span><span>Allergen sheet is the reference, not memory</span></div>
       </div>
     </div>
   </div>
@@ -215,95 +206,55 @@
 
 <section class="section-line" id="table">
   <div class="wrap">
-    <h2>Feature by feature</h2>
-    <p class="section-intro">Where Kitchen Control genuinely covers the same ground, and where MenuIQ goes further — no dressing it up.</p>
+    <h2>Keeping up with a menu that moves</h2>
+    <p class="section-intro">Cafes change their offer more often than most kitchens — the admin needs to move at the same pace, or it stops happening at all.</p>
 
     <table class="compare-table">
       <thead>
-        <tr><th>Capability</th><th>Kitchen Control</th><th class="col-highlight">MenuIQ</th></tr>
+        <tr><th>The daily grind</th><th class="col-highlight">How Kitchen Control helps</th></tr>
       </thead>
       <tbody>
         <tr>
-          <td>Transparent public pricing</td>
-          <td><span class="yes">Yes</span> — £12.99/mo, one flat plan</td>
-          <td><span class="no">No</span> — quote after a demo</td>
+          <td>New specials going on the board uncosted</td>
+          <td>Cost a new dish in minutes before it's offered to a customer</td>
         </tr>
         <tr>
-          <td>Allergen management</td>
-          <td><span class="yes">Yes</span> — core feature</td>
-          <td><span class="yes">Yes</span> — core feature</td>
+          <td>Front-of-house fielding allergen questions on guesswork</td>
+          <td>Printed allergen sheet, kept current as recipes change</td>
         </tr>
         <tr>
-          <td>Live recipe costing</td>
-          <td><span class="yes">Yes</span></td>
-          <td><span class="yes">Yes</span></td>
+          <td>Rewriting the whole menu for small seasonal changes</td>
+          <td>Menu builder — swap dishes and reorder without starting over</td>
         </tr>
         <tr>
-          <td>AI invoice scanning</td>
-          <td><span class="yes">Yes</span> — auto-imports ingredients</td>
-          <td><span class="part">Not advertised</span></td>
+          <td>Recosting when a supplier changes price mid-season</td>
+          <td>Scan the invoice — every recipe using that ingredient updates</td>
         </tr>
         <tr>
-          <td>Live supplier price feeds</td>
-          <td><span class="no">No</span> — invoice-by-invoice</td>
-          <td><span class="yes">Yes</span> — pulled direct from suppliers</td>
-        </tr>
-        <tr>
-          <td>Printed Natasha's Law labels</td>
-          <td><span class="no">Not yet</span></td>
-          <td><span class="yes">Yes</span></td>
-        </tr>
-        <tr>
-          <td>Nutritional / calorie data</td>
-          <td><span class="no">No</span></td>
-          <td><span class="yes">Yes</span></td>
-        </tr>
-        <tr>
-          <td>HACCP tools</td>
-          <td><span class="no">No</span></td>
-          <td><span class="yes">Yes</span></td>
-        </tr>
-        <tr>
-          <td>Customer-facing QR menus</td>
-          <td><span class="no">No</span></td>
-          <td><span class="yes">Yes</span></td>
-        </tr>
-        <tr>
-          <td>Multi-site management</td>
-          <td><span class="no">No</span> — single-site by design</td>
-          <td><span class="yes">Yes</span></td>
-        </tr>
-        <tr>
-          <td>Team access for kitchen staff</td>
-          <td><span class="yes">Yes</span></td>
-          <td><span class="part">Not detailed publicly</span></td>
-        </tr>
-        <tr>
-          <td>Setup time</td>
-          <td><span class="yes">Same-day</span>, self-serve</td>
-          <td><span class="part">Demo + onboarding process</span></td>
+          <td>No dedicated admin time between the morning and lunch rush</td>
+          <td>Recipe Import and quick edits designed to be done in short bursts</td>
         </tr>
       </tbody>
     </table>
 
     <div class="honest-box">
       <span class="tag">Fair's fair</span>
-      If you're managing allergen and nutrition data across several sites, need printed PPDS labels today, or want live supplier price feeds — MenuIQ covers more ground than Kitchen Control currently does. Those are real gaps, not marketing spin. Kitchen Control's bet is that most independent single-site kitchens don't need multi-site tooling or a sales demo to get started — they need something they can sign up for in an afternoon and actually use that night.
+      Kitchen Control doesn't manage till integration, loyalty schemes, or online ordering — it's focused on getting your costing and allergen information right, consistently, as your menu changes. If you're after an all-in-one EPOS-linked system, this isn't that.
     </div>
   </div>
 </section>
 
 <section class="section-line">
   <div class="wrap">
-    <h2>Who each one is actually for</h2>
+    <h2>Is this you?</h2>
     <div class="who-grid">
       <div class="who-item">
-        <h3>Choose Kitchen Control if...</h3>
-        <p>You run one site, you're the one doing the admin yourself, and you want to be live the same day without a sales call. Price matters, and you'd rather see it on the page than ask for it.</p>
+        <h3>Kitchen Control is for you if...</h3>
+        <p>Your menu shifts with the seasons or the specials board, and you want costing and allergens to keep pace without redoing everything each time.</p>
       </div>
       <div class="who-item">
-        <h3>Choose MenuIQ if...</h3>
-        <p>You're managing allergen and cost data across multiple sites, you need printed PPDS labels and HACCP tooling today, and you have the time (and often budget) for a proper onboarding process.</p>
+        <h3>It might not be for you if...</h3>
+        <p>You need EPOS or online ordering integration, or you're running a large multi-site chain with centralised menu control.</p>
       </div>
     </div>
   </div>
@@ -312,7 +263,7 @@
 <section class="closer" id="trial">
   <div class="wrap">
     <h2>Try it for 30 days. Cancel any time.</h2>
-    <p class="section-intro">Built for independent UK kitchens — not multi-site groups with a procurement team. Set up in an afternoon.</p>
+    <p class="section-intro">Built by a working head chef, for kitchens with a menu that never quite sits still. Set up in an afternoon.</p>
     <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
     <div class="price-tag">Then <strong>£12.99/month</strong>. Cancel any time.</div>
   </div>

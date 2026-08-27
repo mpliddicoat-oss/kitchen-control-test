@@ -44,6 +44,30 @@
   </url>
 
   <url>
+    <loc>https://www.kitchen-control.co.uk/for-cafes</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/for-takeaways</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/for-small-kitchens</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/for-outside-catering</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
     <loc>https://www.kitchen-control.co.uk/guide-allergen-law</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
