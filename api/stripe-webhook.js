@@ -29,15 +29,30 @@ export default async function handler(req, res) {
   const rawBody = await getRawBody(req);
   const sig = req.headers['stripe-signature'];
 
+  // Standard Stripe replay-protection window — reject anything signed more
+  // than 5 minutes ago, so a captured (payload, signature) pair can't be
+  // resent indefinitely to re-trigger the effects below (e.g. resetting
+  // scans_used via a replayed invoice.payment_succeeded).
+  const TOLERANCE_SECONDS = 300;
+
   let event;
   try {
-    const { createHmac } = await import('crypto');
+    const { createHmac, timingSafeEqual } = await import('crypto');
     const parts = sig.split(',');
     const timestamp = parts.find(p => p.startsWith('t=')).split('=')[1];
     const v1 = parts.find(p => p.startsWith('v1=')).split('=')[1];
+
+    const age = Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp));
+    if (!Number.isFinite(age) || age > TOLERANCE_SECONDS) {
+      console.error('Webhook timestamp outside tolerance window:', timestamp);
+      return res.status(400).json({error:'Timestamp outside tolerance'});
+    }
+
     const payload = `${timestamp}.${rawBody.toString()}`;
     const expected = createHmac('sha256', STRIPE_WEBHOOK_SECRET).update(payload).digest('hex');
-    if(expected !== v1) {
+    const expectedBuf = Buffer.from(expected, 'hex');
+    const actualBuf = Buffer.from(v1, 'hex');
+    if (expectedBuf.length !== actualBuf.length || !timingSafeEqual(expectedBuf, actualBuf)) {
       console.error('Invalid webhook signature');
       return res.status(400).json({error:'Invalid signature'});
     }

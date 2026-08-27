@@ -3,13 +3,16 @@
 // 1. Signup mode: userId + email passed in body, verified server-side via service key
 // 2. Authenticated mode: JWT in Authorization header (existing users managing billing)
 
-import { getCallerProfile, serviceHeaders } from './_auth.js';
+import { getCallerProfile, serviceHeaders, isValidUuid } from './_auth.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 
 async function verifyUserExists(userId, email) {
+  // Reject anything that isn't a real UUID before it ever reaches a Supabase
+  // URL — never let unvalidated request input reach an Admin API path.
+  if (!isValidUuid(userId)) return null;
   // Confirm this userId actually exists in Supabase auth before trusting it
   const r = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
     headers: serviceHeaders

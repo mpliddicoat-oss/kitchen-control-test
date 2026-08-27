@@ -1,5 +1,9 @@
 {
   "name": "kitchen-control",
   "version": "1.0.0",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "nodemailer": "^6.9.0"
+  }
 }

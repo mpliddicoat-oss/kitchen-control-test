@@ -284,6 +284,7 @@ async function loadSuppliers() {
 }
 async function saveSupplier() {
   if(window.KC_DEMO){ return; }
+  if(!canEdit()){ alert('You do not have permission to add or edit suppliers.'); return; }
   var supplier_name    = (document.getElementById('sup-name').value||'').trim();
   if(supplier_name) supplier_name = supplier_name.charAt(0).toUpperCase() + supplier_name.slice(1);
   var account_number   = document.getElementById('sup-account').value;
@@ -2636,10 +2637,30 @@ function sortedOpts(arr,selId,labelFn,placeholder){
   }).join('');
 }
 
+var CVT_UNIT_ALIASES = {
+  kg:'kg', kgs:'kg', kilo:'kg', kilos:'kg', kilogram:'kg', kilograms:'kg',
+  g:'g', gram:'g', grams:'g',
+  litre:'litre', litres:'litre', liter:'litre', liters:'litre', l:'litre', ltr:'litre', lts:'litre',
+  ml:'ml', mls:'ml', millilitre:'ml', millilitres:'ml', milliliter:'ml', milliliters:'ml',
+  oz:'oz', ounce:'oz', ounces:'oz',
+  lb:'lb', lbs:'lb', pound:'lb', pounds:'lb',
+  each:'each', portion:'portion', portions:'portion', bunch:'bunch', sprig:'sprig', slice:'slice', dozen:'dozen',
+  tbsp:'tbsp', tablespoon:'tbsp', tablespoons:'tbsp',
+  tsp:'tsp', teaspoon:'tsp', teaspoons:'tsp'
+};
+function normalizeUnit(u){
+  u = String(u||'').toLowerCase().trim();
+  return CVT_UNIT_ALIASES[u] || u;
+}
 function cvt(qty,from,to){
+  from = normalizeUnit(from); to = normalizeUnit(to);
   if(from===to) return qty;
-  var m = {kg:1000,g:1,litre:1000,ml:1,each:1,portion:1,bunch:1,sprig:1,slice:1,tbsp:15,tsp:5,dozen:12};
-  return (m[from]&&m[to]) ? qty*m[from]/m[to] : qty;
+  var m = {kg:1000,g:1,oz:28.35,lb:453.6,litre:1000,ml:1,each:1,portion:1,bunch:1,sprig:1,slice:1,tbsp:15,tsp:5,dozen:12};
+  if(!m[from]||!m[to]){
+    console.warn('cvt(): unrecognized unit conversion "'+from+'" -> "'+to+'" — returning NaN rather than a silently wrong number.');
+    return NaN;
+  }
+  return qty*m[from]/m[to];
 }
 function ingCpu(ing){ return (ing&&ing.packCost&&ing.packSize) ? ing.packCost/ing.packSize : 0; }
 function ingBestCpu(ing){
@@ -2803,6 +2824,7 @@ function supEdit(){
   showOnly('sup-form','sup-list','sup-detail');
 }
 function supDel(){
+  if(!canDelete()){ alert('Only owners and head chefs can delete suppliers.'); return; }
   if(!confirm('Delete this supplier? This cannot be undone.')) return;
   var idToDelete = _supId;
   // Delete from Supabase
@@ -2903,9 +2925,9 @@ async function promoteAwaiting(id){
   // Map invoice units to valid dropdown values
   var unitMap = {
     'case':'each', 'box':'each', 'tray':'each', 'pack':'each',
-    'ltr':'litre', 'lts':'litre', 'l':'litre', 'liter':'litre',
-    'grams':'g', 'gram':'g', 'kilo':'kg', 'kilos':'kg', 'kilogram':'kg',
-    'mls':'ml', 'millilitre':'ml', 'milliliter':'ml'
+    'ltr':'litre', 'lts':'litre', 'l':'litre', 'liter':'litre', 'litres':'litre', 'liters':'litre',
+    'grams':'g', 'gram':'g', 'kilo':'kg', 'kilos':'kg', 'kilogram':'kg', 'kilograms':'kg', 'kgs':'kg',
+    'mls':'ml', 'millilitre':'ml', 'milliliter':'ml', 'millilitres':'ml', 'milliliters':'ml'
   };
   var rawUnit = (item.unit||'each').toLowerCase().trim();
   var mappedUnit = unitMap[rawUnit] || rawUnit;
@@ -3119,6 +3141,7 @@ function ingCalc(){
   }
 }
 function ingSave(){
+  if(!canEdit()){ alert('You do not have permission to add or edit ingredients.'); return; }
   var name=el('ing-name').value.trim(); if(!name){ alert('Ingredient name required.'); return; }
   if(!Object.keys(_ingA).length){ alert('Please select allergens or tick No Allergens.\n\nAccurate allergen data is critical.'); return; }
   // Build supplier list - primary + extras
@@ -3241,6 +3264,7 @@ function ingSave(){
 }
 function ingDel(id,ev){
   ev.stopPropagation();
+  if(!canDelete()){ alert('Only owners and head chefs can delete ingredients.'); return; }
   if(!confirm('Delete this ingredient? This cannot be undone.')) return;
   DB.ingredients=DB.ingredients.filter(function(i){ return i.id!==id; });
   save(); dashUpdate(); ingList();
@@ -3395,7 +3419,7 @@ function yldEdit(id){
 
 }
 
-function yldDel(id,ev){ ev.stopPropagation(); if(!confirm('Delete?')) return; DB.yields=DB.yields.filter(function(y){ return y.id!==id; }); save(); dashUpdate(); yldRender(); }
+function yldDel(id,ev){ ev.stopPropagation(); if(!canDelete()){ alert('Only owners and head chefs can delete yields.'); return; } if(!confirm('Delete?')) return; DB.yields=DB.yields.filter(function(y){ return y.id!==id; }); save(); dashUpdate(); yldRender(); }
 function yldCalc(){
   var ing=byId(DB.ingredients,val('yld-ing'));
   var qty=parseFloat(val('yld-qty'))||0;
@@ -3424,6 +3448,7 @@ function yldCalc(){
   }
 }
 function yldSave(){
+  if(!canEdit()){ alert('You do not have permission to add or edit yields.'); return; }
   var name=el('yld-name').value.trim(); if(!name){ alert('Yield name required.'); return; }
   var ingId=val('yld-ing'); if(!ingId){ alert('Please select a base ingredient.'); return; }
   var qty=parseFloat(val('yld-qty')); if(!qty||qty<=0){ alert('Please enter a yield quantity.'); return; }
@@ -3523,12 +3548,14 @@ function recEdit(id){
 }
 function recDel(id){
   if(id===undefined) id=_recId;
+  if(!canDelete()){ alert('Only owners and head chefs can delete recipes.'); return; }
   if(!confirm('Delete this recipe?')) return;
   DB.recipes=DB.recipes.filter(function(r){ return r.id!==id; });
   save(); dashUpdate(); recList();
   if(typeof deleteRecipeFromSupabase==='function') deleteRecipeFromSupabase(id);
 }
 function recSave(){
+  if(!canEdit()){ alert('You do not have permission to add or edit recipes.'); return; }
   var name=el('rec-name').value.trim(); if(!name){ alert('Recipe name required.'); return; }
   var data={name:tc(name),category:val('rec-cat'),portions:parseFloat(val('rec-portions'))||1,yieldQty:parseFloat(val('rec-portions'))||1,yieldUnit:(el('rec-yield-unit')?el('rec-yield-unit').value:'portions'),steps:_recSteps.filter(function(s){return s.trim();}),method:_recSteps.filter(function(s){return s.trim();}).join('\n'),components:_recComps.filter(function(c){ return !!c.id || !!c._scannedName; })};
   var savedRecId = _recId;
@@ -3860,6 +3887,7 @@ function dishEdit(id){
 }
 function dishDel(id){
   if(id===undefined) id=_dishId;
+  if(!canDelete()){ alert('Only owners and head chefs can delete dishes.'); return; }
   if(!confirm('Delete this dish?')) return;
   DB.dishes=DB.dishes.filter(function(d){ return d.id!==id; });
   save(); dashUpdate(); dishList();
@@ -3881,6 +3909,7 @@ function dishCalc(){
   el('dish-allergen-preview').innerHTML=chipHTML(a,true);
 }
 function dishSave(){
+  if(!canEdit()){ alert('You do not have permission to add or edit dishes.'); return; }
   var name=el('dish-name').value.trim(); if(!name){ alert('Dish name required.'); return; }
   var data={name:tc(name),category:val('dish-cat'),notes:val('dish-notes'),targetGP:parseFloat(val('dish-gp'))||0,wastage:parseFloat(val('dish-wastage'))||0,actualSell:parseFloat(val('dish-sell'))||0,photo_url:_dishImg||null,components:_dishComps.filter(function(c){ return !!c.id; }),image:_dishImg||null};
   var savedDishId = _dishId;
@@ -4083,6 +4112,7 @@ function menuCalc(){
   el('menu-gp').innerHTML=gp!==null?'<span class="badge '+gpClass(gp)+'">'+pct(gp)+'</span>':'--';
 }
 function menuSave(){
+  if(!canEdit()){ alert('You do not have permission to add or edit menus.'); return; }
   var name=el('menu-name').value.trim(); if(!name){ alert('Menu name required.'); return; }
   var data={name:name,type:val('menu-type'),desc:val('menu-desc'),dishes:_menuLines.filter(function(l){ return !!l.dishId; })};
   var savedMenuId = _menuId;
@@ -4099,6 +4129,7 @@ function menuSave(){
 function menuEdit(id){ if(id===undefined) id=_menuId; _menuId=id; var m=byId(DB.menus,id); el('menu-name').value=m.name; el('menu-type').value=m.type; el('menu-desc').value=m.desc||''; _menuLines=(m.dishes||[]).map(function(l){ return Object.assign({},l); }); el('menu-form-title').textContent='Edit Menu'; menuLinesRender(); showOnly('menu-form','menu-list','menu-detail'); }
 function menuDel(id){
   if(id===undefined) id=_menuId;
+  if(!canDelete()){ alert('Only owners and head chefs can delete menus.'); return; }
   if(!confirm('Delete this menu?')) return;
   DB.menus=DB.menus.filter(function(m){ return m.id!==id; });
   save(); dashUpdate(); menuList();
@@ -5451,7 +5482,7 @@ function resetScanCountIfNewMonth(){
   if(DB.scanMonth !== currentMonth){ DB.scanCount=0; DB.scanMonth=currentMonth; save(); }
 }
 
-function canScan(){
+function canScanQuota(){
   resetScanCountIfNewMonth();
   var plan = DB.plan||'pro';
   var limit = SCAN_LIMITS[plan]||Infinity;
@@ -6997,17 +7028,18 @@ function applyRecipeScanResults(data){
   _recComps = (data.ingredients || []).map(function(line){
     var match = matchComponentByName(line.name);
     if (match) matchedCount++;
+    var scannedUnit = line.unit ? normalizeUnit(line.unit) : '';
 
     if (!match) {
-      return { type: 'ingredient', id: '', qty: line.quantity || '', unit: line.unit || 'g', _scannedName: line.name };
+      return { type: 'ingredient', id: '', qty: line.quantity || '', unit: scannedUnit || 'g', _scannedName: line.name };
     }
     if (match.type === 'recipe') {
-      return { type: 'recipe', id: match.item.id, qty: line.quantity || 1, unit: match.item.yieldUnit || line.unit || 'portions' };
+      return { type: 'recipe', id: match.item.id, qty: line.quantity || 1, unit: match.item.yieldUnit || scannedUnit || 'portions' };
     }
     if (match.type === 'yield') {
-      return { type: 'yield', id: match.item.id, qty: line.quantity || '', unit: line.unit || match.item.unit || 'g' };
+      return { type: 'yield', id: match.item.id, qty: line.quantity || '', unit: scannedUnit || match.item.unit || 'g' };
     }
-    return { type: 'ingredient', id: match.item.id, qty: line.quantity || '', unit: line.unit || match.item.unit || 'g' };
+    return { type: 'ingredient', id: match.item.id, qty: line.quantity || '', unit: scannedUnit || match.item.unit || 'g' };
   });
   compRender('rec');
   recCalc();
@@ -7164,8 +7196,13 @@ async function scanIngredientText(file) {
   scanInput.addEventListener('change', function(e) {
     var file = e.target.files[0];
     if (!file) return;
-    // Check scan limit first
+    // Check role permission first, then scan quota
     if (typeof canScan === 'function' && !canScan()) {
+      alert('Only owners, head chefs and sous chefs can scan invoices and labels.');
+      scanInput.value = '';
+      return;
+    }
+    if (typeof canScanQuota === 'function' && !canScanQuota()) {
       var plan = (typeof DB !== 'undefined' && DB.plan) || 'core';
       var limit = plan === 'core' ? 30 : 'unlimited';
       alert('You have used all ' + limit + ' scans for this month.\nUpgrade to Pro for unlimited scanning.');

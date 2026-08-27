@@ -9,6 +9,18 @@ export const serviceHeaders = {
   'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * True only if the value is a well-formed UUID (Supabase user/profile IDs
+ * always are). Reject anything else before it ever reaches a Supabase URL —
+ * a value built from unvalidated request input must never be interpolated
+ * into an Admin API path or REST filter without this check first.
+ */
+export function isValidUuid(v) {
+  return typeof v === 'string' && UUID_RE.test(v);
+}
+
 /**
  * Verifies the Bearer JWT from the request and returns the Supabase user.
  * Returns { user } on success, or sends a 401 and returns null.

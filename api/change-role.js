@@ -1,6 +1,6 @@
 // /api/change-role.js
 
-import { requireAuth, getCallerProfile, requireOwner, requireSameCompany, serviceHeaders } from './_auth.js';
+import { requireAuth, getCallerProfile, requireOwner, requireSameCompany, serviceHeaders, isValidUuid } from './_auth.js';
 import { sendEmail, emailHeader, emailFooter, emailButton } from './_email.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -21,6 +21,7 @@ export default async function handler(req, res) {
 
   const { targetUserId, newRole } = req.body || {};
   if (!targetUserId || !newRole) return res.status(400).json({ error: 'Missing fields' });
+  if (!isValidUuid(targetUserId)) return res.status(400).json({ error: 'Invalid targetUserId' });
   if (!validRoles.includes(newRole)) return res.status(400).json({ error: 'Invalid role' });
 
   // 3. Verify target is in the same company

@@ -1,6 +1,6 @@
 // /api/remove-user.js
 
-import { requireAuth, getCallerProfile, requireOwner, requireSameCompany, serviceHeaders } from './_auth.js';
+import { requireAuth, getCallerProfile, requireOwner, requireSameCompany, serviceHeaders, isValidUuid } from './_auth.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 
@@ -17,6 +17,7 @@ export default async function handler(req, res) {
 
   const { targetUserId } = req.body || {};
   if (!targetUserId) return res.status(400).json({ error: 'targetUserId required' });
+  if (!isValidUuid(targetUserId)) return res.status(400).json({ error: 'Invalid targetUserId' });
 
   // 3. Cannot remove yourself
   if (targetUserId === user.id) {
