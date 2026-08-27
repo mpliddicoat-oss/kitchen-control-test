@@ -53,6 +53,11 @@ export default async function handler(req, res) {
 
   const { image, mimeType } = req.body;
   if (!image) return res.status(400).json({ error: 'No file provided' });
+  // Invoice upload accepts a photo or a PDF (matches the file input's accept)
+  if (mimeType && !/^image\//.test(mimeType) && mimeType !== 'application/pdf') {
+    return res.status(400).json({ error: 'File must be an image or PDF' });
+  }
+  if (!/^[A-Za-z0-9+/]+=*$/.test(image)) return res.status(400).json({ error: 'Invalid file data' });
 
   const prompt = `You are reading a food supplier delivery invoice or delivery note for a professional kitchen.
 

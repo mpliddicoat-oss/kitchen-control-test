@@ -50,6 +50,14 @@ export default async function handler(req, res) {
 
   const { image, mimeType, text } = req.body;
   if (!image && !text) return res.status(400).json({ error: 'No file or text provided' });
+  // Recipe import accepts a photo or a PDF (matches the file input's accept)
+  // when an image is sent — the text-only path is unaffected.
+  if (image) {
+    if (mimeType && !/^image\//.test(mimeType) && mimeType !== 'application/pdf') {
+      return res.status(400).json({ error: 'File must be an image or PDF' });
+    }
+    if (!/^[A-Za-z0-9+/]+=*$/.test(image)) return res.status(400).json({ error: 'Invalid file data' });
+  }
 
   const prompt = `You are reading a recipe for a professional kitchen — this could be a photo of a handwritten or printed recipe card, a page from a recipe book, or plain typed text.
 

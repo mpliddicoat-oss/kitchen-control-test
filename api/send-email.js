@@ -4,6 +4,7 @@
 
 import { requireAuth } from './_auth.js';
 import { sendEmail } from './_email.js';
+import { checkRateLimit } from './_ratelimit.js';
 import { createClient } from '@supabase/supabase-js';
 
 const ALLOWED_INTERNAL = ['support@kitchen-control.co.uk'];
@@ -20,7 +21,11 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { token } = req.query;
 
-    if (token) {
+    // Unauthenticated, token-guessable endpoint — cap attempts per IP so it
+    // can't be used to brute-force valid unsubscribe tokens at volume. Still
+    // always returns the pixel below either way, so email rendering never
+    // breaks for a real recipient.
+    if (token && checkRateLimit(req, { max: 30, windowMs: 60 * 60 * 1000, prefix: 'track-pixel' }).ok) {
       try {
         const supabase = createClient(
           process.env.supabase_url || process.env.SUPABASE_URL,

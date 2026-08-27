@@ -77,6 +77,9 @@ export default async function handler(req, res) {
 
   const { image, mimeType } = req.body;
   if (!image) return res.status(400).json({ error: 'No image provided' });
+  // Label scanning only ever accepts a photo (the file input is image/* only)
+  if (mimeType && !/^image\//.test(mimeType)) return res.status(400).json({ error: 'File must be an image' });
+  if (!/^[A-Za-z0-9+/]+=*$/.test(image)) return res.status(400).json({ error: 'Invalid image data' });
 
   const prompt = `You are analysing a food product ingredient label for a professional kitchen allergen management system.
 

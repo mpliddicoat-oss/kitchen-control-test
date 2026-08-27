@@ -4,6 +4,7 @@
 // 2. Authenticated mode: JWT in Authorization header (existing users managing billing)
 
 import { getCallerProfile, serviceHeaders, isValidUuid } from './_auth.js';
+import { checkRateLimit } from './_ratelimit.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
@@ -26,6 +27,12 @@ async function verifyUserExists(userId, email) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // This endpoint is reachable fully unauthenticated in signup mode and
+  // calls Stripe's Customer Search API — worth a basic ceiling against
+  // scripted abuse of that quota / spam customer/session creation.
+  const rl = checkRateLimit(req, { max: 20, windowMs: 60 * 60 * 1000, prefix: 'create-checkout' });
+  if (!rl.ok) return res.status(429).json({ error: 'Too many requests. Please try again later.' });
 
   if (!STRIPE_SECRET || !STRIPE_PRICE_ID) {
     return res.status(500).json({ error: 'Stripe not configured' });
@@ -69,9 +76,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Check if Stripe customer already exists
+    // Check if Stripe customer already exists.
+    // Stripe's search query syntax needs its own escaping for a literal
+    // quote inside the value — encodeURIComponent only handles URL-safety,
+    // not Stripe's query DSL, so a quote in the email could otherwise break
+    // out of the query string.
+    const escapedEmail = email.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
     const existingRes = await fetch(
-      `https://api.stripe.com/v1/customers/search?query=email:'${encodeURIComponent(email)}'`,
+      `https://api.stripe.com/v1/customers/search?query=${encodeURIComponent(`email:'${escapedEmail}'`)}`,
       { headers: { 'Authorization': `Bearer ${STRIPE_SECRET}` } }
     );
     const existing = await existingRes.json();
