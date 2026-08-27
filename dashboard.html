@@ -2617,6 +2617,7 @@ function showOnly(show_id){ var others=Array.prototype.slice.call(arguments,1); 
 function tc(s){
   return s.replace(/\w+/g,function(w){ return BIZ.indexOf(w.toLowerCase())>=0?w.toUpperCase():w[0].toUpperCase()+w.slice(1).toLowerCase(); });
 }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function fld(label,v){ return '<div class="detail-label">'+label+'</div><div class="detail-value">'+(v||'&mdash;')+'</div>'; }
 function fmt(n){ return '&pound;'+n.toFixed(2); }
 function pct(n){ return n.toFixed(1)+'%'; }
@@ -2778,14 +2779,14 @@ function supNew(){ _supId=null; clr(['sup-name','sup-account','sup-contact','sup
 function supDetail(id){
   _supId=id; var s=byId(DB.suppliers,id); showOnly('sup-detail','sup-list','sup-form');
   el('sup-detail-name').textContent=s.name;
-  el('sup-detail-info').innerHTML=fld('Account No',s.account)+fld('Contact',s.contact)+fld('Telephone',s.phone)+fld('Email',s.email?'<a href="mailto:'+s.email+'">'+s.email+'</a>':null)+fld('Address',(s.address||'').replace(/\n/g,'<br>'))+fld('Notes',s.notes);
+  el('sup-detail-info').innerHTML=fld('Account No',esc(s.account))+fld('Contact',esc(s.contact))+fld('Telephone',esc(s.phone))+fld('Email',s.email?'<a href="mailto:'+esc(s.email)+'">'+esc(s.email)+'</a>':null)+fld('Address',esc(s.address||'').replace(/\n/g,'<br>'))+fld('Notes',esc(s.notes));
   var sup = byId(DB.suppliers, id);
   var supName = sup ? sup.name : '';
   var ings=DB.ingredients.filter(function(i){
     var isid = (i.supplierId==null) ? '' : String(i.supplierId);
     return isid===String(id) || isid===supName;
   });
-  el('sup-detail-ings').innerHTML=ings.length?ings.map(function(i){ return '<div class="card-row" style="cursor:pointer" onclick="ingEdit(\''+i.id+'\');go(\'ingredients\');"><div class="cr-title">'+i.name+' <span style="font-size:11px;color:var(--green)">Edit →</span></div><div class="cr-sub">'+ingCpuLabel(i)+'</div></div>'; }).join(''):'<p style="color:var(--muted);font-size:13px">No ingredients linked.</p>';
+  el('sup-detail-ings').innerHTML=ings.length?ings.map(function(i){ return '<div class="card-row" style="cursor:pointer" onclick="ingEdit(\''+i.id+'\');go(\'ingredients\');"><div class="cr-title">'+esc(i.name)+' <span style="font-size:11px;color:var(--green)">Edit →</span></div><div class="cr-sub">'+ingCpuLabel(i)+'</div></div>'; }).join(''):'<p style="color:var(--muted);font-size:13px">No ingredients linked.</p>';
 }
 function supEdit(){
   var s=byId(DB.suppliers,_supId);
@@ -2839,8 +2840,8 @@ function supRender(f){
              xsid.toLowerCase()===(s.name||'').toLowerCase();
     }).length;
     html+='<div class="card-row" onclick="_supItems&&supDetail(_supItems['+i+'].id)">';
-    html+='<div><div class="cr-title">'+s.name+'</div>';
-    html+='<div class="cr-sub">'+(s.account?'Acc: '+s.account+' &middot; ':'')+s.phone+'</div></div>';
+    html+='<div><div class="cr-title">'+esc(s.name)+'</div>';
+    html+='<div class="cr-sub">'+(s.account?'Acc: '+esc(s.account)+' &middot; ':'')+esc(s.phone)+'</div></div>';
     html+='<div style="font-size:12px;color:var(--muted)">'+ingCount+' ingredients &rarr;</div>';
     html+='</div>';
   });
@@ -3248,7 +3249,7 @@ function ingDel(id,ev){
 function ingRow(i){
   var aDisp=(i.allergens||[]).indexOf('none')>=0?'<span style="color:#065f46">No allergens</span>':aFromIng(i).map(function(a){ var f=ALLERGENS.find(function(x){ return x.id===a; }); return f?f.e:''; }).join(' ')||'Not set';
   var hasLabel=i.fullIngredients?'<span style="font-size:10px;margin-left:6px;padding:1px 6px;background:#dbeafe;color:#1e40af;border-radius:10px;font-weight:600">Label</span>':'';
-  return '<div class="card-row"><div onclick="ingEdit(\''+i.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+i.name+hasLabel+'</div><div class="cr-sub">'+ingCpuLabel(i)+' &middot; '+aDisp+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="ingEdit(\''+i.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="ingDel(\''+i.id+'\',event)">Del</button></div></div>';
+  return '<div class="card-row"><div onclick="ingEdit(\''+i.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(i.name)+hasLabel+'</div><div class="cr-sub">'+ingCpuLabel(i)+' &middot; '+aDisp+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="ingEdit(\''+i.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="ingDel(\''+i.id+'\',event)">Del</button></div></div>';
 }
 
 function ingGoBack(){
@@ -3269,8 +3270,8 @@ function ingRender(f){
     items.forEach(function(item,idx){
       var priceWarn=(!item.priceConfirmed&&item.source==='invoice')?' <span style="color:#dc2626;font-size:11px;font-weight:600">(Price not confirmed)</span>':''; html+='<div class="card-row" style="border-color:#fbbf24;background:#fffbeb">'
         +'<div style="flex:1">'
-        +'<div class="cr-title">'+item.name+priceWarn+' <span class="badge-new">NEW</span></div>'
-        +'<div class="cr-sub">'+item.packSize+' '+item.unit+' &middot; &pound;'+item.packCost.toFixed(2)+' &middot; '+item.notes+'</div>'
+        +'<div class="cr-title">'+esc(item.name)+priceWarn+' <span class="badge-new">NEW</span></div>'
+        +'<div class="cr-sub">'+esc(item.packSize)+' '+esc(item.unit)+' &middot; &pound;'+item.packCost.toFixed(2)+' &middot; '+esc(item.notes)+'</div>'
         +'</div>'
         +'<div class="cr-actions">'
         +'<button class="btn btn-green btn-sm" onclick="_awaitItems&&promoteAwaiting(_awaitItems['+idx+'].id)">&#9989; Confirm Allergens</button>'
@@ -3465,10 +3466,10 @@ function yldRender(f){
   items.forEach(function(y,i){
     var ing=byId(DB.ingredients,y.ingId);
     var cpu=y.trueCpu?y.trueCpu.toFixed(4):'0.0000';
-    var sub=(ing?'From: '+ing.name+' - ':'')+y.qty+' '+y.unit+' - True cost: &pound;'+cpu+'/'+y.unit;
+    var sub=(ing?'From: '+esc(ing.name)+' - ':'')+y.qty+' '+y.unit+' - True cost: &pound;'+cpu+'/'+y.unit;
     html+='<div class="card-row">';
     html+='<div style="flex:1;cursor:pointer" onclick="yldEditIdx('+i+')">';
-    html+='<div class="cr-title">'+y.name+'</div>';
+    html+='<div class="cr-title">'+esc(y.name)+'</div>';
     html+='<div class="cr-sub">'+sub+'</div>';
     html+='</div>';
     html+='<div class="cr-actions">';
@@ -3564,22 +3565,22 @@ function recShowDetail(id){
     var name='',cost=0,qty=comp.qty,unit=comp.unit||'',printName='';
     if(!comp.id){
       missingCount++;
-      var label=comp._scannedName || (comp.type==='recipe'?'Unresolved sub-recipe':comp.type==='yield'?'Unresolved yield':'Unresolved ingredient');
+      var label=esc(comp._scannedName) || (comp.type==='recipe'?'Unresolved sub-recipe':comp.type==='yield'?'Unresolved yield':'Unresolved ingredient');
       name='<span class="badge" style="background:#fef3c7;color:#92400e;margin-right:4px">&#9888; Missing</span>'+label;
       tbody+='<tr style="background:#fffbeb"><td>'+name+'</td><td>'+(qty||'--')+'</td><td>'+(unit||'--')+'</td><td>--</td></tr>';
       return;
     }
     if(comp.type==='recipe'){
       var sub=byId(DB.recipes,comp.id); if(!sub) return;
-      name='<span class="badge bg-teal" style="margin-right:4px">Recipe</span>'+sub.name;
-      printName=sub.name; cost=recCostPer(sub)*(parseFloat(comp.qty)||1); unit=sub.yieldUnit||'portions';
+      name='<span class="badge bg-teal" style="margin-right:4px">Recipe</span>'+esc(sub.name);
+      printName=esc(sub.name); cost=recCostPer(sub)*(parseFloat(comp.qty)||1); unit=sub.yieldUnit||'portions';
     } else if(comp.type==='yield'){
       var y=byId(DB.yields,comp.id); if(!y) return;
-      name='<span class="badge bg-purple" style="margin-right:4px">Yield</span>'+y.name;
-      printName=y.name; cost=y.trueCpu*(parseFloat(comp.qty)||0); unit=comp.unit||y.unit;
+      name='<span class="badge bg-purple" style="margin-right:4px">Yield</span>'+esc(y.name);
+      printName=esc(y.name); cost=y.trueCpu*(parseFloat(comp.qty)||0); unit=comp.unit||y.unit;
     } else {
       var ing=byId(DB.ingredients,comp.id); if(!ing) return;
-      name=ing.name; printName=ing.name; cost=lineCost(ing,parseFloat(comp.qty)||0,comp.unit);
+      name=esc(ing.name); printName=esc(ing.name); cost=lineCost(ing,parseFloat(comp.qty)||0,comp.unit);
     }
     t+=cost;
     tbody+='<tr><td>'+name+'</td><td>'+qty+'</td><td>'+unit+'</td><td>'+fmt(cost)+'</td></tr>';
@@ -3619,8 +3620,8 @@ function recShowDetail(id){
         '<img class="rp-logo" src="'+logo+'" alt="Kitchen Control">'+
       '</div>'+
       '<div style="text-align:right">'+
-        '<div class="rp-title">'+r.name+'</div>'+
-        '<div class="rp-sub">'+r.category+' &nbsp;&bull;&nbsp; Yields: '+yQty+' '+yUnit+'</div>'+
+        '<div class="rp-title">'+esc(r.name)+'</div>'+
+        '<div class="rp-sub">'+esc(r.category)+' &nbsp;&bull;&nbsp; Yields: '+yQty+' '+yUnit+'</div>'+
         '<div class="rp-meta" style="margin-top:4px">Printed: '+new Date().toLocaleDateString('en-GB')+'</div>'+
       '</div>'+
     '</div>'+
@@ -3659,9 +3660,9 @@ function recScale(){
   var tbody='',t=0;
   (r.components||[]).forEach(function(c){
     var name='',sqty='',unit='',cost=0;
-    if(c.type==='recipe'){ var sub=byId(DB.recipes,c.id); if(!sub) return; var sq=(parseFloat(c.qty)||1)*fac; cost=recCostPer(sub)*sq; t+=cost; name='<span class="badge bg-teal" style="margin-right:4px">Recipe</span>'+sub.name; sqty=(sq%1===0?sq:sq.toFixed(2))+' portions'; }
-    else if(c.type==='yield'){ var y=byId(DB.yields,c.id); if(!y) return; var sq=(parseFloat(c.qty)||0)*fac; cost=y.trueCpu*sq; t+=cost; name='<span class="badge bg-purple" style="margin-right:4px">Yield</span>'+y.name; sqty=(sq%1===0?sq:sq.toFixed(3)); unit=y.unit; }
-    else{ var i=byId(DB.ingredients,c.id); if(!i) return; var sq=(parseFloat(c.qty)||0)*fac; cost=lineCost(i,parseFloat(c.qty)||0,c.unit)*fac; t+=cost; name=i.name; sqty=(sq%1===0?sq:sq.toFixed(3)); unit=c.unit; }
+    if(c.type==='recipe'){ var sub=byId(DB.recipes,c.id); if(!sub) return; var sq=(parseFloat(c.qty)||1)*fac; cost=recCostPer(sub)*sq; t+=cost; name='<span class="badge bg-teal" style="margin-right:4px">Recipe</span>'+esc(sub.name); sqty=(sq%1===0?sq:sq.toFixed(2))+' portions'; }
+    else if(c.type==='yield'){ var y=byId(DB.yields,c.id); if(!y) return; var sq=(parseFloat(c.qty)||0)*fac; cost=y.trueCpu*sq; t+=cost; name='<span class="badge bg-purple" style="margin-right:4px">Yield</span>'+esc(y.name); sqty=(sq%1===0?sq:sq.toFixed(3)); unit=y.unit; }
+    else{ var i=byId(DB.ingredients,c.id); if(!i) return; var sq=(parseFloat(c.qty)||0)*fac; cost=lineCost(i,parseFloat(c.qty)||0,c.unit)*fac; t+=cost; name=esc(i.name); sqty=(sq%1===0?sq:sq.toFixed(3)); unit=c.unit; }
     tbody+='<tr><td>'+name+'</td><td><strong>'+sqty+'</strong> '+unit+'</td></tr>';
   });
   el('rec-scale-result').innerHTML='<table class="dt"><thead><tr><th>Item</th><th>Qty for '+tgt+'</th></tr></thead><tbody>'+tbody+'</tbody></table><div class="cost-box"><div class="cr2 total"><span>Scaled Total</span><span>'+fmt(t)+'</span></div></div>';
@@ -3671,7 +3672,7 @@ function recRender(f){
   el('rec-items').innerHTML=items.length?items.map(function(r){
     var missingCount=(r.components||[]).filter(function(c){ return !c.id; }).length;
     var missingTag=missingCount?' <span class="badge" style="background:#fef3c7;color:#92400e;font-size:10px">&#9888; '+missingCount+' missing</span>':'';
-    return '<div class="card-row"><div onclick="recShowDetail(\''+r.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+r.name+missingTag+'</div><div class="cr-sub">'+r.category+' &middot; '+(r.yieldQty||r.portions||1)+' '+(r.yieldUnit||'portions')+' &middot; '+fmt(recCostPer(r))+'/'+(r.yieldUnit||'portion')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="recEdit(\''+r.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="recDel(\''+r.id+'\')">Del</button></div></div>';
+    return '<div class="card-row"><div onclick="recShowDetail(\''+r.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(r.name)+missingTag+'</div><div class="cr-sub">'+esc(r.category)+' &middot; '+(r.yieldQty||r.portions||1)+' '+(r.yieldUnit||'portions')+' &middot; '+fmt(recCostPer(r))+'/'+(r.yieldUnit||'portion')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="recEdit(\''+r.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="recDel(\''+r.id+'\')">Del</button></div></div>';
   }).join(''):'<p style="color:var(--muted);text-align:center;padding:30px">No recipes yet.</p>';
 }
 
@@ -3896,7 +3897,7 @@ function dishSave(){
 function dishShowDetail(id){
   _dishId=id; var d=byId(DB.dishes,id); showOnly('dish-detail','dish-list','dish-form');
   el('dish-detail-name').textContent=d.name; el('dish-detail-sub').textContent=d.category+(d.notes?' &middot; '+d.notes:'');
-  el('dish-detail-img').innerHTML=(d.photo_url||d.image)?'<a href="'+(d.photo_url||d.image)+'" target="_blank" title="Click to view full size"><img src="'+(d.photo_url||d.image)+'" style="width:100%;height:auto;max-height:180px;border-radius:8px;object-fit:contain;background:#f8fafc;cursor:pointer"></a>':'<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No photo added</div>';
+  el('dish-detail-img').innerHTML=(d.photo_url||d.image)?'<a href="'+esc(d.photo_url||d.image)+'" target="_blank" rel="noopener" title="Click to view full size"><img src="'+esc(d.photo_url||d.image)+'" style="width:100%;height:auto;max-height:180px;border-radius:8px;object-fit:contain;background:#f8fafc;cursor:pointer"></a>':'<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No photo added</div>';
   var compH='<h3 style="margin-bottom:10px">Components</h3>', total=0;
   (d.components||[]).forEach(function(c){
     var name='',cost=0,sub2='';
@@ -3951,7 +3952,7 @@ function dishSetSort(mode){
 }
 function dishRowHtml(d){
   var cost=adjDishCost(d),sell=d.actualSell||0,exVAT=sell>0?sell/1.2:0,gp=exVAT>0?(exVAT-cost)/exVAT*100:null;
-  return '<div class="card-row"><div onclick="dishShowDetail(\''+d.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+d.name+(d.photo_url||d.image?' 📷':'')+' <span class="badge bg-blue" style="margin-left:4px">'+d.category+'</span></div><div class="cr-sub">Cost: '+fmt(cost)+(sell?' &middot; Sell: '+fmt(sell):'')+(gp!==null?' &middot; '+pct(gp)+' GP':'')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="dishEdit(\''+d.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="dishDel(\''+d.id+'\')">Del</button></div></div>';
+  return '<div class="card-row"><div onclick="dishShowDetail(\''+d.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(d.name)+(d.photo_url||d.image?' 📷':'')+' <span class="badge bg-blue" style="margin-left:4px">'+esc(d.category)+'</span></div><div class="cr-sub">Cost: '+fmt(cost)+(sell?' &middot; Sell: '+fmt(sell):'')+(gp!==null?' &middot; '+pct(gp)+' GP':'')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="dishEdit(\''+d.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="dishDel(\''+d.id+'\')">Del</button></div></div>';
 }
 function dishRender(f){
   if(f!==undefined) _dishSearch=f;
@@ -4057,12 +4058,12 @@ function menuPickerRender(){
   var html='', lastCat=null;
   items.forEach(function(d){
     var cat=d.category||'Uncategorised';
-    if(cat!==lastCat){ lastCat=cat; html+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:10px 0 4px">'+cat+'</div>'; }
+    if(cat!==lastCat){ lastCat=cat; html+='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:10px 0 4px">'+esc(cat)+'</div>'; }
     var already=!!existingIds[d.id];
     var checked=_menuPickerChecked[d.id]?'checked':'';
     html+='<label style="display:flex;align-items:center;gap:8px;padding:4px 2px;font-size:13px;cursor:'+(already?'default':'pointer')+';opacity:'+(already?'0.5':'1')+'">'+
       '<input type="checkbox" '+checked+' '+(already?'disabled':'')+' onchange="menuPickerToggle(\''+d.id+'\',this.checked)">'+
-      d.name+(already?' <span style="color:var(--muted)">(already added)</span>':'')+
+      esc(d.name)+(already?' <span style="color:var(--muted)">(already added)</span>':'')+
       '</label>';
   });
   el('menu-dish-picker-list').innerHTML=html || '<p style="color:var(--muted);font-size:13px">No dishes found.</p>';
@@ -4107,12 +4108,12 @@ function menuShowDetail(id){
   _menuId=id; var m=byId(DB.menus,id); showOnly('menu-detail','menu-list','menu-form');
   el('menu-detail-name').textContent=m.name; el('menu-detail-sub').textContent=m.type+(m.desc?' &middot; '+m.desc:'');
   var html='',gc=0,gs=0;
-  (m.dishes||[]).forEach(function(l){ var d=byId(DB.dishes,l.dishId); if(!d) return; var c=adjDishCost(d),s=l.sell!==''?parseFloat(l.sell)||0:d.actualSell||0; gc+=c; gs+=s; var a=Object.assign({},aFromDish(d),manualA(d.id)); html+='<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px"><div><strong style="font-size:15px">'+d.name+'</strong> <span class="badge bg-blue">'+d.category+'</span></div><div style="text-align:right">'+(s?'<div style="font-size:16px;font-weight:700">'+fmt(s)+'</div>':'<div style="color:var(--muted);font-size:13px">No sell price</div>')+'<div style="font-size:12px;color:var(--muted)">Cost: '+fmt(c)+'</div>'+gpBadge(c,s)+'</div></div><div class="ag">'+chipHTML(a,true)+'</div></div>'; });
+  (m.dishes||[]).forEach(function(l){ var d=byId(DB.dishes,l.dishId); if(!d) return; var c=adjDishCost(d),s=l.sell!==''?parseFloat(l.sell)||0:d.actualSell||0; gc+=c; gs+=s; var a=Object.assign({},aFromDish(d),manualA(d.id)); html+='<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px"><div><strong style="font-size:15px">'+esc(d.name)+'</strong> <span class="badge bg-blue">'+esc(d.category)+'</span></div><div style="text-align:right">'+(s?'<div style="font-size:16px;font-weight:700">'+fmt(s)+'</div>':'<div style="color:var(--muted);font-size:13px">No sell price</div>')+'<div style="font-size:12px;color:var(--muted)">Cost: '+fmt(c)+'</div>'+gpBadge(c,s)+'</div></div><div class="ag">'+chipHTML(a,true)+'</div></div>'; });
   var exVAT=gs/1.2,gp=exVAT>0?(exVAT-gc)/exVAT*100:null;
   html+='<div class="cost-box"><div class="cr2"><span>Total Food Cost</span><span>'+fmt(gc)+'</span></div><div class="cr2"><span>Total Revenue (inc VAT)</span><span>'+fmt(gs)+'</span></div>'+(gp!==null?'<div class="cr2 total"><span>Menu GP</span><span><span class="badge '+gpClass(gp)+'">'+pct(gp)+'</span></span></div>':'')+'</div>';
   el('menu-detail-content').innerHTML=html;
 }
-function menuRender(){ el('menu-items').innerHTML=DB.menus.length?DB.menus.map(function(m){ return '<div class="card-row"><div onclick="menuShowDetail(\''+m.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+m.name+'</div><div class="cr-sub">'+m.type+' &middot; '+m.dishes.length+' dish(es)'+(m.desc?' &middot; '+m.desc:'')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="menuEdit(\''+m.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="menuDel(\''+m.id+'\')">Del</button></div></div>'; }).join(''):'<p style="color:var(--muted);text-align:center;padding:30px">No menus yet.</p>'; }
+function menuRender(){ el('menu-items').innerHTML=DB.menus.length?DB.menus.map(function(m){ return '<div class="card-row"><div onclick="menuShowDetail(\''+m.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(m.name)+'</div><div class="cr-sub">'+esc(m.type)+' &middot; '+m.dishes.length+' dish(es)'+(m.desc?' &middot; '+esc(m.desc):'')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="menuEdit(\''+m.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="menuDel(\''+m.id+'\')">Del</button></div></div>'; }).join(''):'<p style="color:var(--muted);text-align:center;padding:30px">No menus yet.</p>'; }
 
 // ================================================================
 // ALLERGEN SHEET
@@ -4183,9 +4184,9 @@ function aRender(){
 
 function aMatrixTable(rows, title, clickable, colLabel){
   if(!rows.length) return '<p style="color:var(--muted);text-align:center;padding:30px">No components found.</p>';
-  colLabel = colLabel || 'Component';
+  colLabel = esc(colLabel || 'Component');
   var date = new Date().toLocaleDateString('en-GB');
-  var companyName = el('sidebar-user-biz') ? el('sidebar-user-biz').textContent : 'Kitchen Control';
+  var companyName = esc(el('sidebar-user-biz') ? el('sidebar-user-biz').textContent : 'Kitchen Control');
   var ROWS_PER_PAGE = 16; // confirmed via print test there was still room to spare at 14
   var colSpan = ALLERGENS.length + 1;
 
@@ -4220,7 +4221,7 @@ function aMatrixTable(rows, title, clickable, colLabel){
     var bgStyle = isTotal ? 'background:#f0fdf4;font-weight:600;' : (row.sub ? 'background:#f8fafc;' : '');
     var nameStyle = row.sub ? 'padding-left:18px;font-size:11px;color:var(--muted)' : 'font-size:12px;font-weight:'+(isTotal?'700':'500');
     html += '<tr style="'+bgStyle+'">';
-    html += '<td style="padding:4px 6px;'+nameStyle+'">'+(row.label||row.name||'')+'</td>';
+    html += '<td style="padding:4px 6px;'+nameStyle+'">'+esc(row.label||row.name||'')+'</td>';
     ALLERGENS.forEach(function(a){
       var has = (row.auto&&row.auto[a.id])||(row.allergens&&row.allergens[a.id]);
       var manual = (row.man&&row.man[a.id])||(row.manualAllergens&&row.manualAllergens[a.id]);
@@ -4299,6 +4300,7 @@ function aManualRemove(itemId, allergenId){
 
 
 function aTable(rows,label,clickable){
+  label=esc(label||'');
   if(!rows.length) return '<p style="color:var(--muted);text-align:center;padding:30px">No '+label.toLowerCase()+'s yet.</p>';
   var logo=el('logo-img').src;
   var date=new Date().toLocaleDateString('en-GB');
@@ -4348,7 +4350,7 @@ function aTable(rows,label,clickable){
       html+=titleBarRow(true);
       html+=columnHeaderRow(true);
     }
-    html+='<tr><td>'+row.label+'</td>';
+    html+='<tr><td>'+esc(row.label)+'</td>';
     ALLERGENS.forEach(function(a){
       var auto=row.auto&&row.auto[a.id], manual=row.man&&row.man[a.id], isRed=auto||manual;
       if(clickable&&row.did){
@@ -4497,7 +4499,7 @@ function aTableIng(rows){
   ALLERGENS.forEach(function(a){ html+='<th style="width:44px;text-align:center;border-left:1px solid var(--border)"><div class="col-hdr">'+a.label+'</div></th>'; });
   html+='</tr></thead><tbody>';
   rows.forEach(function(row){
-    html+='<tr><td>'+row.label+'</td>';
+    html+='<tr><td>'+esc(row.label)+'</td>';
     ALLERGENS.forEach(function(a){
       var has=row.auto&&row.auto[a.id];
       html+='<td class="a-cell"><div class="a-dot '+(has?'yes':'no')+' click" data-iid="'+row.iid+'" data-aid="'+a.id+'" onclick="aIngClickHandler(this)" title="'+(has?'Remove '+a.label+' from this ingredient':'Add '+a.label+' to this ingredient')+'"></div></td>';
@@ -4594,7 +4596,7 @@ function ordMenuChange(){
     var d=byId(DB.dishes,l.dishId); if(!d) return;
     _ordDishQtys[d.id]=0;
     html+='<div style="display:grid;grid-template-columns:1fr 100px;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">';
-    html+='<div><div style="font-weight:500">'+d.name+'</div><div style="font-size:12px;color:var(--muted)">'+d.category+'</div></div>';
+    html+='<div><div style="font-weight:500">'+esc(d.name)+'</div><div style="font-size:12px;color:var(--muted)">'+esc(d.category)+'</div></div>';
     html+='<input type="number" min="0" step="1" value="" placeholder="0" data-dishid="'+d.id+'" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-weight:600;text-align:center;width:100%;font-family:inherit" onchange="ordQtyChange(this)">';
     html+='</div>';
   });
@@ -4700,9 +4702,9 @@ function ordGenerate(){
 
   // Render
   var html='<div style="margin-bottom:14px;padding:12px 16px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:8px">';
-  html+='<div style="font-weight:600;font-size:15px;margin-bottom:6px">'+m.name+'</div>';
+  html+='<div style="font-weight:600;font-size:15px;margin-bottom:6px">'+esc(m.name)+'</div>';
   html+='<div style="font-size:12px;color:var(--muted)">'+new Date().toLocaleDateString('en-GB',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'</div>';
-  html+='<div style="margin-top:8px;font-size:13px">Dishes: '+dishSummary.map(function(d){ return d.name+' x'+d.qty; }).join(', ')+'</div>';
+  html+='<div style="margin-top:8px;font-size:13px">Dishes: '+dishSummary.map(function(d){ return esc(d.name)+' x'+d.qty; }).join(', ')+'</div>';
   html+='</div>';
 
   keys.forEach(function(k){
@@ -4710,13 +4712,13 @@ function ordGenerate(){
     var supTotal=items.reduce(function(s,x){ return s+x.cost; },0);
     html+='<div style="margin-bottom:14px">';
     html+='<div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);padding:8px 14px;background:var(--light);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between">';
-    html+='<span>&#128666; '+k+'</span><span>&pound;'+supTotal.toFixed(2)+'</span></div>';
+    html+='<span>&#128666; '+esc(k)+'</span><span>&pound;'+supTotal.toFixed(2)+'</span></div>';
     items.forEach(function(item){
       var q=item.qty%1===0?item.qty.toFixed(0):item.qty.toFixed(3);
       html+='<div style="display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);gap:10px">';
       html+='<div class="no-print" style="width:18px;height:18px;border:2px solid var(--border);border-radius:3px;flex-shrink:0"></div>';
       html+='<div class="print-checkbox" style="width:18px;height:18px;border:1.5px solid #333;border-radius:2px;flex-shrink:0;display:none"></div>';
-      html+='<div style="flex:1"><div style="font-weight:500;font-size:13px">'+item.name+'</div>';
+      html+='<div style="flex:1"><div style="font-weight:500;font-size:13px">'+esc(item.name)+'</div>';
       html+='<div style="font-size:12px;color:var(--muted)">&pound;'+item.cpu.toFixed(4)+'/'+item.unit+'</div></div>';
       html+='<div style="text-align:right;flex-shrink:0"><div style="font-weight:600">'+q+' '+item.unit+'</div>';
       html+='<div style="font-size:12px;color:var(--muted)">&pound;'+item.cost.toFixed(2)+'</div></div>';
@@ -4790,9 +4792,9 @@ function ordShowDetail(id){
   var keys=Object.keys(grp).sort(function(a,b){ return a==='Unassigned'?1:b==='Unassigned'?-1:a.localeCompare(b); });
 
   var html='<div style="margin-bottom:14px;padding:12px 16px;background:#f0fff4;border:1px solid #9ae6b4;border-radius:8px">';
-  html+='<div style="font-weight:600;font-size:15px;margin-bottom:4px">'+o.menuName+'</div>';
-  html+='<div style="font-size:12px;color:var(--muted)">'+o.dateDisplay+'</div>';
-  html+='<div style="margin-top:8px;font-size:13px">'+o.dishes.map(function(d){ return d.name+' x'+d.qty; }).join(', ')+'</div>';
+  html+='<div style="font-weight:600;font-size:15px;margin-bottom:4px">'+esc(o.menuName)+'</div>';
+  html+='<div style="font-size:12px;color:var(--muted)">'+esc(o.dateDisplay)+'</div>';
+  html+='<div style="margin-top:8px;font-size:13px">'+o.dishes.map(function(d){ return esc(d.name)+' x'+d.qty; }).join(', ')+'</div>';
   html+='</div>';
 
   keys.forEach(function(k){
@@ -4800,13 +4802,13 @@ function ordShowDetail(id){
     var supTotal=items.reduce(function(s,x){ return s+x.cost; },0);
     html+='<div style="margin-bottom:14px">';
     html+='<div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--muted);padding:8px 14px;background:var(--light);border-radius:6px;margin-bottom:6px;display:flex;justify-content:space-between">';
-    html+='<span>&#128666; '+k+'</span><span>&pound;'+supTotal.toFixed(2)+'</span></div>';
+    html+='<span>&#128666; '+esc(k)+'</span><span>&pound;'+supTotal.toFixed(2)+'</span></div>';
     items.forEach(function(item){
       var q=item.qty%1===0?item.qty.toFixed(0):item.qty.toFixed(3);
       html+='<div style="display:flex;align-items:center;padding:8px 14px;border-bottom:1px solid var(--border);gap:10px">';
       html+='<div class="no-print" style="width:18px;height:18px;border:2px solid var(--border);border-radius:3px;flex-shrink:0"></div>';
       html+='<div class="print-checkbox" style="width:18px;height:18px;border:1.5px solid #333;border-radius:2px;flex-shrink:0;display:none"></div>';
-      html+='<div style="flex:1"><div style="font-weight:500;font-size:13px">'+item.name+'</div>';
+      html+='<div style="flex:1"><div style="font-weight:500;font-size:13px">'+esc(item.name)+'</div>';
       html+='<div style="font-size:12px;color:var(--muted)">&pound;'+item.cpu.toFixed(4)+'/'+item.unit+'</div></div>';
       html+='<div style="text-align:right;flex-shrink:0"><div style="font-weight:600">'+q+' '+item.unit+'</div>';
       html+='<div style="font-size:12px;color:var(--muted)">&pound;'+item.cost.toFixed(2)+'</div></div>';
@@ -4829,11 +4831,11 @@ function ordRenderHistory(){
   var html = '';
   orders.forEach(function(o, i){
     var dishes = Array.isArray(o.dishes) ? o.dishes : [];
-    var dishList = dishes.map(function(d){ return (d.name||'') + (d.qty ? ' x'+d.qty : ''); }).join(', ') || 'No dishes';
+    var dishList = dishes.map(function(d){ return esc(d.name||'') + (d.qty ? ' x'+d.qty : ''); }).join(', ') || 'No dishes';
     html += '<div class="card-row">';
     html += '<div style="flex:1;cursor:pointer" id="ord-row-'+i+'">';
-    html += '<div class="cr-title">'+(o.menuName||'Order')+'</div>';
-    html += '<div class="cr-sub">'+(o.dateDisplay||'')+' &middot; '+dishList+'</div>';
+    html += '<div class="cr-title">'+esc(o.menuName||'Order')+'</div>';
+    html += '<div class="cr-sub">'+esc(o.dateDisplay||'')+' &middot; '+dishList+'</div>';
     html += '</div>';
     html += '<div class="cr-actions">';
     html += '<button class="btn btn-outline btn-sm" id="ord-view-'+i+'">View</button>';
@@ -4910,7 +4912,7 @@ async function handleInvoiceUpload(input){
   } else {
     // PDF - show placeholder text
     if (placeholder) {
-      placeholder.innerHTML = '<div>&#128196;</div><p>' + file.name + '</p>';
+      placeholder.innerHTML = '<div>&#128196;</div><p>' + esc(file.name) + '</p>';
     }
   }
 
@@ -5090,7 +5092,7 @@ function processInvoiceResults(invoiceData) {
       matched.innerHTML = matchedItems.map(function(m) {
         var priceChanged = m.item.unitPrice > 0 && m.ingredient.packCost !== m.item.unitPrice;
         return '<div class="invoice-item-row">' +
-          '<span class="invoice-item-name">' + m.ingredient.name + '</span>' +
+          '<span class="invoice-item-name">' + esc(m.ingredient.name) + '</span>' +
           (priceChanged
             ? '<span class="invoice-price-change">&#163;' + (m.ingredient.packCost||0).toFixed(2) + ' &rarr; <strong>&#163;' + m.item.unitPrice.toFixed(2) + '</strong></span>'
             : '<span style="color:#6b7280;font-size:12px">Price unchanged (&#163;' + (m.item.unitPrice||0).toFixed(2) + ')</span>') +
@@ -5106,7 +5108,7 @@ function processInvoiceResults(invoiceData) {
     if (awaitingItems.length) {
       awaiting.innerHTML = awaitingItems.map(function(item) {
         return '<div class="invoice-item-row">' +
-          '<span class="invoice-item-name">' + item.productName + '</span>' +
+          '<span class="invoice-item-name">' + esc(item.productName) + '</span>' +
           (item.unitPrice ? '<span style="font-size:12px;color:#6b7280">&#163;' + item.unitPrice.toFixed(2) + '</span>' : '') +
           '</div>';
       }).join('');
@@ -5172,7 +5174,7 @@ function showInvoiceResults(){
     var dir = m.newPrice > m.oldPrice ? '&#8593;' : '&#8595;';
     var col = m.newPrice > m.oldPrice ? '#dc2626' : '#065f46';
     return '<div class="invoice-match-row">'
-      +'<span>'+m.name+' ('+m.packSize+' '+m.unit+')</span>'
+      +'<span>'+esc(m.name)+' ('+m.packSize+' '+m.unit+')</span>'
       +'<span class="price-update">'
       +'<span class="price-old">&pound;'+m.oldPrice.toFixed(2)+'</span>'
       +'<span class="price-new" style="color:'+col+'">'+dir+' &pound;'+m.newPrice.toFixed(2)+'</span>'
@@ -5578,11 +5580,11 @@ function recGetStepsHTML(steps, forPrint){
   if (!steps || !steps.length) return forPrint ? '<p style="color:#9ca3af;font-size:12px">No method added.</p>' : '';
   if (forPrint){
     return steps.map(function(s, i){
-      return '<div class="rp-step"><div class="rp-step-num">' + (i+1) + '</div><div class="rp-step-text">' + s + '</div></div>';
+      return '<div class="rp-step"><div class="rp-step-num">' + (i+1) + '</div><div class="rp-step-text">' + esc(s) + '</div></div>';
     }).join('');
   }
   return steps.map(function(s, i){
-    return '<div style="display:flex;gap:8px;margin-bottom:6px;align-items:flex-start"><div style="width:22px;height:22px;background:var(--green);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">' + (i+1) + '</div><div style="font-size:13px;line-height:1.5">' + s + '</div></div>';
+    return '<div style="display:flex;gap:8px;margin-bottom:6px;align-items:flex-start"><div style="width:22px;height:22px;background:var(--green);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">' + (i+1) + '</div><div style="font-size:13px;line-height:1.5">' + esc(s) + '</div></div>';
   }).join('');
 }
 
@@ -6121,7 +6123,7 @@ async function settingsRenderTeam(profile){
         h += '<div style="width:36px;height:36px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;flex-shrink:0;margin-top:2px">' + (m.full_name||'?').charAt(0).toUpperCase() + '</div>';
         // Name + role dropdown
         h += '<div style="flex:1">';
-        h += '<div style="font-size:14px;font-weight:600;color:var(--dark);margin-bottom:4px">' + (m.full_name||'Unnamed') + (isMe ? ' <span style="font-size:11px;color:var(--green);font-weight:400">(You)</span>' : '') + '</div>';
+        h += '<div style="font-size:14px;font-weight:600;color:var(--dark);margin-bottom:4px">' + esc(m.full_name||'Unnamed') + (isMe ? ' <span style="font-size:11px;color:var(--green);font-weight:400">(You)</span>' : '') + '</div>';
         if(isOwnerOrHead && !isMe){
           // Editable role dropdown
           if(mRole === 'owner'){
@@ -6359,7 +6361,7 @@ function settingsShowLogo(url){
   // Settings preview
   var preview = document.getElementById('set-logo-preview');
   var removeBtn = document.getElementById('set-logo-remove');
-  if(preview) preview.innerHTML = '<img src="'+url+'?t='+Date.now()+'" style="max-width:140px;max-height:80px;object-fit:contain;border-radius:6px">';
+  if(preview) preview.innerHTML = '<img src="'+esc(url)+'?t='+Date.now()+'" style="max-width:140px;max-height:80px;object-fit:contain;border-radius:6px">';
   if(removeBtn) removeBtn.style.display = 'inline-flex';
   // Sidebar company logo
   var wrap = document.getElementById('company-logo-wrap');
@@ -6678,7 +6680,7 @@ function handleRecipeScanUpload(input){
     };
     reader.readAsDataURL(file);
   } else if (placeholder) {
-    placeholder.innerHTML = '<div>&#128196;</div><p>' + file.name + '</p>';
+    placeholder.innerHTML = '<div>&#128196;</div><p>' + esc(file.name) + '</p>';
   }
 
   (async function(){
@@ -6719,7 +6721,7 @@ function handleRecipeDocUpload(input){
   var placeholder = el('recipe-scan-placeholder');
   var img = el('recipe-scan-img-preview');
   if (img) img.style.display = 'none';
-  if (placeholder) { placeholder.style.display = 'block'; placeholder.innerHTML = '<div>&#128196;</div><p>' + file.name + '</p>'; }
+  if (placeholder) { placeholder.style.display = 'block'; placeholder.innerHTML = '<div>&#128196;</div><p>' + esc(file.name) + '</p>'; }
 
   var proc = el('recipe-scan-processing');
   var procText = el('recipe-scan-processing-text');
