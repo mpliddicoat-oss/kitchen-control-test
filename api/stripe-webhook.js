@@ -167,6 +167,18 @@ ${emailFooter()}`);
           });
         }
 
+        // Remove from the newsletter list
+        if(email) {
+          await fetch(`${SUPABASE_URL}/rest/v1/newsletter_subscribers?email=eq.${encodeURIComponent(email)}`, {
+            method: 'PATCH',
+            headers: supabaseHeaders,
+            body: JSON.stringify({
+              unsubscribed: true,
+              unsubscribed_at: new Date().toISOString()
+            })
+          }).catch(e => console.error('webhook: failed to unsubscribe from newsletter', e.message));
+        }
+
         await sendEmail(email, 'Your Kitchen Control subscription has ended', `
 ${emailHeader()}
 <h1 style="color:#16222c;font-size:24px;font-weight:700;margin:0 0 16px;">Your subscription has ended</h1>
