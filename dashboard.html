@@ -2636,7 +2636,7 @@ function tc(s){
 }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function fld(label,v){ return '<div class="detail-label">'+label+'</div><div class="detail-value">'+(v||'&mdash;')+'</div>'; }
-function fmt(n){ return '&pound;'+n.toFixed(2); }
+function fmt(n){ return isNaN(n) ? '&pound;&mdash;' : '&pound;'+n.toFixed(2); }
 function pct(n){ return n.toFixed(1)+'%'; }
 function gpClass(gp){ return gp>=65?'bg-green':gp>=50?'bg-orange':'bg-red'; }
 function gpBadge(cost,sell){
@@ -2671,15 +2671,18 @@ function normalizeUnit(u){
 function cvt(qty,from,to){
   from = normalizeUnit(from); to = normalizeUnit(to);
   if(from===to) return qty;
-  // Weight, volume and count are kept as separate scales — converting
-  // between categories (e.g. "each" to "kg") isn't a unit conversion, it's
-  // a different kind of measurement entirely, and treating them as
-  // interchangeable numbers on one scale silently produced wrong costs
-  // (e.g. cvt(500,'each','kg') used to return 0.5 instead of refusing).
-  var weight = {kg:1000,g:1,oz:28.35,lb:453.6};
-  var volume = {litre:1000,ml:1,tbsp:15,tsp:5};
+  // Weight and volume share one scale using the standard kitchen approximation
+  // that 1g of a liquid/sauce is ~1ml (water density) — chefs routinely weigh
+  // liquids on scales rather than measuring them out, so recipes mix g/kg with
+  // ml/litre/tbsp/tsp on purpose and this must keep converting between them.
+  // Count units (each, portion, ...) are kept on their own separate scale —
+  // converting count to weight/volume isn't a unit conversion, it's a
+  // different kind of measurement entirely with no fixed ratio, and treating
+  // it as interchangeable silently produced wrong costs (e.g. cvt(8,'each','kg')
+  // used to return 0.008 instead of refusing).
+  var weightVolume = {kg:1000,g:1,oz:28.35,lb:453.6,litre:1000,ml:1,tbsp:15,tsp:5};
   var count = {each:1,portion:1,bunch:1,sprig:1,slice:1,dozen:12};
-  var cat = weight[from] ? weight : volume[from] ? volume : count[from] ? count : null;
+  var cat = weightVolume[from] ? weightVolume : count[from] ? count : null;
   if(!cat || cat[to]==null){
     console.warn('cvt(): unrecognized or incompatible unit conversion "'+from+'" -> "'+to+'" — returning NaN rather than a silently wrong number.');
     return NaN;
@@ -2705,7 +2708,13 @@ function ingBestCpu(ing){
 function ingCpuLabel(ing){ return ingCpu(ing)?'£'+ingCpu(ing).toFixed(4)+'/'+ing.unit:'No cost data'; }
 function lineCost(ing,qty,unit){
   if(!ing||!ing.packCost||!ing.packSize) return 0;
-  return ingCpu(ing)*cvt(qty,unit,ing.unit||'kg');
+  var c = ingCpu(ing)*cvt(qty,unit,ing.unit||'kg');
+  // cvt() returns NaN for a genuinely unconvertible pairing (e.g. an
+  // ingredient priced by weight but used by count in this recipe, like
+  // "8 each" of something bought in kg). Same convention as the missing
+  // pack-data case above: report 0 rather than let NaN cascade through
+  // recCostPer/dishCost and blank out every total that includes this line.
+  return isNaN(c) ? 0 : c;
 }
 
 // ================================================================
