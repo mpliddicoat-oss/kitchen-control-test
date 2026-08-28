@@ -682,7 +682,7 @@ async function saveYieldToSupabase(yld) {
 }
 
 async function deleteYieldFromSupabase(id) {
-  if (!id || id.length <= 10) return;
+  if (!isSupabaseId(id)) return;
   var { error } = await supabaseClient.from('yields').delete().eq('id', id);
   if (error) console.error('deleteYield error:', error);
 }
@@ -3510,7 +3510,7 @@ function yldEdit(id){
 
 }
 
-function yldDel(id,ev){ ev.stopPropagation(); if(!canDelete()){ alert('Only owners and head chefs can delete yields.'); return; } if(!confirm('Delete?')) return; DB.yields=DB.yields.filter(function(y){ return y.id!==id; }); save(); dashUpdate(); yldRender(); }
+function yldDel(id,ev){ ev.stopPropagation(); if(!canDelete()){ alert('Only owners and head chefs can delete yields.'); return; } if(!confirm('Delete?')) return; DB.yields=DB.yields.filter(function(y){ return y.id!==id; }); save(); dashUpdate(); yldRender(); if(typeof deleteYieldFromSupabase==='function') deleteYieldFromSupabase(id); }
 function yldCalc(){
   var ing=byId(DB.ingredients,val('yld-ing'));
   var qty=parseFloat(val('yld-qty'))||0;
