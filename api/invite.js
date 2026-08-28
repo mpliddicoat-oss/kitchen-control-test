@@ -1,12 +1,18 @@
 // /api/invite.js
 
 import { requireAuth, getCallerProfile, requireOwner } from './_auth.js';
+import { checkRateLimit } from './_ratelimit.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Guards against a compromised/scripted owner session hammering Supabase's
+  // invite endpoint (and its outbound email quota) with invite spam.
+  const rl = checkRateLimit(req, { max: 20, windowMs: 60 * 60 * 1000, prefix: 'invite' });
+  if (!rl.ok) return res.status(429).json({ error: 'Too many requests. Please try again later.' });
 
   // 1. Verify caller is authenticated
   const user = await requireAuth(req, res);

@@ -7,9 +7,21 @@
 const _buckets = new Map(); // "prefix:ip" -> { count, resetAt }
 
 function clientIp(req) {
+  // Prefer x-real-ip: Vercel's edge network sets this from the actual TCP
+  // connection, overwriting any client-supplied value, whereas the FIRST
+  // entry of x-forwarded-for is client-controlled/spoofable — a request can
+  // just prepend a fake IP to that header. Falls back to the last entry of
+  // x-forwarded-for (closest hop to us) rather than the first. Exact proxy
+  // semantics aren't independently verifiable from this environment, so
+  // this is a best-effort hardening, not a hard guarantee.
+  const realIp = req.headers['x-real-ip'];
+  if (realIp) return String(realIp).trim();
   const fwd = req.headers['x-forwarded-for'];
-  if (fwd) return fwd.split(',')[0].trim();
-  return req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown';
+  if (fwd) {
+    const parts = String(fwd).split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+  return req.socket?.remoteAddress || 'unknown';
 }
 
 /**

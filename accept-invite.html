@@ -144,22 +144,19 @@ async function acceptInvite(){
     var pwRes = await kcSupa.auth.updateUser({ password: pass });
     if(pwRes.error) throw pwRes.error;
 
-    var userId = (_inviteSession && _inviteSession.user && _inviteSession.user.id) || '';
-
-    // Create or update profile using company_id from invite metadata
-    await kcSupa.from('profiles').upsert({
-      user_id: userId,
-      full_name: fullName,
-      company_name: _inviteMeta.company_name || '',
-      company_id: _inviteMeta.company_id || null,
-      role: _inviteMeta.role || 'chef',
-      scans_used: 0,
-      billing_start_date: new Date().toISOString().split('T')[0]
-    }, {onConflict: 'user_id'});
-
-    // Mark invite as accepted
-    await kcSupa.from('invites').update({accepted: true})
-      .eq('email', _inviteSession.user.email);
+    // Profile creation happens server-side — the server re-derives role and
+    // company from the verified session itself rather than trusting
+    // anything sent from this page, since a page-local variable (or even
+    // the underlying user_metadata, which the signed-in user can edit
+    // themselves via the SDK) is not a safe place to decide someone's role.
+    var accessToken = (_inviteSession && _inviteSession.access_token) || '';
+    var acceptRes = await fetch('/api/accept-invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + accessToken },
+      body: JSON.stringify({ fullName: fullName })
+    });
+    var acceptData = await acceptRes.json();
+    if(!acceptRes.ok) throw new Error(acceptData.error || 'Could not finish setting up your account.');
 
     showOk('Account created! Taking you to Kitchen Control...');
     setTimeout(function(){ window.location.href = '/'; }, 1500);

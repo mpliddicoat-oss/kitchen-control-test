@@ -19,9 +19,16 @@ export function isDemoRequest(req) {
 }
 
 function clientIp(req) {
+  // See api/_ratelimit.js clientIp() for why x-real-ip is preferred over the
+  // client-controlled first entry of x-forwarded-for.
+  const realIp = req.headers['x-real-ip'];
+  if (realIp) return String(realIp).trim();
   const fwd = req.headers['x-forwarded-for'];
-  if (fwd) return fwd.split(',')[0].trim();
-  return req.headers['x-real-ip'] || req.socket?.remoteAddress || 'unknown';
+  if (fwd) {
+    const parts = String(fwd).split(',').map(s => s.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+  return req.socket?.remoteAddress || 'unknown';
 }
 
 /**

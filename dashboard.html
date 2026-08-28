@@ -597,7 +597,7 @@ async function saveIngredientToSupabase(ing) {
 }
 
 async function deleteIngredientFromSupabase(id) {
-  if (!id || id.length <= 10) return; // not a Supabase UUID
+  if (!isSupabaseId(id)) return; // not a Supabase UUID
   var { error } = await supabaseClient
     .from('ingredients')
     .delete()
@@ -2671,12 +2671,20 @@ function normalizeUnit(u){
 function cvt(qty,from,to){
   from = normalizeUnit(from); to = normalizeUnit(to);
   if(from===to) return qty;
-  var m = {kg:1000,g:1,oz:28.35,lb:453.6,litre:1000,ml:1,each:1,portion:1,bunch:1,sprig:1,slice:1,tbsp:15,tsp:5,dozen:12};
-  if(!m[from]||!m[to]){
-    console.warn('cvt(): unrecognized unit conversion "'+from+'" -> "'+to+'" — returning NaN rather than a silently wrong number.');
+  // Weight, volume and count are kept as separate scales — converting
+  // between categories (e.g. "each" to "kg") isn't a unit conversion, it's
+  // a different kind of measurement entirely, and treating them as
+  // interchangeable numbers on one scale silently produced wrong costs
+  // (e.g. cvt(500,'each','kg') used to return 0.5 instead of refusing).
+  var weight = {kg:1000,g:1,oz:28.35,lb:453.6};
+  var volume = {litre:1000,ml:1,tbsp:15,tsp:5};
+  var count = {each:1,portion:1,bunch:1,sprig:1,slice:1,dozen:12};
+  var cat = weight[from] ? weight : volume[from] ? volume : count[from] ? count : null;
+  if(!cat || cat[to]==null){
+    console.warn('cvt(): unrecognized or incompatible unit conversion "'+from+'" -> "'+to+'" — returning NaN rather than a silently wrong number.');
     return NaN;
   }
-  return qty*m[from]/m[to];
+  return qty*cat[from]/cat[to];
 }
 function ingCpu(ing){ return (ing&&ing.packCost&&ing.packSize) ? ing.packCost/ing.packSize : 0; }
 function ingBestCpu(ing){
@@ -2964,6 +2972,7 @@ async function promoteAwaiting(id){
   show('ing-form'); hide('ing-list');
 }
 function deleteAwaiting(id){
+  if(!canDelete()){ alert('Only owners and head chefs can remove awaiting items.'); return; }
   if(!confirm('Remove this item from the awaiting list?')) return;
   var item = (DB.awaiting||[]).find(function(x){ return x.id===id; });
   DB.awaiting=(DB.awaiting||[]).filter(function(x){ return x.id!==id; });
@@ -3340,7 +3349,7 @@ function ingRender(f){
     }
     var grp={}; items.forEach(function(i){ var k=supLabel(i); if(!grp[k]) grp[k]=[]; grp[k].push(i); });
     var keys=Object.keys(grp).sort(function(a,b){ return a==='Unassigned'?1:b==='Unassigned'?-1:a.localeCompare(b); });
-    el('ing-items').innerHTML=items.length?keys.map(function(k){ return '<div class="sup-group-hdr">'+k+'</div>'+grp[k].map(ingRow).join(''); }).join(''):'<p style="color:var(--muted);text-align:center;padding:30px">No ingredients yet.</p>';
+    el('ing-items').innerHTML=items.length?keys.map(function(k){ return '<div class="sup-group-hdr">'+esc(k)+'</div>'+grp[k].map(ingRow).join(''); }).join(''):'<p style="color:var(--muted);text-align:center;padding:30px">No ingredients yet.</p>';
   }
 }
 
@@ -3786,7 +3795,7 @@ function compRender(ctx){
       var onUnitI=arrNm+'['+i+'].unit=this.value;'+calcNm+'()';
       html+='<div class="comp-row" style="grid-template-columns:auto 2fr 70px 90px auto 28px">';
       html+=comp._scannedName?'<span class="badge" style="background:#fef3c7;color:#92400e">&#9888; Missing</span>':'<span class="badge bg-green">Ingredient</span>';
-      html+='<div><div id="comp-ing-sel-'+ctx+'-'+i+'"></div>'+(comp._scannedName?'<div style="font-size:11px;color:#b45309;margin-top:2px">Scanned as: "'+comp._scannedName+'" — pick a match, or '+(ctx==='rec'?'<a href="javascript:void(0)" onclick="addNewIngredientForRecipeSlot('+i+')" style="color:#b45309;text-decoration:underline">create new ingredient</a>':'create a new ingredient first')+'</div>':'')+'</div>';
+      html+='<div><div id="comp-ing-sel-'+ctx+'-'+i+'"></div>'+(comp._scannedName?'<div style="font-size:11px;color:#b45309;margin-top:2px">Scanned as: "'+esc(comp._scannedName)+'" — pick a match, or '+(ctx==='rec'?'<a href="javascript:void(0)" onclick="addNewIngredientForRecipeSlot('+i+')" style="color:#b45309;text-decoration:underline">create new ingredient</a>':'create a new ingredient first')+'</div>':'')+'</div>';
       html+='<input type="number" step="any" min="0" value="'+(comp.qty||'')+'" placeholder="Qty" oninput="'+onQty+'">';
       html+='<select onchange="'+onUnitI+'">'+['g','kg','ml','litre','each','portion','bunch','sprig','tbsp','tsp','slice'].map(function(u){return'<option'+(comp.unit===u?' selected':'')+'>'+u+'</option>';}).join('')+'</select>';
       html+=costStr+'<button class="btn btn-red btn-sm" onclick="'+onRm+'">X</button></div>';
@@ -4413,6 +4422,7 @@ function aTable(rows,label,clickable){
   return html;
 }
 function aToggle(dishId,allergenId){
+  if(!canEdit()){ alert('You do not have permission to change allergen data.'); return; }
   if(!DB.manual) DB.manual={};
   if(!DB.manual[dishId]) DB.manual[dishId]=[];
   var idx=DB.manual[dishId].indexOf(allergenId);
@@ -4662,6 +4672,7 @@ function ordGenerate(){
 
   // Collect all ingredients needed
   var map={};
+  var conversionWarnings=[];
 
   function getBestSupplier(ing){
     // If ingredient has multiple suppliers, find cheapest
@@ -4682,6 +4693,13 @@ function ordGenerate(){
     if(!ing) return;
     var best=getBestSupplier(ing);
     var actualQty=cvt(qty,unit,ing.unit||'kg');
+    if(isNaN(actualQty)){
+      // cvt() can't convert (e.g. mismatched unit categories, like count vs weight) —
+      // skip this ingredient's contribution rather than let NaN corrupt the saved
+      // order and later crash ordShowDetail()'s .toFixed() call.
+      if(conversionWarnings.indexOf(ing.name)<0) conversionWarnings.push(ing.name);
+      return;
+    }
     var key=ing.id+'|'+best.supplierId;
     if(!map[key]) map[key]={
       ingId:ing.id, name:ing.name, supplierId:best.supplierId, supName:best.supName,
@@ -4728,6 +4746,10 @@ function ordGenerate(){
   });
 
   if(!dishSummary.length){ alert('No dishes with portions set.'); return; }
+
+  if(conversionWarnings.length){
+    alert('Could not convert units for: '+conversionWarnings.join(', ')+'. These ingredients were left out of the order — please check their unit settings and add them manually if needed.');
+  }
 
   // Group by supplier
   var grp={};
@@ -4780,6 +4802,7 @@ function ordGenerate(){
 }
 
 async function ordSave(){
+  if(!canEdit()){ alert('You do not have permission to save orders.'); return; }
   if(!_ordGeneratedData){ alert('Generate an order list first.'); return; }
   var userId = currentUserId();
   if(!userId){ alert('Please log in to save orders.'); return; }
@@ -4815,6 +4838,7 @@ function ordReset(){
 }
 
 async function ordDel(){
+  if(!canDelete()){ alert('Only owners and head chefs can delete orders.'); return; }
   if(!_ordId||!confirm('Delete this order?')) return;
   try{ await supabaseClient.from('orders').delete().eq('id', _ordId); }
   catch(e){ console.error('Order delete error:', e); }
@@ -4936,6 +4960,18 @@ async function handleInvoiceUpload(input){
   var file = input.files[0];
   if (!file) return;
   if (window.KC_DEMO && !demoScanAllowed('invoice')) { input.value=''; return; }
+  if (!window.KC_DEMO && typeof canScan === 'function' && !canScan()) {
+    alert('Only owners, head chefs and sous chefs can scan invoices.');
+    input.value = '';
+    return;
+  }
+  if (!window.KC_DEMO && typeof canScanQuota === 'function' && !canScanQuota()) {
+    var _plan = (typeof DB !== 'undefined' && DB.plan) || 'core';
+    var _limit = _plan === 'core' ? 30 : 'unlimited';
+    alert('You have used all ' + _limit + ' scans for this month.\nUpgrade to Pro for unlimited scanning.');
+    input.value = '';
+    return;
+  }
 
   // Always reset input so same file can be reselected
   input.value = '';
@@ -5631,7 +5667,7 @@ function recRenderSteps(){
   _recSteps.forEach(function(step, i){
     html += '<div class="step-row">';
     html += '<div class="step-num">' + (i+1) + '</div>';
-    html += '<textarea placeholder="Describe this step..." oninput="_recSteps[' + i + ']=this.value">' + (step||'').replace(/</g,'&lt;') + '</textarea>';
+    html += '<textarea placeholder="Describe this step..." oninput="_recSteps[' + i + ']=this.value">' + esc(step||'') + '</textarea>';
     html += '<button class="btn btn-red btn-sm" style="margin-top:6px" onclick="_recSteps.splice(' + i + ',1);recRenderSteps()">&#10005;</button>';
     html += '</div>';
   });
@@ -5869,7 +5905,7 @@ function initRealtime(){
 
   // Subscribe to Suppliers
   supabaseClient.channel('suppliers-changes')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'Suppliers', filter: 'user_id=eq.'+userId }, function(payload){
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'suppliers', filter: 'user_id=eq.'+userId }, function(payload){
       loadSuppliers().then(function(){ dashUpdate(); if(document.getElementById('suppliers').classList.contains('active')) supRender(); liveToast('Suppliers updated'); });
     })
     .subscribe();
@@ -6239,8 +6275,16 @@ async function settingsChangeRole(targetUserId, newRole, userName, currentRole){
     return;
   }
   try{
-    var res = await supabaseClient.from('profiles').update({role: newRole}).eq('user_id', targetUserId);
-    if(res.error) throw res.error;
+    // Routed through the server (owner-only, same-company, role-whitelist
+    // checked there) rather than writing to Supabase directly from the
+    // client — a direct client write here has no server-side check at all.
+    var res = await fetch('/api/change-role', {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify({targetUserId: targetUserId, newRole: newRole})
+    });
+    var data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Could not update role');
     if(typeof liveToast === 'function') liveToast((userName||'User') + ' updated to ' + (roleLabels[newRole]||newRole));
     if(_settingsProfile) settingsRenderTeam(_settingsProfile);
   }catch(e){
@@ -6264,7 +6308,7 @@ function settingsInviteUser(){
     + '<div style="margin-bottom:20px"><label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:5px">Role</label>'
     + '<select id="kc-invite-role" style="width:100%;padding:9px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:14px">'
     + '<option value="head_chef">Head Chef</option><option value="sous_chef">Sous Chef</option>'
-    + '<option value="chef" selected>Chef</option><option value="owner">Owner</option>'
+    + '<option value="chef" selected>Chef</option>'
     + '</select></div>'
     + '<div id="kc-invite-status" style="display:none;font-size:13px;padding:10px;border-radius:8px;margin-bottom:16px"></div>'
     + '<div style="display:flex;gap:10px;justify-content:flex-end">'
@@ -6721,6 +6765,16 @@ function toggleRecipeScanTextInput(){
 
 function submitRecipeScanText(){
   if (window.KC_DEMO && !demoScanAllowed('recipe')) return;
+  if (!window.KC_DEMO && typeof canScan === 'function' && !canScan()) {
+    alert('Only owners, head chefs and sous chefs can import recipes.');
+    return;
+  }
+  if (!window.KC_DEMO && typeof canScanQuota === 'function' && !canScanQuota()) {
+    var _plan = (typeof DB !== 'undefined' && DB.plan) || 'core';
+    var _limit = _plan === 'core' ? 30 : 'unlimited';
+    alert('You have used all ' + _limit + ' scans for this month.\nUpgrade to Pro for unlimited scanning.');
+    return;
+  }
   var textInput = el('recipe-scan-text-input');
   var text = textInput ? textInput.value.trim() : '';
   if (!text) { alert('Paste some recipe text first.'); return; }
@@ -6731,6 +6785,18 @@ function handleRecipeScanUpload(input){
   var file = input.files[0];
   if (!file) return;
   if (window.KC_DEMO && !demoScanAllowed('recipe')) { input.value=''; return; }
+  if (!window.KC_DEMO && typeof canScan === 'function' && !canScan()) {
+    alert('Only owners, head chefs and sous chefs can import recipes.');
+    input.value = '';
+    return;
+  }
+  if (!window.KC_DEMO && typeof canScanQuota === 'function' && !canScanQuota()) {
+    var _plan = (typeof DB !== 'undefined' && DB.plan) || 'core';
+    var _limit = _plan === 'core' ? 30 : 'unlimited';
+    alert('You have used all ' + _limit + ' scans for this month.\nUpgrade to Pro for unlimited scanning.');
+    input.value = '';
+    return;
+  }
   input.value = '';
 
   var img = el('recipe-scan-img-preview');
