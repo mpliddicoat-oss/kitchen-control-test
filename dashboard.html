@@ -1271,6 +1271,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .search-dropdown.open { display:block; }
 .search-option { padding:8px 12px; cursor:pointer; font-size:13px; color:var(--text); }
 .search-option:hover, .search-option:focus { background:#f0fdf4; color:var(--green); }
+
+#kc-boot-loader { position:fixed; inset:0; z-index:99999; background:linear-gradient(135deg,#223548,#16222c); display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity .25s ease; }
+#kc-boot-loader img { width:120px; height:auto; margin-bottom:20px; }
+#kc-boot-loader .kc-spin { width:26px; height:26px; border:3px solid rgba(255,255,255,0.25); border-top-color:#7fbf3f; border-radius:50%; animation:kc-spin .8s linear infinite; }
+@keyframes kc-spin { to { transform:rotate(360deg); } }
 </style>
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
@@ -1283,6 +1288,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 </head>
 <body>
 
+<div id="kc-boot-loader"><img src="logo.png" alt="Kitchen Control"><div class="kc-spin"></div></div>
 
 <!-- Mobile sidebar overlay -->
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
@@ -6680,12 +6686,16 @@ dashUpdate();
 
 // Restore Supabase session before loading any data
 // This ensures RLS policies work correctly
-// Hide body until session check resolves to prevent flash
-document.body.style.visibility = 'hidden';
+function hideBootLoader(){
+  var l = document.getElementById('kc-boot-loader');
+  if(!l) return;
+  l.style.opacity = '0';
+  setTimeout(function(){ l.remove(); }, 250);
+}
 
-if(window.KC_DEMO){ document.body.style.visibility='visible'; demoBoot(); } else {
+if(window.KC_DEMO){ hideBootLoader(); demoBoot(); } else {
 supabaseClient.auth.getSession().then(async function(res){
-  document.body.style.visibility = 'visible';
+  hideBootLoader();
   if(res.data && res.data.session){
     var userId = res.data.session.user.id;
     window._kcUserId = userId;
@@ -6721,7 +6731,7 @@ supabaseClient.auth.getSession().then(async function(res){
     startDataLoad();
 
   } else {
-    document.body.style.visibility = 'visible';
+    hideBootLoader();
     // No session - try to refresh
     supabaseClient.auth.refreshSession().then(function(refreshRes){
       if(refreshRes.data && refreshRes.data.session){
