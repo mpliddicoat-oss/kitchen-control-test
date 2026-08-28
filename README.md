@@ -84,10 +84,10 @@ Set in Vercel project settings, not committed to this folder:
 
 ## How to deploy
 
-Matt deploys manually via the Vercel dashboard drag-and-drop (Add New → Project → drag this folder in, or redeploy an existing project by dragging the updated folder onto it). Not connected to GitHub for auto-deploy at the moment.
+This repo is connected to Vercel for auto-deploy: any push to `main` on GitHub (whether committed via Claude Code or pushed manually by Matt) goes live automatically. There is no separate manual/drag-and-drop deploy path — GitHub is the single source of truth for what's live.
 
 ## Important notes
 
-- This folder (`Development`) is the current working / "last known good" copy. Keep it in sync with whatever actually gets dragged into Vercel.
+- `main` on GitHub is the current working / "last known good" copy — it's what's actually live, since Vercel deploys straight from it.
 - The demo (`/demo`) and the demo-mode scanning endpoints are anonymous and IP-rate-limited — no account needed, nothing is saved.
 - Rate limiting is in-memory per serverless instance, not distributed — fine for blunting casual abuse, not a hard guarantee under scale.
