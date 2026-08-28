@@ -813,6 +813,57 @@ async function deleteDishFromSupabase(id) {
   if (res.error) console.error('deleteDish error:', res.error);
 }
 
+var _MANUAL_MIGRATE_FLAG = 'kc_dish_allergen_migrated_v1';
+
+// One-time, per-browser push of any dish-level manual allergen overrides
+// that only ever existed in this browser's localStorage (DB.manual, from
+// before this table existed) up into Supabase. Safe to run more than once
+// (upsert onConflict ignores anything already there) -- the flag just
+// avoids re-checking on every load once this browser is caught up.
+async function migrateDishAllergenOverridesOnce() {
+  if (window.KC_DEMO) return;
+  if (localStorage.getItem(_MANUAL_MIGRATE_FLAG)) return;
+  if (!_companyId) return; // retry on a later load once company_id is known
+  try {
+    var rows = [];
+    Object.keys(DB.manual || {}).forEach(function(itemId) {
+      // Only dish-level entries belong in this table -- ingredient-level
+      // manual-matrix flags already live on the ingredient's own allergens
+      // field (see aManualAdd/aManualRemove) and are out of scope here.
+      var isDish = DB.dishes.some(function(d) { return d.id === itemId; });
+      if (!isDish) return;
+      (DB.manual[itemId] || []).forEach(function(allergenId) {
+        rows.push({ company_id: _companyId, user_id: currentUserId(), dish_id: itemId, allergen_id: allergenId });
+      });
+    });
+    if (rows.length) {
+      var res = await supabaseClient.from('dish_allergen_overrides')
+        .upsert(rows, { onConflict: 'dish_id,allergen_id', ignoreDuplicates: true });
+      if (res.error) { console.error('migrateDishAllergenOverridesOnce:', res.error); return; }
+    }
+    localStorage.setItem(_MANUAL_MIGRATE_FLAG, '1');
+  } catch (e) { console.error('migrateDishAllergenOverridesOnce failed:', e); }
+}
+
+async function loadDishAllergenOverrides() {
+  if (window.KC_DEMO) return;
+  try {
+    var res = await supabaseClient.from('dish_allergen_overrides').select('dish_id, allergen_id');
+    if (res.error) { console.error('loadDishAllergenOverrides:', res.error); return; }
+    if (!DB.manual) DB.manual = {};
+    // Supabase is authoritative for dish-level overrides once loaded -- clear
+    // stale dish keys first so a removal made on another device actually
+    // takes effect here. Ingredient-level DB.manual keys are untouched
+    // (they aren't stored in this table).
+    DB.dishes.forEach(function(d) { delete DB.manual[d.id]; });
+    (res.data || []).forEach(function(row) {
+      if (!DB.manual[row.dish_id]) DB.manual[row.dish_id] = [];
+      DB.manual[row.dish_id].push(row.allergen_id);
+    });
+    save();
+  } catch (e) { console.error('loadDishAllergenOverrides failed:', e); }
+}
+
 // ============================================================
 // SUPABASE MENUS
 // ============================================================
@@ -4430,14 +4481,39 @@ function aTable(rows,label,clickable){
   html+='</tbody></table></div><div class="a-key"><strong style="font-size:11px">Key:</strong><div class="a-key-item"><div class="a-dot yes" style="display:inline-block"></div><span>Contains allergen</span></div><div class="a-key-item"><div class="a-dot no" style="display:inline-block"></div><span>Does not contain</span></div></div></div>';
   return html;
 }
-function aToggle(dishId,allergenId){
+async function aToggle(dishId,allergenId){
   if(!canEdit()){ alert('You do not have permission to change allergen data.'); return; }
   if(!DB.manual) DB.manual={};
   if(!DB.manual[dishId]) DB.manual[dishId]=[];
   var idx=DB.manual[dishId].indexOf(allergenId);
-  if(idx>=0) DB.manual[dishId].splice(idx,1); else DB.manual[dishId].push(allergenId);
+  var adding=idx<0;
+  if(adding) DB.manual[dishId].push(allergenId); else DB.manual[dishId].splice(idx,1);
   save();
   if(_aTab==='byDish') aRenderDish(); else aRenderMenu();
+
+  if(window.KC_DEMO) return;
+  try{
+    var res = adding
+      ? await supabaseClient.from('dish_allergen_overrides').upsert(
+          {company_id:_companyId, user_id:currentUserId(), dish_id:dishId, allergen_id:allergenId},
+          {onConflict:'dish_id,allergen_id'}
+        )
+      : await supabaseClient.from('dish_allergen_overrides').delete().eq('dish_id',dishId).eq('allergen_id',allergenId);
+    if(res.error){
+      console.error('aToggle sync error:', res.error);
+      // Roll back the optimistic local change so the UI doesn't claim a
+      // save that didn't actually happen -- this is compliance data.
+      var idx2=DB.manual[dishId].indexOf(allergenId);
+      if(adding && idx2>=0) DB.manual[dishId].splice(idx2,1);
+      else if(!adding && idx2<0) DB.manual[dishId].push(allergenId);
+      save();
+      if(_aTab==='byDish') aRenderDish(); else aRenderMenu();
+      alert('Could not save this allergen change. Please check your connection and try again.');
+    }
+  }catch(e){
+    console.error('aToggle sync failed:', e);
+    alert('Could not save this allergen change. Please check your connection and try again.');
+  }
 }
 function aRenderDish(){
   var cont = el('a-dish-matrix');
@@ -6677,6 +6753,16 @@ loadSuppliers().then(function(){
     settingsRender();
     // Load awaiting allergens AFTER all data is loaded so save() doesn't overwrite it
     if(_companyId && typeof loadAwaitingFromSupabase === 'function') loadAwaitingFromSupabase();
+    // Same reasoning -- push up any pre-existing local-only overrides once,
+    // then load Supabase's copy (now including anything just migrated) so
+    // dish-level manual allergen flags sync across devices.
+    if(_companyId && typeof migrateDishAllergenOverridesOnce === 'function'){
+      migrateDishAllergenOverridesOnce().then(function(){
+        if(typeof loadDishAllergenOverrides === 'function') loadDishAllergenOverrides().then(function(){
+          if(document.getElementById('allergens') && document.getElementById('allergens').classList.contains('active') && typeof aRender==='function') aRender();
+        });
+      });
+    }
   });
 }).catch(function(e){
   console.error('loadSuppliers failed:', e);
