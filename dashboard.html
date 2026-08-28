@@ -6043,6 +6043,21 @@ function initRealtime(){
       });
     }).subscribe();
 
+  // Subscribe to dish-level manual allergen overrides -- filtered by
+  // company_id rather than user_id (unlike the channels above) because this
+  // is meant to update live across every team member's own screen, not just
+  // updates the currently-viewing user made themselves.
+  if(_companyId){
+    supabaseClient.channel('dish-allergen-overrides-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dish_allergen_overrides', filter: 'company_id=eq.'+_companyId }, function(payload){
+        loadDishAllergenOverrides().then(function(){
+          if(document.getElementById('allergens') && document.getElementById('allergens').classList.contains('active') && typeof aRender==='function') aRender();
+          liveToast('Allergen data updated');
+        });
+      })
+      .subscribe();
+  }
+
   supabaseClient.channel('profile-scan-counter')
     .on('postgres_changes', {event:'UPDATE', schema:'public', table:'profiles', filter: 'company_id=eq.'+_companyId}, function(payload){
       // Recalculate total company scans when any profile updates
