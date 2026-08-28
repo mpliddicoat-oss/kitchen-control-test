@@ -1,5 +1,5 @@
-// Kitchen Control Service Worker v4
-const CACHE_NAME = 'kitchen-control-v4';
+// Kitchen Control Service Worker v5
+const CACHE_NAME = 'kitchen-control-v5';
 const STATIC_ASSETS = [
   '/dashboard.html',
   '/login.html',
