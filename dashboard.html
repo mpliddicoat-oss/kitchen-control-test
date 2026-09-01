@@ -1273,14 +1273,16 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-print { page: kc-label; width: 62mm; margin: 0; border: none; padding: 2mm; box-sizing: border-box; }
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
-.kc-label-body .kc-l-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
+.kc-label-body .kc-l-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 11px; margin-bottom: 2px; }
 .kc-label-body .kc-l-row strong { font-weight: 600; }
-.kc-label-body .kc-l-useby { font-size: 13px; font-weight: 700; margin-top: 4px; }
 .kc-label-body .kc-l-allergens { font-size: 11px; font-weight: 700; margin-top: 4px; padding: 3px 4px; border: 1px solid #333; word-break: break-word; }
-.kc-label-body .kc-l-day-box { margin-bottom: 5px; padding: 4px 2px; border: 2px solid #000; border-radius: 4px; text-align: center; }
+.kc-label-body .kc-l-day-box { margin-bottom: 6px; padding: 4px 2px; border: 2px solid #000; border-radius: 4px; text-align: center; }
+.kc-label-body .kc-l-day-box.kc-l-day-box-empty { border-color: #dc2626; }
+.kc-label-body .kc-l-day-box.kc-l-day-box-empty .kc-l-day-date { color: #dc2626; }
 .kc-label-body .kc-l-day-label { display: block; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
 .kc-label-body .kc-l-day-name { display: block; font-size: 18px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
+.kc-label-body .kc-l-day-date { display: block; font-size: 11px; font-weight: 600; margin-top: 1px; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -5170,11 +5172,12 @@ function plUpdate(){
   var allergens = _plSelected.allergens || [];
   var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
   var body =
-    (useByDay ? '<div class="kc-l-day-box"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span></div>' : '')+
+    (useByDay
+      ? '<div class="kc-l-day-box"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'
+      : '<div class="kc-l-day-box kc-l-day-box-empty"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div>')+
     '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
     '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(el('pl-prod-date').textContent)+'</div>'+
     (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
-    (useByStr ? '<div class="kc-l-useby">Use By: '+esc(useByStr)+'</div>' : '<div class="kc-l-useby" style="color:#dc2626">Enter shelf life to set Use By</div>')+
     (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
     (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>');
 
