@@ -2282,14 +2282,17 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
         <div class="fg"><label>Day of Production</label><div class="calc-display" id="pl-prod-date" style="font-weight:600;color:var(--text)"></div></div>
       </div>
       <div class="fr">
+        <div class="fg"><label>Made By <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><input type="text" id="pl-made-by" placeholder="e.g. Sarah" oninput="plUpdate()"></div>
+        <div class="fg"><label>Batch Code <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><input type="text" id="pl-batch-code" placeholder="e.g. B240901-1" oninput="plUpdate()"></div>
+      </div>
+      <div class="fr">
         <div class="fg"><label>Shelf Life *</label><input type="number" step="1" min="1" id="pl-shelf-life" placeholder="e.g. 3" oninput="plUpdate()"></div>
         <div class="fg"><label>Unit</label><select id="pl-shelf-unit" onchange="plUpdate()"><option value="days">Days</option><option value="months">Months</option></select></div>
       </div>
       <div class="fr">
         <div class="fg"><label>Use By</label><div class="calc-display" id="pl-use-by" style="font-weight:700;color:var(--dark)">Enter shelf life above</div></div>
-        <div class="fg"><label>Batch Code <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><input type="text" id="pl-batch-code" placeholder="e.g. B240901-1" oninput="plUpdate()"></div>
       </div>
-      <div class="fg"><label>Notes <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><textarea id="pl-notes" placeholder="Batch notes, initials, allergen flags..." oninput="plUpdate()"></textarea></div>
+      <div class="fg"><label>Batch <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><textarea id="pl-notes" placeholder="Batch details, initials, allergen flags..." oninput="plUpdate()"></textarea></div>
       <div class="form-actions">
         <button class="btn btn-green no-print" id="pl-print-btn" onclick="plPrint()">&#128424; Print Label</button>
         <button class="btn btn-grey no-print" onclick="plBackToSelect()">Cancel</button>
@@ -5107,6 +5110,7 @@ function plSelect(type, id){
   _plSelected = {type:type, id:id, name:item.name};
   el('pl-item-name').textContent = item.name;
   el('pl-prod-date').textContent = new Date().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+  el('pl-made-by').value = '';
   el('pl-shelf-life').value = '';
   el('pl-shelf-unit').value = 'days';
   el('pl-batch-code').value = '';
@@ -5153,13 +5157,15 @@ function plUpdate(){
   var useByStr = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) : '';
   el('pl-use-by').textContent = useByStr || 'Enter shelf life above';
 
+  var madeBy = el('pl-made-by').value.trim();
   var batchCode = el('pl-batch-code').value.trim();
   var notes = el('pl-notes').value.trim();
   var body =
     '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
     '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(el('pl-prod-date').textContent)+'</div>'+
+    (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
     (useByStr ? '<div class="kc-l-useby">Use By: '+esc(useByStr)+'</div>' : '<div class="kc-l-useby" style="color:#dc2626">Enter shelf life to set Use By</div>')+
-    (batchCode ? '<div class="kc-l-row"><strong>Batch:</strong> '+esc(batchCode)+'</div>' : '')+
+    (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
     (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '');
 
   el('pl-preview').innerHTML = body;
