@@ -1278,6 +1278,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-body .kc-l-row strong { font-weight: 600; }
 .kc-label-body .kc-l-useby { font-size: 13px; font-weight: 700; margin-top: 4px; }
 .kc-label-body .kc-l-allergens { font-size: 11px; font-weight: 700; margin-top: 4px; padding: 3px 4px; border: 1px solid #333; word-break: break-word; }
+.kc-label-body .kc-l-day-box { margin-top: 5px; padding: 4px 2px; border: 2px solid #000; border-radius: 4px; text-align: center; }
+.kc-label-body .kc-l-day-label { display: block; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
+.kc-label-body .kc-l-day-name { display: block; font-size: 18px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -5165,13 +5168,15 @@ function plUpdate(){
   var madeBy = el('pl-made-by').value.trim();
   var batchCode = el('pl-batch-code').value.trim();
   var allergens = _plSelected.allergens || [];
+  var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
   var body =
     '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
     '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(el('pl-prod-date').textContent)+'</div>'+
     (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
     (useByStr ? '<div class="kc-l-useby">Use By: '+esc(useByStr)+'</div>' : '<div class="kc-l-useby" style="color:#dc2626">Enter shelf life to set Use By</div>')+
     (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
-    (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>');
+    (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>')+
+    (useByDay ? '<div class="kc-l-day-box"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span></div>' : '');
 
   el('pl-preview').innerHTML = body;
   el('pl-print-body').innerHTML = body;
