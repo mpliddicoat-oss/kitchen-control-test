@@ -1277,6 +1277,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-body .kc-l-row { font-size: 11px; margin-bottom: 2px; }
 .kc-label-body .kc-l-row strong { font-weight: 600; }
 .kc-label-body .kc-l-allergens { font-size: 11px; font-weight: 700; margin-top: 4px; padding: 3px 4px; border: 1px solid #dc2626; color: #dc2626; word-break: break-word; }
+.kc-label-body .kc-l-notes { font-size: 10px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; border-top: 1px dashed #999; padding-top: 3px; }
 .kc-label-body .kc-l-day-box { margin-bottom: 6px; padding: 4px 2px; border: 2px solid #000; border-radius: 4px; text-align: center; }
 .kc-label-body .kc-l-day-box.kc-l-day-box-empty { border-color: #dc2626; }
 .kc-label-body .kc-l-day-box.kc-l-day-box-empty .kc-l-day-date { color: #dc2626; }
@@ -2297,6 +2298,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div class="fr">
         <div class="fg"><label>Use By</label><div class="calc-display" id="pl-use-by" style="font-weight:700;color:var(--dark)">Enter shelf life above</div></div>
       </div>
+      <div class="fg"><label>Notes <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><textarea id="pl-notes" placeholder="Anything else that needs to go on the label..." oninput="plUpdate()"></textarea></div>
       <div class="form-actions">
         <button class="btn btn-green no-print" id="pl-print-btn" onclick="plPrint()">&#128424; Print Label</button>
         <button class="btn btn-grey no-print" onclick="plBackToSelect()">Cancel</button>
@@ -5127,6 +5129,7 @@ function plSelect(type, id){
   el('pl-shelf-life').value = '';
   el('pl-shelf-unit').value = 'days';
   el('pl-batch-code').value = '';
+  el('pl-notes').value = '';
   showOnly('pl-form','pl-select');
   plUpdate();
 }
@@ -5183,6 +5186,7 @@ function plUpdate(){
 
   var madeBy = el('pl-made-by').value.trim();
   var batchCode = el('pl-batch-code').value.trim();
+  var notes = el('pl-notes').value.trim();
   var allergens = _plSelected.allergens || [];
   var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
   var prodDateStr = plProdDate().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
@@ -5194,7 +5198,8 @@ function plUpdate(){
     '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(prodDateStr)+'</div>'+
     (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
     (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
-    (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>');
+    (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>')+
+    (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '');
 
   el('pl-preview').innerHTML = body;
   el('pl-print-body').innerHTML = body;
