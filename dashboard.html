@@ -2284,7 +2284,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <div class="fs">
       <div class="fr">
         <div class="fg"><label>Item</label><div class="calc-display" id="pl-item-name" style="font-weight:600;color:var(--text)"></div></div>
-        <div class="fg"><label>Day of Production</label><div class="calc-display" id="pl-prod-date" style="font-weight:600;color:var(--text)"></div></div>
+        <div class="fg"><label>Day of Production</label><input type="date" id="pl-prod-date" oninput="plUpdate()"></div>
       </div>
       <div class="fr">
         <div class="fg"><label>Made By <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><input type="text" id="pl-made-by" placeholder="e.g. Sarah" oninput="plUpdate()"></div>
@@ -5120,7 +5120,9 @@ function plSelect(type, id){
   if(!item) return;
   _plSelected = {type:type, id:id, name:item.name, allergens:plAllergenNames(type, item)};
   el('pl-item-name').textContent = item.name;
-  el('pl-prod-date').textContent = new Date().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+  var todayIso = plDateToIso(new Date());
+  el('pl-prod-date').value = todayIso;
+  el('pl-prod-date').max = todayIso; // production can be backdated (e.g. decanting from a bigger batch made earlier) but never set in the future
   el('pl-made-by').value = '';
   el('pl-shelf-life').value = '';
   el('pl-shelf-unit').value = 'days';
@@ -5131,6 +5133,18 @@ function plSelect(type, id){
 
 function plBackToSelect(){
   showOnly('pl-select','pl-form');
+}
+
+function plDateToIso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+
+// Reads the (possibly backdated, e.g. decanting from a bigger batch made
+// earlier) production date input as a local Date -- parsed via Y/M/D rather
+// than new Date(isoString) so it can't shift a day near a timezone boundary.
+function plProdDate(){
+  var v = el('pl-prod-date').value;
+  if(!v) return new Date();
+  var parts = v.split('-');
+  return new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
 }
 
 // Adds whole months, clamping to the last day of the target month so e.g.
@@ -5149,7 +5163,7 @@ function plCalcUseBy(){
   var n = parseInt(el('pl-shelf-life').value, 10);
   var unit = el('pl-shelf-unit').value;
   if(!n || n<=0) return null;
-  var prod = new Date(); prod.setHours(0,0,0,0);
+  var prod = plProdDate(); prod.setHours(0,0,0,0);
   var useBy = unit==='months' ? plAddMonths(prod, n) : new Date(prod.getTime() + n*24*60*60*1000);
   // The day of production counts as day 1 of the shelf life, not day 0 --
   // a 3-day shelf life made Monday means day1=Mon, day2=Tue, day3=Wed, so
@@ -5171,12 +5185,13 @@ function plUpdate(){
   var batchCode = el('pl-batch-code').value.trim();
   var allergens = _plSelected.allergens || [];
   var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
+  var prodDateStr = plProdDate().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
   var body =
     (useByDay
       ? '<div class="kc-l-day-box"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'
       : '<div class="kc-l-day-box kc-l-day-box-empty"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div>')+
     '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
-    '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(el('pl-prod-date').textContent)+'</div>'+
+    '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(prodDateStr)+'</div>'+
     (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
     (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
     (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>');
