@@ -1277,7 +1277,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-body .kc-l-row { font-size: 11px; margin-bottom: 2px; }
 .kc-label-body .kc-l-row strong { font-weight: 600; }
 .kc-label-body .kc-l-useby { font-size: 13px; font-weight: 700; margin-top: 4px; }
-.kc-label-body .kc-l-notes { font-size: 10px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; border-top: 1px dashed #999; padding-top: 3px; }
+.kc-label-body .kc-l-allergens { font-size: 11px; font-weight: 700; margin-top: 4px; padding: 3px 4px; border: 1px solid #333; word-break: break-word; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -2292,7 +2292,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div class="fr">
         <div class="fg"><label>Use By</label><div class="calc-display" id="pl-use-by" style="font-weight:700;color:var(--dark)">Enter shelf life above</div></div>
       </div>
-      <div class="fg"><label>Batch <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><textarea id="pl-notes" placeholder="Batch details, initials, allergen flags..." oninput="plUpdate()"></textarea></div>
       <div class="form-actions">
         <button class="btn btn-green no-print" id="pl-print-btn" onclick="plPrint()">&#128424; Print Label</button>
         <button class="btn btn-grey no-print" onclick="plBackToSelect()">Cancel</button>
@@ -5103,18 +5102,24 @@ function plRenderList(q){
   }).join('');
 }
 
+function plAllergenNames(type, item){
+  var ids = type==='ingredient' ? aFromIng(item)
+    : type==='yield' ? aFromYield(item)
+    : Object.keys(aFromRec(item));
+  return ids.map(function(id){ var a=ALLERGENS.find(function(x){ return x.id===id; }); return a?a.label:null; }).filter(Boolean);
+}
+
 function plSelect(type, id){
   var src = type==='ingredient'?DB.ingredients:type==='yield'?DB.yields:DB.recipes;
   var item = byId(src, id);
   if(!item) return;
-  _plSelected = {type:type, id:id, name:item.name};
+  _plSelected = {type:type, id:id, name:item.name, allergens:plAllergenNames(type, item)};
   el('pl-item-name').textContent = item.name;
   el('pl-prod-date').textContent = new Date().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
   el('pl-made-by').value = '';
   el('pl-shelf-life').value = '';
   el('pl-shelf-unit').value = 'days';
   el('pl-batch-code').value = '';
-  el('pl-notes').value = '';
   showOnly('pl-form','pl-select');
   plUpdate();
 }
@@ -5159,14 +5164,14 @@ function plUpdate(){
 
   var madeBy = el('pl-made-by').value.trim();
   var batchCode = el('pl-batch-code').value.trim();
-  var notes = el('pl-notes').value.trim();
+  var allergens = _plSelected.allergens || [];
   var body =
     '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
     '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(el('pl-prod-date').textContent)+'</div>'+
     (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
     (useByStr ? '<div class="kc-l-useby">Use By: '+esc(useByStr)+'</div>' : '<div class="kc-l-useby" style="color:#dc2626">Enter shelf life to set Use By</div>')+
     (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
-    (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '');
+    (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>');
 
   el('pl-preview').innerHTML = body;
   el('pl-print-body').innerHTML = body;
