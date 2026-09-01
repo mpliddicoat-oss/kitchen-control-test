@@ -5134,7 +5134,15 @@ function plCalcUseBy(){
   var unit = el('pl-shelf-unit').value;
   if(!n || n<=0) return null;
   var prod = new Date(); prod.setHours(0,0,0,0);
-  return unit==='months' ? plAddMonths(prod, n) : new Date(prod.getTime() + n*24*60*60*1000);
+  var useBy = unit==='months' ? plAddMonths(prod, n) : new Date(prod.getTime() + n*24*60*60*1000);
+  // The day of production counts as day 1 of the shelf life, not day 0 --
+  // a 3-day shelf life made Monday means day1=Mon, day2=Tue, day3=Wed, so
+  // Use By is Wednesday, not Thursday. "+N days/months" lands one day past
+  // that, so pull it back a day. (Same adjustment for months: a 1-month
+  // shelf life from 1 Jan lands on 31 Jan, matching standard "best before
+  // end of" labelling, not 1 Feb.)
+  useBy.setDate(useBy.getDate() - 1);
+  return useBy;
 }
 
 function plUpdate(){
