@@ -1265,6 +1265,20 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .sig-line { border-bottom: 1px solid #333; height: 30px; margin-bottom: 4px; }
 .sig-label { font-size: 11px; color: var(--muted); }
 
+/* Print Label -- 62mm continuous label roll (Brother DK-roll standard), dynamic length.
+   Named page keeps this sized correctly without affecting the landscape @page rule
+   everything else in @media print above uses; actual paper size still depends on the
+   printer/OS paper-size setup, this just tells the browser what to ask for. */
+@page kc-label { size: 62mm auto; margin: 2mm; }
+.kc-label-print { page: kc-label; width: 62mm; margin: 0; border: none; padding: 2mm; box-sizing: border-box; }
+.kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
+.kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
+.kc-label-body .kc-l-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
+.kc-label-body .kc-l-row { font-size: 11px; margin-bottom: 2px; }
+.kc-label-body .kc-l-row strong { font-weight: 600; }
+.kc-label-body .kc-l-useby { font-size: 13px; font-weight: 700; margin-top: 4px; }
+.kc-label-body .kc-l-notes { font-size: 10px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; border-top: 1px dashed #999; padding-top: 3px; }
+
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
 .search-dropdown { position:absolute; top:100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:8px; max-height:220px; overflow-y:auto; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,0.12); display:none; }
@@ -1355,6 +1369,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:7px" onclick="go('menus')">Create Menu</button>
       <button class="btn btn-green" style="width:100%;justify-content:center;margin-bottom:7px" onclick="go('allergens')">Allergen Sheet</button>
       <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:7px" onclick="go('ordering')">Generate Order</button>
+      <button class="btn btn-green" style="width:100%;justify-content:center;margin-bottom:7px" onclick="go('print-label')">&#127991;&#65039; Print Label</button>
       <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
       <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:7px" onclick="openRecipeScanModal()">&#128214; Import Recipe</button>
       <button class="btn btn-green" style="width:100%;justify-content:center" onclick="openInvoiceModal()">&#128196; Import Invoice</button>
@@ -2249,6 +2264,47 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   </div>
 </div>
 
+<!-- PRINT LABEL -->
+<div id="print-label" class="page">
+  <div id="pl-select">
+    <div class="ph"><div><button class="btn btn-grey btn-sm" onclick="go('home')" style="font-size:11px;padding:4px 10px;margin-bottom:4px">&#8592; Back</button></div>
+      <div><h1>Print Label</h1><div class="ph-sub">Search ingredients, yields and recipes to print a prep label</div></div>
+    </div>
+    <input class="search-bar" id="pl-search" placeholder="Search ingredients, yields, recipes..." oninput="plRenderList(this.value)">
+    <div id="pl-items"></div>
+  </div>
+
+  <div id="pl-form" style="display:none">
+    <div class="ph"><div><h1>Label Details</h1></div><div><button class="btn btn-grey" onclick="plBackToSelect()">&#8592; Back</button></div></div>
+    <div class="fs">
+      <div class="fr">
+        <div class="fg"><label>Item</label><div class="calc-display" id="pl-item-name" style="font-weight:600;color:var(--text)"></div></div>
+        <div class="fg"><label>Day of Production</label><div class="calc-display" id="pl-prod-date" style="font-weight:600;color:var(--text)"></div></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>Shelf Life *</label><input type="number" step="1" min="1" id="pl-shelf-life" placeholder="e.g. 3" oninput="plUpdate()"></div>
+        <div class="fg"><label>Unit</label><select id="pl-shelf-unit" onchange="plUpdate()"><option value="days">Days</option><option value="months">Months</option></select></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>Use By</label><div class="calc-display" id="pl-use-by" style="font-weight:700;color:var(--dark)">Enter shelf life above</div></div>
+      </div>
+      <div class="fg"><label>Notes <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><textarea id="pl-notes" placeholder="Batch notes, initials, allergen flags..." oninput="plUpdate()"></textarea></div>
+      <div class="form-actions">
+        <button class="btn btn-green no-print" id="pl-print-btn" onclick="plPrint()">&#128424; Print Label</button>
+        <button class="btn btn-grey no-print" onclick="plBackToSelect()">Cancel</button>
+      </div>
+    </div>
+
+    <h3 class="no-print" style="margin:20px 0 10px">Preview</h3>
+    <div class="no-print" style="display:flex;justify-content:center;padding:20px;background:var(--light);border-radius:10px">
+      <div id="pl-preview" class="kc-label-body kc-label-preview"></div>
+    </div>
+
+    <!-- Actual print output -- hidden on screen, shown only when printing, sized to the label -->
+    <div id="pl-label-print" class="print-only kc-label-print"><div id="pl-print-body" class="kc-label-body"></div></div>
+  </div>
+</div>
+
 
 
 <!-- SETTINGS -->
@@ -2846,7 +2902,7 @@ function go(id, btn){
   else document.querySelectorAll('.nav-btn').forEach(function(b){
     if((b.getAttribute('onclick')||'').indexOf("'"+id+"'")>=0) b.classList.add('active');
   });
-  var fn={home:dashUpdate,suppliers:supList,ingredients:ingList,yields:yldList,recipes:recList,dishes:dishList,menus:menuList,allergens:aRender,ordering:ordList,settings:settingsRender};
+  var fn={home:dashUpdate,suppliers:supList,ingredients:ingList,yields:yldList,recipes:recList,dishes:dishList,menus:menuList,allergens:aRender,ordering:ordList,'print-label':plInit,settings:settingsRender};
   if(fn[id]) fn[id]();
   if(typeof closeSidebar === 'function') closeSidebar();
 }
@@ -5016,6 +5072,98 @@ function ordRenderHistory(){
 }
 
 
+
+// ================================================================
+// PRINT LABEL
+// ================================================================
+var _plSelected = null; // {type:'ingredient'|'yield'|'recipe', id, name}
+
+function plInit(){
+  showOnly('pl-select','pl-form');
+  el('pl-search').value = '';
+  plRenderList('');
+}
+
+function plRenderList(q){
+  q = (q||'').toLowerCase().trim();
+  var items = [];
+  (DB.ingredients||[]).forEach(function(i){ items.push({type:'ingredient', id:i.id, name:i.name, badge:'<span class="badge bg-green">Ingredient</span>'}); });
+  (DB.yields||[]).forEach(function(y){ items.push({type:'yield', id:y.id, name:y.name, badge:'<span class="badge bg-purple">Yield</span>'}); });
+  (DB.recipes||[]).forEach(function(r){ items.push({type:'recipe', id:r.id, name:r.name, badge:'<span class="badge bg-teal">Recipe</span>'}); });
+  if(q) items = items.filter(function(it){ return (it.name||'').toLowerCase().indexOf(q)>=0; });
+  items.sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+  var cont = el('pl-items');
+  if(!items.length){ cont.innerHTML='<p style="color:var(--muted);text-align:center;padding:30px">No matches found.</p>'; return; }
+  cont.innerHTML = items.map(function(it){
+    return '<div class="card-row" style="cursor:pointer" onclick="plSelect(\''+it.type+'\',\''+it.id+'\')"><div class="cr-title">'+esc(it.name)+'</div><div class="cr-sub">'+it.badge+'</div></div>';
+  }).join('');
+}
+
+function plSelect(type, id){
+  var src = type==='ingredient'?DB.ingredients:type==='yield'?DB.yields:DB.recipes;
+  var item = byId(src, id);
+  if(!item) return;
+  _plSelected = {type:type, id:id, name:item.name};
+  el('pl-item-name').textContent = item.name;
+  el('pl-prod-date').textContent = new Date().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+  el('pl-shelf-life').value = '';
+  el('pl-shelf-unit').value = 'days';
+  el('pl-notes').value = '';
+  showOnly('pl-form','pl-select');
+  plUpdate();
+}
+
+function plBackToSelect(){
+  showOnly('pl-select','pl-form');
+}
+
+// Adds whole months, clamping to the last day of the target month so e.g.
+// 31 Jan + 1 month lands on 28/29 Feb instead of overflowing into March.
+function plAddMonths(date, months){
+  var d = new Date(date.getTime());
+  var day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  var lastDay = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+  return d;
+}
+
+function plCalcUseBy(){
+  var n = parseInt(el('pl-shelf-life').value, 10);
+  var unit = el('pl-shelf-unit').value;
+  if(!n || n<=0) return null;
+  var prod = new Date(); prod.setHours(0,0,0,0);
+  return unit==='months' ? plAddMonths(prod, n) : new Date(prod.getTime() + n*24*60*60*1000);
+}
+
+function plUpdate(){
+  if(!_plSelected) return;
+  var useBy = plCalcUseBy();
+  var useByStr = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) : '';
+  el('pl-use-by').textContent = useByStr || 'Enter shelf life above';
+
+  var notes = el('pl-notes').value.trim();
+  var body =
+    '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
+    '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(el('pl-prod-date').textContent)+'</div>'+
+    (useByStr ? '<div class="kc-l-useby">Use By: '+esc(useByStr)+'</div>' : '<div class="kc-l-useby" style="color:#dc2626">Enter shelf life to set Use By</div>')+
+    (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '');
+
+  el('pl-preview').innerHTML = body;
+  el('pl-print-body').innerHTML = body;
+
+  var printBtn = el('pl-print-btn');
+  if(printBtn) printBtn.disabled = !useBy;
+}
+
+function plPrint(){
+  if(!_plSelected) return;
+  var useBy = plCalcUseBy();
+  if(!useBy){ alert('Please enter a shelf life first so the Use By date can be calculated.'); return; }
+  plUpdate();
+  window.print();
+}
 
 // ================================================================
 // INVOICE IMPORT (UI Demo)
