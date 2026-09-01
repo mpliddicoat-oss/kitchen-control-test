@@ -2287,6 +2287,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       </div>
       <div class="fr">
         <div class="fg"><label>Use By</label><div class="calc-display" id="pl-use-by" style="font-weight:700;color:var(--dark)">Enter shelf life above</div></div>
+        <div class="fg"><label>Batch Code <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><input type="text" id="pl-batch-code" placeholder="e.g. B240901-1" oninput="plUpdate()"></div>
       </div>
       <div class="fg"><label>Notes <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><textarea id="pl-notes" placeholder="Batch notes, initials, allergen flags..." oninput="plUpdate()"></textarea></div>
       <div class="form-actions">
@@ -5108,6 +5109,7 @@ function plSelect(type, id){
   el('pl-prod-date').textContent = new Date().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
   el('pl-shelf-life').value = '';
   el('pl-shelf-unit').value = 'days';
+  el('pl-batch-code').value = '';
   el('pl-notes').value = '';
   showOnly('pl-form','pl-select');
   plUpdate();
@@ -5151,11 +5153,13 @@ function plUpdate(){
   var useByStr = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) : '';
   el('pl-use-by').textContent = useByStr || 'Enter shelf life above';
 
+  var batchCode = el('pl-batch-code').value.trim();
   var notes = el('pl-notes').value.trim();
   var body =
     '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
     '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(el('pl-prod-date').textContent)+'</div>'+
     (useByStr ? '<div class="kc-l-useby">Use By: '+esc(useByStr)+'</div>' : '<div class="kc-l-useby" style="color:#dc2626">Enter shelf life to set Use By</div>')+
+    (batchCode ? '<div class="kc-l-row"><strong>Batch:</strong> '+esc(batchCode)+'</div>' : '')+
     (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '');
 
   el('pl-preview').innerHTML = body;
