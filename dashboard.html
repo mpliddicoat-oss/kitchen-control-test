@@ -1283,7 +1283,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    confused about. These rules stay here only for the on-screen preview
    (#pl-preview); plPrint() keeps its own copy for the actual print. */
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
-.kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; position: relative; padding-bottom: 26mm; }
+.kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; position: relative; padding-bottom: 40mm; }
 .kc-label-body .kc-l-name { font-size: 24px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 13px; margin-bottom: 2px; }
 .kc-label-body .kc-l-row strong { font-weight: 600; }
@@ -1295,7 +1295,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-body .kc-l-day-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
 .kc-label-body .kc-l-day-name { display: block; font-size: 22px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
 .kc-label-body .kc-l-day-date { display: block; font-size: 13px; font-weight: 600; margin-top: 1px; }
-.kc-label-body .kc-l-logo { position: absolute; right: 0; bottom: 0; width: 24.5mm; height: 24.5mm; object-fit: contain; opacity: 1; }
+.kc-label-body .kc-l-logo { position: absolute; right: 0; bottom: 0; width: 36mm; height: 36mm; object-fit: contain; opacity: 1; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -5225,7 +5225,7 @@ function plBodyHtml(useBy, useByStr){
     (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
     (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>')+
     (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '')+
-    '<img class="kc-l-logo" src="'+esc(location.origin+'/favicon-icon.png')+'" alt="">';
+    '<img class="kc-l-logo" src="'+esc(location.origin+'/favicon.png')+'" alt="">';
 }
 
 // Prints via a hidden, fully standalone iframe document rather than this
@@ -5244,9 +5244,9 @@ function plPrint(){
 
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label</title><style>'+
     '*{box-sizing:border-box;margin:0;padding:0}'+
-    '@page{size:62mm 100mm;margin:6mm 2mm 1mm 2mm}'+
+    '@page{size:62mm 112mm;margin:6mm 2mm 1mm 2mm}'+
     'body{font-family:\'Segoe UI\',system-ui,sans-serif}'+
-    '.kc-label-body{position:relative;padding-bottom:26mm}'+
+    '.kc-label-body{position:relative;padding-bottom:40mm}'+
     '.kc-l-name{font-size:24px;font-weight:700;margin-bottom:4px;word-break:break-word}'+
     '.kc-l-row{font-size:13px;margin-bottom:2px}'+
     '.kc-l-row strong{font-weight:600}'+
@@ -5258,7 +5258,7 @@ function plPrint(){
     '.kc-l-day-label{display:block;font-size:10px;font-weight:700;letter-spacing:1px}'+
     '.kc-l-day-name{display:block;font-size:22px;font-weight:800;letter-spacing:1px;line-height:1.15}'+
     '.kc-l-day-date{display:block;font-size:13px;font-weight:600;margin-top:1px}'+
-    '.kc-l-logo{position:absolute;right:0;bottom:0;width:24.5mm;height:24.5mm;object-fit:contain;opacity:1}'+
+    '.kc-l-logo{position:absolute;right:0;bottom:0;width:36mm;height:36mm;object-fit:contain;opacity:1}'+
     '</style></head><body><div class="kc-label-body">'+plBodyHtml(useBy, useByStr)+'</div></body></html>';
 
   var iframe = el('pl-print-frame');
