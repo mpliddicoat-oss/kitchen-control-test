@@ -2768,6 +2768,7 @@ function showOnly(show_id){ var others=Array.prototype.slice.call(arguments,1); 
 function tc(s){
   return s.replace(/\w+/g,function(w){ return BIZ.indexOf(w.toLowerCase())>=0?w.toUpperCase():w[0].toUpperCase()+w.slice(1).toLowerCase(); });
 }
+function capFirst(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function fld(label,v){ return '<div class="detail-label">'+label+'</div><div class="detail-value">'+(v||'&mdash;')+'</div>'; }
 function fmt(n){ return isNaN(n) ? '&pound;&mdash;' : '&pound;'+n.toFixed(2); }
@@ -5197,7 +5198,7 @@ function plUpdate(){
 
   var madeBy = tc(el('pl-made-by').value.trim());
   var batchCode = el('pl-batch-code').value.trim();
-  var notes = el('pl-notes').value.trim();
+  var notes = capFirst(el('pl-notes').value.trim());
   var allergens = _plSelected.allergens || [];
   var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
   var prodDateStr = plProdDate().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
