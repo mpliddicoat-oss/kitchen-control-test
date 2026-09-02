@@ -5195,7 +5195,7 @@ function plUpdate(){
   var useByStr = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) : '';
   el('pl-use-by').textContent = useByStr || 'Enter shelf life above';
 
-  var madeBy = el('pl-made-by').value.trim();
+  var madeBy = tc(el('pl-made-by').value.trim());
   var batchCode = el('pl-batch-code').value.trim();
   var notes = el('pl-notes').value.trim();
   var allergens = _plSelected.allergens || [];
