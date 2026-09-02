@@ -1265,20 +1265,23 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .sig-line { border-bottom: 1px solid #333; height: 30px; margin-bottom: 4px; }
 .sig-label { font-size: 11px; color: var(--muted); }
 
-/* Print Label -- sized to match a real preset in the Brother driver's own
-   paper-size list (60mm x 86mm) rather than an arbitrary size, since the
-   driver only accepts its own fixed presets -- a CSS size that doesn't
-   exactly match one causes it to fall back and split across extra pages.
-   "size: 62mm auto" (a fixed width + auto-grow height) isn't valid CSS --
-   @page size needs two real lengths, not a length plus auto -- so true
-   continuous-roll dynamic length isn't something plain browser printing
-   supports; this trades a little unused width (60mm content on 62mm tape)
-   for a size that reliably prints as one page. Named page keeps this sized
-   correctly without affecting the landscape @page rule everything else in
-   @media print above uses. */
-@page kc-label { size: 60mm 86mm; margin: 2mm; }
-.kc-label-print { page: kc-label; width: 60mm; margin: 0; border: none; padding: 2mm; box-sizing: border-box; }
-.kc-label-preview { width: 60mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
+/* Print Label -- must be exactly 62mm wide to match the physical tape
+   loaded in the printer (confirmed: "62mm Continuous Length Tape"). A
+   page width that doesn't match the loaded tape gets rejected outright by
+   the Brother driver ("roll of labels does not match"), which is what
+   happened trying 60mm x 86mm -- that preset is for a different, die-cut
+   cassette type, not this continuous roll, despite appearing in the same
+   general paper-size list. 62mm x 100mm is the confirmed-working size
+   (prints as a single page); "size: 62mm auto" (fixed width + auto-grow
+   height) isn't valid CSS -- @page size needs two real lengths, not a
+   length plus auto -- so true continuous-roll dynamic length isn't
+   something plain browser printing supports, hence the fixed height and
+   some unavoidable blank tape on shorter labels. Named page keeps this
+   sized correctly without affecting the landscape @page rule everything
+   else in @media print above uses. */
+@page kc-label { size: 62mm 100mm; margin: 2mm; }
+.kc-label-print { page: kc-label; width: 62mm; margin: 0; border: none; padding: 2mm; box-sizing: border-box; }
+.kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
 .kc-label-body .kc-l-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 11px; margin-bottom: 2px; }
