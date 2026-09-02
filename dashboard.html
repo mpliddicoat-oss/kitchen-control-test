@@ -1265,11 +1265,15 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .sig-line { border-bottom: 1px solid #333; height: 30px; margin-bottom: 4px; }
 .sig-label { font-size: 11px; color: var(--muted); }
 
-/* Print Label -- 62mm continuous label roll (Brother DK-roll standard), dynamic length.
-   Named page keeps this sized correctly without affecting the landscape @page rule
-   everything else in @media print above uses; actual paper size still depends on the
+/* Print Label -- 62mm continuous label roll (Brother DK-roll standard).
+   "size: 62mm auto" (a fixed width + auto-grow height) isn't valid CSS --
+   @page size needs two real lengths, not a length plus auto -- so this is a
+   fixed, generous height instead; true continuous-roll dynamic length isn't
+   something plain browser printing supports. Named page keeps this sized
+   correctly without affecting the landscape @page rule everything else in
+   @media print above uses; actual paper size still depends on the
    printer/OS paper-size setup, this just tells the browser what to ask for. */
-@page kc-label { size: 62mm auto; margin: 2mm; }
+@page kc-label { size: 62mm 100mm; margin: 2mm; }
 .kc-label-print { page: kc-label; width: 62mm; margin: 0; border: none; padding: 2mm; box-sizing: border-box; }
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
