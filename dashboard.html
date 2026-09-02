@@ -1284,21 +1284,18 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    (#pl-preview); plPrint() keeps its own copy for the actual print. */
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
-.kc-label-body .kc-l-top { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
-.kc-label-body .kc-l-details { flex: 1 1 auto; min-width: 0; }
 .kc-label-body .kc-l-name { font-size: 24px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 13px; margin-bottom: 2px; }
 .kc-label-body .kc-l-row strong { font-weight: 600; }
 .kc-label-body .kc-l-allergens { font-size: 14px; font-weight: 700; margin-top: 4px; padding: 3px 4px; border: 1px solid #dc2626; color: #dc2626; word-break: break-word; }
-.kc-label-body .kc-l-bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; margin-top: 6px; }
-.kc-label-body .kc-l-notes { flex: 1 1 auto; min-width: 0; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
-.kc-label-body .kc-l-day-box { flex: 0 0 auto; width: 20mm; padding: 4px 2px; border: 2px solid #000; border-radius: 4px; text-align: center; box-sizing: border-box; }
+.kc-label-body .kc-l-notes { font-size: 14px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+.kc-label-body .kc-l-day-box { margin-bottom: 6px; padding: 4px 2px; border: 2px solid #000; border-radius: 4px; text-align: center; }
 .kc-label-body .kc-l-day-box.kc-l-day-box-empty { border-color: #dc2626; }
 .kc-label-body .kc-l-day-box.kc-l-day-box-empty .kc-l-day-date { color: #dc2626; }
-.kc-label-body .kc-l-day-label { display: block; font-size: 9px; font-weight: 700; letter-spacing: 1px; }
-.kc-label-body .kc-l-day-name { display: block; font-size: 17px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
-.kc-label-body .kc-l-day-date { display: block; font-size: 11px; font-weight: 600; margin-top: 1px; }
-.kc-label-body .kc-l-logo { flex: 0 0 auto; width: 28mm; height: 28mm; object-fit: contain; opacity: 1; }
+.kc-label-body .kc-l-day-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+.kc-label-body .kc-l-day-name { display: block; font-size: 22px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
+.kc-label-body .kc-l-day-date { display: block; font-size: 13px; font-weight: 600; margin-top: 1px; }
+.kc-label-body .kc-l-logo { display: block; margin: 6px 0 0 auto; width: 36mm; height: 36mm; object-fit: contain; opacity: 1; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -5219,23 +5216,16 @@ function plBodyHtml(useBy, useByStr){
   var allergens = _plSelected.allergens || [];
   var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
   var prodDateStr = plProdDate().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
-  var dayBoxHtml = useByDay
-    ? '<div class="kc-l-day-box"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'
-    : '<div class="kc-l-day-box kc-l-day-box-empty"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div>';
-  var detailsHtml =
+  return (useByDay
+      ? '<div class="kc-l-day-box"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'
+      : '<div class="kc-l-day-box kc-l-day-box-empty"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div>')+
     '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
     '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(prodDateStr)+'</div>'+
     (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
-    (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '');
-  var allergensHtml = allergens.length
-    ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>'
-    : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>';
-  return '<div class="kc-l-top">'+dayBoxHtml+'<div class="kc-l-details">'+detailsHtml+'</div></div>'+
-    allergensHtml+
-    '<div class="kc-l-bottom">'+
-      (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '<div></div>')+
-      '<img class="kc-l-logo" src="'+esc(location.origin+'/favicon.png')+'" alt="">'+
-    '</div>';
+    (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
+    (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>')+
+    (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '')+
+    '<img class="kc-l-logo" src="'+esc(location.origin+'/favicon.png')+'" alt="">';
 }
 
 // Prints via a hidden, fully standalone iframe document rather than this
@@ -5254,23 +5244,20 @@ function plPrint(){
 
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label</title><style>'+
     '*{box-sizing:border-box;margin:0;padding:0}'+
-    '@page{size:62mm 76mm;margin:6mm 2mm 1mm 2mm}'+
+    '@page{size:62mm 100mm;margin:6mm 2mm 1mm 2mm}'+
     'body{font-family:\'Segoe UI\',system-ui,sans-serif}'+
-    '.kc-l-top{display:flex;align-items:flex-start;gap:6px;margin-bottom:4px}'+
-    '.kc-l-details{flex:1 1 auto;min-width:0}'+
     '.kc-l-name{font-size:24px;font-weight:700;margin-bottom:4px;word-break:break-word}'+
     '.kc-l-row{font-size:13px;margin-bottom:2px}'+
     '.kc-l-row strong{font-weight:600}'+
     '.kc-l-allergens{font-size:14px;font-weight:700;margin-top:4px;padding:3px 4px;border:1px solid #dc2626;color:#dc2626;word-break:break-word}'+
-    '.kc-l-bottom{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;margin-top:6px}'+
-    '.kc-l-notes{flex:1 1 auto;min-width:0;font-size:14px;white-space:pre-wrap;word-break:break-word}'+
-    '.kc-l-day-box{flex:0 0 auto;width:20mm;padding:4px 2px;border:2px solid #000;border-radius:4px;text-align:center;box-sizing:border-box}'+
+    '.kc-l-notes{font-size:14px;margin-top:4px;white-space:pre-wrap;word-break:break-word}'+
+    '.kc-l-day-box{margin-bottom:6px;padding:4px 2px;border:2px solid #000;border-radius:4px;text-align:center}'+
     '.kc-l-day-box.kc-l-day-box-empty{border-color:#dc2626}'+
     '.kc-l-day-box.kc-l-day-box-empty .kc-l-day-date{color:#dc2626}'+
-    '.kc-l-day-label{display:block;font-size:9px;font-weight:700;letter-spacing:1px}'+
-    '.kc-l-day-name{display:block;font-size:17px;font-weight:800;letter-spacing:1px;line-height:1.15}'+
-    '.kc-l-day-date{display:block;font-size:11px;font-weight:600;margin-top:1px}'+
-    '.kc-l-logo{flex:0 0 auto;width:28mm;height:28mm;object-fit:contain;opacity:1}'+
+    '.kc-l-day-label{display:block;font-size:10px;font-weight:700;letter-spacing:1px}'+
+    '.kc-l-day-name{display:block;font-size:22px;font-weight:800;letter-spacing:1px;line-height:1.15}'+
+    '.kc-l-day-date{display:block;font-size:13px;font-weight:600;margin-top:1px}'+
+    '.kc-l-logo{display:block;margin:6px 0 0 auto;width:36mm;height:36mm;object-fit:contain;opacity:1}'+
     '</style></head><body><div class="kc-label-body">'+plBodyHtml(useBy, useByStr)+'</div></body></html>';
 
   var iframe = el('pl-print-frame');
