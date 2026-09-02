@@ -1285,10 +1285,15 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    keep guessing a height that satisfies Chrome's fragmentation logic,
    give the content a fixed, explicit height with overflow:hidden so
    there is nothing left for it to fragment: it is forced into a
-   single page's worth of space. Content height = page height (60mm)
-   minus the @page margin (2mm top + 2mm bottom). */
-@page kc-label { size: 62mm 60mm; margin: 2mm; }
-.kc-label-print { page: kc-label; width: 100%; height: 56mm; margin: 0; border: none; padding: 0; box-sizing: border-box; overflow: hidden; }
+   single page's worth of space. Content height = page height minus
+   the @page margin (2mm top + 2mm bottom). NOTE: overflow:hidden only
+   clips at paint time -- if the actual content is even slightly taller
+   than this explicit height, Chrome's pagination step can still emit
+   a second, blank page-fragment for the invisible overflow before the
+   clip applies. So this height must have real headroom, not be cut
+   right at the estimated minimum. */
+@page kc-label { size: 62mm 65mm; margin: 2mm; }
+.kc-label-print { page: kc-label; width: 100%; height: 61mm; margin: 0; border: none; padding: 0; box-sizing: border-box; overflow: hidden; }
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
 .kc-label-body .kc-l-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
