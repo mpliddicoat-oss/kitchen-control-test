@@ -1271,31 +1271,19 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .sig-label { font-size: 11px; color: var(--muted); }
 
 /* Print Label -- 62mm wide, physical roll is continuous tape.
-   "size: 62mm auto" (fixed width + auto-grow height) isn't valid CSS --
-   @page size needs two real lengths, not a length plus auto -- so true
-   continuous-roll dynamic length isn't something plain browser printing
-   supports, hence a fixed size here. Named page keeps this sized
-   correctly without affecting the landscape @page rule everything else
-   in @media print above uses.
-   Chrome's own page-fragmentation heuristics were repeatedly pushing
-   the Notes block onto a second page despite clear visual headroom on
-   the first (confirmed on real hardware at 65mm, 70mm and 80mm) --
-   whatever its internal "does this block fit" calculation is doing,
-   it isn't matching the actual rendered content height. Rather than
-   keep guessing a height that satisfies Chrome's fragmentation logic,
-   give the content a fixed, explicit height with overflow:hidden so
-   there is nothing left for it to fragment: it is forced into a
-   single page's worth of space. Content height = page height minus
-   the @page margin (2mm top + 2mm bottom). NOTE: overflow:hidden only
-   clips at paint time -- if the actual content is even slightly taller
-   than this explicit height, Chrome's pagination step can still emit
-   a second, blank page-fragment for the invisible overflow before the
-   clip applies. So this height must have real headroom, not be cut
-   right at the estimated minimum. */
-@page kc-label { size: 62mm 65mm; margin: 2mm; }
-.kc-label-print { page: kc-label; width: 100%; height: 61mm; margin: 0; border: none; padding: 0; box-sizing: border-box; overflow: hidden; }
+   Actual printing no longer happens through this document's own print
+   flow (see plPrint()): named @page + the `page:` property, nested
+   inside this large multi-page app document, repeatedly produced a
+   blank trailing page no matter how the height/overflow was tuned --
+   a known-brittle corner of CSS paged media when it has to coexist
+   with the rest of the app's own print rules. plPrint() instead builds
+   a fully standalone HTML document (label markup + a copy of the rules
+   below, plain unnamed @page) and prints that from a hidden iframe, so
+   Chrome only ever sees one plain page with nothing else to get
+   confused about. These rules stay here only for the on-screen preview
+   (#pl-preview); plPrint() keeps its own copy for the actual print. */
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
-.kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
+.kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; position: relative; }
 .kc-label-body .kc-l-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 11px; margin-bottom: 2px; }
 .kc-label-body .kc-l-row strong { font-weight: 600; }
@@ -1307,6 +1295,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-body .kc-l-day-label { display: block; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
 .kc-label-body .kc-l-day-name { display: block; font-size: 18px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
 .kc-label-body .kc-l-day-date { display: block; font-size: 11px; font-weight: 600; margin-top: 1px; }
+.kc-label-body .kc-l-logo { position: absolute; right: 0; bottom: 0; width: 7mm; height: 7mm; object-fit: contain; opacity: 0.55; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -2333,9 +2322,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <div class="no-print" style="display:flex;justify-content:center;padding:20px;background:var(--light);border-radius:10px">
       <div id="pl-preview" class="kc-label-body kc-label-preview"></div>
     </div>
-
-    <!-- Actual print output -- hidden on screen, shown only when printing, sized to the label -->
-    <div id="pl-label-print" class="print-only kc-label-print"><div id="pl-print-body" class="kc-label-body"></div></div>
   </div>
 </div>
 
@@ -2782,6 +2768,12 @@ function tc(s){
   return s.replace(/\w+/g,function(w){ return BIZ.indexOf(w.toLowerCase())>=0?w.toUpperCase():w[0].toUpperCase()+w.slice(1).toLowerCase(); });
 }
 function capFirst(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+// Capitalizes the first letter of every sentence (not just the first), e.g.
+// "vegan. store in fridge" -> "Vegan. Store in fridge" -- used for free-text
+// notes fields where full title-casing (tc()) would be wrong.
+function capSentences(s){
+  return s ? s.replace(/(^\s*|[.!?]\s+)([a-z])/g, function(m,sep,ch){ return sep+ch.toUpperCase(); }) : s;
+}
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function fld(label,v){ return '<div class="detail-label">'+label+'</div><div class="detail-value">'+(v||'&mdash;')+'</div>'; }
 function fmt(n){ return isNaN(n) ? '&pound;&mdash;' : '&pound;'+n.toFixed(2); }
@@ -5209,14 +5201,22 @@ function plUpdate(){
   var useByStr = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) : '';
   el('pl-use-by').textContent = useByStr || 'Enter shelf life above';
 
+  el('pl-preview').innerHTML = plBodyHtml(useBy, useByStr);
+
+  var printBtn = el('pl-print-btn');
+  if(printBtn) printBtn.disabled = !useBy;
+}
+
+// Builds the label content markup shared by the on-screen preview and the
+// print output, so the two can never drift out of sync with each other.
+function plBodyHtml(useBy, useByStr){
   var madeBy = tc(el('pl-made-by').value.trim());
   var batchCode = el('pl-batch-code').value.trim();
-  var notes = capFirst(el('pl-notes').value.trim());
+  var notes = capSentences(el('pl-notes').value.trim());
   var allergens = _plSelected.allergens || [];
   var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
   var prodDateStr = plProdDate().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
-  var body =
-    (useByDay
+  return (useByDay
       ? '<div class="kc-l-day-box"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'
       : '<div class="kc-l-day-box kc-l-day-box-empty"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div>')+
     '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
@@ -5224,21 +5224,59 @@ function plUpdate(){
     (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
     (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
     (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>')+
-    (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '');
-
-  el('pl-preview').innerHTML = body;
-  el('pl-print-body').innerHTML = body;
-
-  var printBtn = el('pl-print-btn');
-  if(printBtn) printBtn.disabled = !useBy;
+    (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '')+
+    '<img class="kc-l-logo" src="'+esc(location.origin+'/favicon-32x32.png')+'" alt="">';
 }
 
+// Prints via a hidden, fully standalone iframe document rather than this
+// page's own window.print() -- named @page + the `page:` property, nested
+// inside this large multi-page app, repeatedly produced a phantom blank
+// second page no matter how height/overflow was tuned (a known-brittle
+// corner of CSS paged media once other print rules are in the same
+// document). An isolated document with a single plain @page rule and
+// nothing else on it sidesteps that whole class of bug.
 function plPrint(){
   if(!_plSelected) return;
   var useBy = plCalcUseBy();
   if(!useBy){ alert('Please enter a shelf life first so the Use By date can be calculated.'); return; }
+  var useByStr = useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
   plUpdate();
-  window.print();
+
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label</title><style>'+
+    '*{box-sizing:border-box;margin:0;padding:0}'+
+    '@page{size:62mm 65mm;margin:2mm}'+
+    'body{font-family:\'Segoe UI\',system-ui,sans-serif}'+
+    '.kc-label-body{position:relative;min-height:61mm;padding-bottom:9mm}'+
+    '.kc-l-name{font-size:20px;font-weight:700;margin-bottom:4px;word-break:break-word}'+
+    '.kc-l-row{font-size:11px;margin-bottom:2px}'+
+    '.kc-l-row strong{font-weight:600}'+
+    '.kc-l-allergens{font-size:12px;font-weight:700;margin-top:4px;padding:3px 4px;border:1px solid #dc2626;color:#dc2626;word-break:break-word}'+
+    '.kc-l-notes{font-size:12px;margin-top:4px;white-space:pre-wrap;word-break:break-word}'+
+    '.kc-l-day-box{margin-bottom:6px;padding:4px 2px;border:2px solid #000;border-radius:4px;text-align:center}'+
+    '.kc-l-day-box.kc-l-day-box-empty{border-color:#dc2626}'+
+    '.kc-l-day-box.kc-l-day-box-empty .kc-l-day-date{color:#dc2626}'+
+    '.kc-l-day-label{display:block;font-size:8px;font-weight:700;letter-spacing:1px}'+
+    '.kc-l-day-name{display:block;font-size:18px;font-weight:800;letter-spacing:1px;line-height:1.15}'+
+    '.kc-l-day-date{display:block;font-size:11px;font-weight:600;margin-top:1px}'+
+    '.kc-l-logo{position:absolute;right:0;bottom:0;width:7mm;height:7mm;object-fit:contain;opacity:0.55}'+
+    '</style></head><body><div class="kc-label-body">'+plBodyHtml(useBy, useByStr)+'</div></body></html>';
+
+  var iframe = el('pl-print-frame');
+  if(!iframe){
+    iframe = document.createElement('iframe');
+    iframe.id = 'pl-print-frame';
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    document.body.appendChild(iframe);
+  }
+  var doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  setTimeout(function(){
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  }, 150);
 }
 
 // ================================================================
