@@ -1276,7 +1276,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    shorter labels). Named page keeps this sized correctly without
    affecting the landscape @page rule everything else in @media print
    above uses. */
-@page kc-label { size: 62mm 100mm; margin: 2mm; }
+@page kc-label { size: 62mm 100mm; margin: 2mm; margin-top: 6mm; }
 .kc-label-print { page: kc-label; width: 62mm; margin: 0; border: none; padding: 2mm; box-sizing: border-box; }
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
