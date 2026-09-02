@@ -1283,7 +1283,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    confused about. These rules stay here only for the on-screen preview
    (#pl-preview); plPrint() keeps its own copy for the actual print. */
 .kc-label-preview { width: 58mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
-.kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; position: relative; padding-bottom: 9mm; }
+.kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; position: relative; padding-bottom: 12mm; }
 .kc-label-body .kc-l-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 11px; margin-bottom: 2px; }
 .kc-label-body .kc-l-row strong { font-weight: 600; }
@@ -1295,7 +1295,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-body .kc-l-day-label { display: block; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
 .kc-label-body .kc-l-day-name { display: block; font-size: 18px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
 .kc-label-body .kc-l-day-date { display: block; font-size: 11px; font-weight: 600; margin-top: 1px; }
-.kc-label-body .kc-l-logo { position: absolute; right: 0; bottom: 0; width: 10.5mm; height: 10.5mm; object-fit: contain; opacity: 1; }
+.kc-label-body .kc-l-logo { position: absolute; right: 0; bottom: 0; width: 14mm; height: 14mm; object-fit: contain; opacity: 1; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -5246,7 +5246,7 @@ function plPrint(){
     '*{box-sizing:border-box;margin:0;padding:0}'+
     '@page{size:58mm 82mm;margin:3mm}'+
     'body{font-family:\'Segoe UI\',system-ui,sans-serif}'+
-    '.kc-label-body{position:relative;padding-bottom:9mm}'+
+    '.kc-label-body{position:relative;padding-bottom:12mm}'+
     '.kc-l-name{font-size:20px;font-weight:700;margin-bottom:4px;word-break:break-word}'+
     '.kc-l-row{font-size:11px;margin-bottom:2px}'+
     '.kc-l-row strong{font-weight:600}'+
@@ -5258,7 +5258,7 @@ function plPrint(){
     '.kc-l-day-label{display:block;font-size:8px;font-weight:700;letter-spacing:1px}'+
     '.kc-l-day-name{display:block;font-size:18px;font-weight:800;letter-spacing:1px;line-height:1.15}'+
     '.kc-l-day-date{display:block;font-size:11px;font-weight:600;margin-top:1px}'+
-    '.kc-l-logo{position:absolute;right:0;bottom:0;width:10.5mm;height:10.5mm;object-fit:contain;opacity:1}'+
+    '.kc-l-logo{position:absolute;right:0;bottom:0;width:14mm;height:14mm;object-fit:contain;opacity:1}'+
     '</style></head><body><div class="kc-label-body">'+plBodyHtml(useBy, useByStr)+'</div></body></html>';
 
   var iframe = el('pl-print-frame');
