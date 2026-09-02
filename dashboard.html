@@ -1232,6 +1232,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   .page { display: none !important; height: auto !important; overflow: visible !important; }
   .page.active { display: block !important; height: auto !important; overflow: visible !important; }
   .print-only { display: block !important; }
+  /* Print Label: .page's own 22px padding (base rule below) otherwise
+     wraps the label content on every edge during print, invisible in
+     the on-screen preview since that's a separate element -- kills it
+     specifically for this page so it doesn't eat into the tiny label. */
+  #print-label.page { padding: 0 !important; }
   /* Allergen table */
   .as-wrap { overflow: visible !important; height: auto !important; max-height: none !important; display: block !important; }
   .allergen-main-table { border-collapse: collapse !important; width: 100% !important; }
