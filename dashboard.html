@@ -1284,17 +1284,17 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    (#pl-preview); plPrint() keeps its own copy for the actual print. */
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; position: relative; padding-bottom: 12mm; }
-.kc-label-body .kc-l-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
-.kc-label-body .kc-l-row { font-size: 11px; margin-bottom: 2px; }
+.kc-label-body .kc-l-name { font-size: 24px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
+.kc-label-body .kc-l-row { font-size: 13px; margin-bottom: 2px; }
 .kc-label-body .kc-l-row strong { font-weight: 600; }
-.kc-label-body .kc-l-allergens { font-size: 12px; font-weight: 700; margin-top: 4px; padding: 3px 4px; border: 1px solid #dc2626; color: #dc2626; word-break: break-word; }
-.kc-label-body .kc-l-notes { font-size: 12px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
+.kc-label-body .kc-l-allergens { font-size: 14px; font-weight: 700; margin-top: 4px; padding: 3px 4px; border: 1px solid #dc2626; color: #dc2626; word-break: break-word; }
+.kc-label-body .kc-l-notes { font-size: 14px; margin-top: 4px; white-space: pre-wrap; word-break: break-word; }
 .kc-label-body .kc-l-day-box { margin-bottom: 6px; padding: 4px 2px; border: 2px solid #000; border-radius: 4px; text-align: center; }
 .kc-label-body .kc-l-day-box.kc-l-day-box-empty { border-color: #dc2626; }
 .kc-label-body .kc-l-day-box.kc-l-day-box-empty .kc-l-day-date { color: #dc2626; }
-.kc-label-body .kc-l-day-label { display: block; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
-.kc-label-body .kc-l-day-name { display: block; font-size: 18px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
-.kc-label-body .kc-l-day-date { display: block; font-size: 11px; font-weight: 600; margin-top: 1px; }
+.kc-label-body .kc-l-day-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
+.kc-label-body .kc-l-day-name { display: block; font-size: 22px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
+.kc-label-body .kc-l-day-date { display: block; font-size: 13px; font-weight: 600; margin-top: 1px; }
 .kc-label-body .kc-l-logo { position: absolute; right: 0; bottom: 0; width: 14mm; height: 14mm; object-fit: contain; opacity: 1; }
 
 /* Searchable dropdown */
@@ -5247,17 +5247,17 @@ function plPrint(){
     '@page{size:62mm 78mm;margin:2mm 0mm 1mm 0mm}'+
     'body{font-family:\'Segoe UI\',system-ui,sans-serif}'+
     '.kc-label-body{position:relative;padding-bottom:12mm}'+
-    '.kc-l-name{font-size:20px;font-weight:700;margin-bottom:4px;word-break:break-word}'+
-    '.kc-l-row{font-size:11px;margin-bottom:2px}'+
+    '.kc-l-name{font-size:24px;font-weight:700;margin-bottom:4px;word-break:break-word}'+
+    '.kc-l-row{font-size:13px;margin-bottom:2px}'+
     '.kc-l-row strong{font-weight:600}'+
-    '.kc-l-allergens{font-size:12px;font-weight:700;margin-top:4px;padding:3px 4px;border:1px solid #dc2626;color:#dc2626;word-break:break-word}'+
-    '.kc-l-notes{font-size:12px;margin-top:4px;white-space:pre-wrap;word-break:break-word}'+
+    '.kc-l-allergens{font-size:14px;font-weight:700;margin-top:4px;padding:3px 4px;border:1px solid #dc2626;color:#dc2626;word-break:break-word}'+
+    '.kc-l-notes{font-size:14px;margin-top:4px;white-space:pre-wrap;word-break:break-word}'+
     '.kc-l-day-box{margin-bottom:6px;padding:4px 2px;border:2px solid #000;border-radius:4px;text-align:center}'+
     '.kc-l-day-box.kc-l-day-box-empty{border-color:#dc2626}'+
     '.kc-l-day-box.kc-l-day-box-empty .kc-l-day-date{color:#dc2626}'+
-    '.kc-l-day-label{display:block;font-size:8px;font-weight:700;letter-spacing:1px}'+
-    '.kc-l-day-name{display:block;font-size:18px;font-weight:800;letter-spacing:1px;line-height:1.15}'+
-    '.kc-l-day-date{display:block;font-size:11px;font-weight:600;margin-top:1px}'+
+    '.kc-l-day-label{display:block;font-size:10px;font-weight:700;letter-spacing:1px}'+
+    '.kc-l-day-name{display:block;font-size:22px;font-weight:800;letter-spacing:1px;line-height:1.15}'+
+    '.kc-l-day-date{display:block;font-size:13px;font-weight:600;margin-top:1px}'+
     '.kc-l-logo{position:absolute;right:0;bottom:0;width:14mm;height:14mm;object-fit:contain;opacity:1}'+
     '</style></head><body><div class="kc-label-body">'+plBodyHtml(useBy, useByStr)+'</div></body></html>';
 
