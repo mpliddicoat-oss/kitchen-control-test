@@ -1270,19 +1270,25 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .sig-line { border-bottom: 1px solid #333; height: 30px; margin-bottom: 4px; }
 .sig-label { font-size: 11px; color: var(--muted); }
 
-/* Print Label -- 62mm x 100mm. Confirmed by Matt as the size that prints
-   most reliably against the physical 62mm continuous tape -- other sizes
-   tried (60mm x 86mm, 62mm x 29/70mm) each produced either a driver
-   rejection (wrong width for the loaded roll) or a stray extra page.
+/* Print Label -- 62mm wide, physical roll is continuous tape.
    "size: 62mm auto" (fixed width + auto-grow height) isn't valid CSS --
    @page size needs two real lengths, not a length plus auto -- so true
    continuous-roll dynamic length isn't something plain browser printing
-   supports, hence a fixed size here (with some unavoidable blank tape on
-   shorter labels). Named page keeps this sized correctly without
-   affecting the landscape @page rule everything else in @media print
-   above uses. */
-@page kc-label { size: 62mm 65mm; margin: 2mm; }
-.kc-label-print { page: kc-label; width: 100%; margin: 0; border: none; padding: 0; box-sizing: border-box; }
+   supports, hence a fixed size here. Named page keeps this sized
+   correctly without affecting the landscape @page rule everything else
+   in @media print above uses.
+   Chrome's own page-fragmentation heuristics were repeatedly pushing
+   the Notes block onto a second page despite clear visual headroom on
+   the first (confirmed on real hardware at 65mm, 70mm and 80mm) --
+   whatever its internal "does this block fit" calculation is doing,
+   it isn't matching the actual rendered content height. Rather than
+   keep guessing a height that satisfies Chrome's fragmentation logic,
+   give the content a fixed, explicit height with overflow:hidden so
+   there is nothing left for it to fragment: it is forced into a
+   single page's worth of space. Content height = page height (60mm)
+   minus the @page margin (2mm top + 2mm bottom). */
+@page kc-label { size: 62mm 60mm; margin: 2mm; }
+.kc-label-print { page: kc-label; width: 100%; height: 56mm; margin: 0; border: none; padding: 0; box-sizing: border-box; overflow: hidden; }
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
 .kc-label-body .kc-l-name { font-size: 20px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
