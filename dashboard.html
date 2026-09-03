@@ -1282,8 +1282,18 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    Chrome only ever sees one plain page with nothing else to get
    confused about. These rules stay here only for the on-screen preview
    (#pl-preview); plPrint() keeps its own copy for the actual print. */
-.kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
-#pl-preview-rotate-wrap { position: relative; }
+/* Preview reads left-to-right to represent how the printed label
+   looks once applied (the driver physically rotates the whole print
+   90deg onto the tape -- confirmed against real hardware). A CSS
+   rotate transform would spin the text sideways along with the box,
+   which isn't representative of anything a person actually reads --
+   the print rotates as a whole bitmap, so on the finished label the
+   text itself reads normally. Laying the SAME elements out as a
+   plain horizontal row (day box, name, rows, allergens, notes, logo,
+   left to right) shows that normally-reading result directly,
+   without any rotation, measurement, or positioning trickery. */
+.kc-label-preview { display: flex; flex-direction: row; align-items: flex-start; gap: 8px; width: auto; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
+.kc-label-preview .kc-l-name, .kc-label-preview .kc-l-row, .kc-label-preview .kc-l-allergens, .kc-label-preview .kc-l-notes { white-space: nowrap; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
 .kc-label-body .kc-l-name { font-size: 24px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 13px; margin-bottom: 2px; }
@@ -2320,11 +2330,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     </div>
 
     <h3 class="no-print" style="margin:20px 0 10px">Preview</h3>
-    <div class="no-print" style="font-size:11px;color:var(--muted);margin-bottom:8px">Rotated to show how the printed label reads once applied -- the printer prints this content sideways onto the tape.</div>
-    <div class="no-print" style="display:flex;justify-content:center;padding:20px;background:var(--light);border-radius:10px">
-      <div id="pl-preview-rotate-wrap">
-        <div id="pl-preview" class="kc-label-body kc-label-preview"></div>
-      </div>
+    <div class="no-print" style="font-size:11px;color:var(--muted);margin-bottom:8px">Shown left-to-right to match how the printed label reads once applied.</div>
+    <div class="no-print" style="display:flex;justify-content:center;padding:20px;background:var(--light);border-radius:10px;overflow-x:auto">
+      <div id="pl-preview" class="kc-label-body kc-label-preview"></div>
     </div>
   </div>
 </div>
@@ -5206,34 +5214,9 @@ function plUpdate(){
   el('pl-use-by').textContent = useByStr || 'Enter shelf life above';
 
   el('pl-preview').innerHTML = plBodyHtml(useBy, useByStr);
-  plRotatePreview();
 
   var printBtn = el('pl-print-btn');
   if(printBtn) printBtn.disabled = !useBy;
-}
-
-// The on-screen preview never goes through the printer driver, so it only
-// ever shows our raw (un-rotated) CSS layout -- but the driver physically
-// rotates the whole print 90 degrees onto the tape (confirmed against real
-// hardware: the printed label reads left-to-right along its longer
-// dimension, not down its 62mm width). Rotating the preview here so it
-// visually matches what actually comes out of the printer, rather than
-// showing a portrait layout that doesn't represent the real result.
-function plRotatePreview(){
-  var body = el('pl-preview'), wrap = el('pl-preview-rotate-wrap');
-  if(!body || !wrap) return;
-  body.style.position = 'static';
-  body.style.transform = 'none';
-  body.style.width = '';
-  var w = body.offsetWidth, h = body.offsetHeight;
-  wrap.style.width = h+'px';
-  wrap.style.height = w+'px';
-  body.style.width = w+'px';
-  body.style.position = 'absolute';
-  body.style.top = '0';
-  body.style.left = '0';
-  body.style.transformOrigin = 'top left';
-  body.style.transform = 'translateY(-100%) rotate(-90deg)';
 }
 
 // Builds the label content markup shared by the on-screen preview and the
