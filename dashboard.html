@@ -1282,7 +1282,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    Chrome only ever sees one plain page with nothing else to get
    confused about. These rules stay here only for the on-screen preview
    (#pl-preview); plPrint() keeps its own copy for the actual print. */
-.kc-label-preview { width: 140mm; min-height: 62mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
+.kc-label-preview { width: 100mm; height: 62mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; overflow-y: auto; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
 .kc-label-body .kc-l-name { font-size: 24px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 13px; margin-bottom: 2px; }
@@ -1295,7 +1295,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-body .kc-l-day-label { display: block; font-size: 10px; font-weight: 700; letter-spacing: 1px; }
 .kc-label-body .kc-l-day-name { display: block; font-size: 22px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
 .kc-label-body .kc-l-day-date { display: block; font-size: 13px; font-weight: 600; margin-top: 1px; }
-.kc-label-body .kc-l-logo { display: block; margin: 6px 0 0 auto; width: 36mm; height: 36mm; object-fit: contain; opacity: 1; }
+.kc-label-body .kc-l-logo { display: block; margin: 6px 0 0 auto; width: 18mm; height: 18mm; object-fit: contain; opacity: 1; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -5256,7 +5256,7 @@ function plPrint(){
     '.kc-l-day-label{display:block;font-size:10px;font-weight:700;letter-spacing:1px}'+
     '.kc-l-day-name{display:block;font-size:22px;font-weight:800;letter-spacing:1px;line-height:1.15}'+
     '.kc-l-day-date{display:block;font-size:13px;font-weight:600;margin-top:1px}'+
-    '.kc-l-logo{display:block;margin:6px 0 0 auto;width:36mm;height:36mm;object-fit:contain;opacity:1}'+
+    '.kc-l-logo{display:block;margin:6px 0 0 auto;width:18mm;height:18mm;object-fit:contain;opacity:1}'+
     '</style></head><body><div class="kc-label-body">'+plBodyHtml(useBy, useByStr)+'</div></body></html>';
 
   var iframe = el('pl-print-frame');
