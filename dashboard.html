@@ -1680,7 +1680,10 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div>
         <h1 id="ing-form-title">Add Ingredient</h1>
       </div>
-      <div><button class="btn btn-grey" onclick="ingList()">&#8592; Back</button></div>
+      <div>
+        <button id="ing-print-label-btn" class="btn btn-blue" style="display:none" onclick="plGoTo('ingredient', _ingId)">Print Label</button>
+        <button class="btn btn-grey" onclick="ingList()">&#8592; Back</button>
+      </div>
     </div>
 
     <div class="fs">
@@ -1930,7 +1933,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <div id="yld-items"></div>
   </div>
   <div id="yld-form" style="display:none">
-    <div class="ph"><div><h1 id="yld-form-title">New Yield</h1></div><div><button class="btn btn-grey" onclick="yldList()">&#8592; Back</button></div></div>
+    <div class="ph"><div><h1 id="yld-form-title">New Yield</h1></div><div><button id="yld-print-label-btn" class="btn btn-blue" style="display:none" onclick="plGoTo('yield', _yldId)">Print Label</button> <button class="btn btn-grey" onclick="yldList()">&#8592; Back</button></div></div>
     <div class="fs">
       <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Define what a raw ingredient yields after preparation. e.g. 1kg whole chicken yields 650g usable meat, 1kg prawns yields 30 each.</p>
       <div class="fr"><div class="fg"><label>Yield Name *</label><input id="yld-name" placeholder="e.g. Chicken Breast Meat, Peeled Prawns"></div><div class="fg"><label>Base Ingredient *</label><div id="yld-ing-wrap"></div><input type="hidden" id="yld-ing" value=""></div></div>
@@ -1966,7 +1969,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <div id="rec-items"></div>
   </div>
   <div id="rec-form" style="display:none">
-    <div class="ph"><div><h1 id="rec-form-title">New Recipe</h1></div><div><button class="btn btn-grey" onclick="recList()">&#8592; Back</button></div></div>
+    <div class="ph"><div><h1 id="rec-form-title">New Recipe</h1></div><div><button id="rec-print-label-btn" class="btn btn-blue" style="display:none" onclick="plGoTo('recipe', _recId)">Print Label</button> <button class="btn btn-grey" onclick="recList()">&#8592; Back</button></div></div>
     <div class="fs">
       <div class="fr"><div class="fg"><label>Recipe Name *</label><input id="rec-name" placeholder="e.g. Shortcrust Pastry"></div><div class="fg"><label>Category</label><select id="rec-cat"><option>Sauce / Base</option><option>Pastry / Dough</option><option>Starter</option><option>Main</option><option>Dessert</option><option>Side</option><option>Snack</option><option>Garnish</option></select></div></div>
       <div class="fr t3"><div class="fg"><label>Yield Quantity</label><input id="rec-portions" type="number" step="any" min="0.001" placeholder="e.g. 4" oninput="recCalc()"></div><div class="fg"><label>Yield Unit</label><select id="rec-yield-unit" onchange="recCalc()"><option value="portions">portions</option><option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="litre">litre</option><option value="each">each</option></select></div><div class="fg"><label>Cost per Yield Unit</label><div class="calc-display hl" id="rec-cpp">--</div></div></div>
@@ -3180,6 +3183,7 @@ function ingNew(){
     var h=document.getElementById('ing-supplier'); if(h) h.value='';
   }
   el('ing-form-title').textContent='Add Ingredient';
+  el('ing-print-label-btn').style.display='none';
   ingPickerBuild();
   ingRenderExtraSups();
   showOnly('ing-form','ing-list');
@@ -3212,6 +3216,7 @@ function ingEdit(id){
   _ingExtraSups=(i.suppliers&&i.suppliers.length>1)?i.suppliers.slice(1).map(function(s){ return Object.assign({},s); }):[];
   ingRenderExtraSups();
   el('ing-form-title').textContent='Edit Ingredient';
+  el('ing-print-label-btn').style.display='';
   ingCalc(); ingPickerBuild(); showOnly('ing-form','ing-list');
 }
 function ingAddSup(){
@@ -3516,6 +3521,7 @@ function yldList(){
 function yldNew(){
 
   _yldId = null;
+  if(el('yld-print-label-btn')) el('yld-print-label-btn').style.display='none';
 
   clr([
     'yld-name',
@@ -3562,6 +3568,7 @@ function yldEdit(id){
   }
 
   _yldId = id;
+  if(el('yld-print-label-btn')) el('yld-print-label-btn').style.display='';
 
   var h=document.getElementById('yld-ing'); if(h) h.value=y.ingId||'';
   if(document.getElementById('yld-ing-wrap')){
@@ -3695,6 +3702,7 @@ function recNew(){
   el('rec-portions').value='';
   el('rec-cat').value='Sauce / Base';
   el('rec-form-title').textContent='New Recipe';
+  if(el('rec-print-label-btn')) el('rec-print-label-btn').style.display='none';
   recRenderSteps();
   compRender('rec');
   showOnly('rec-form','rec-list','rec-detail');
@@ -3719,7 +3727,7 @@ function recEdit(id){
   _recId=id; el('rec-name').value=r.name; el('rec-cat').value=r.category; el('rec-portions').value=r.yieldQty||r.portions||1; var ryuEdit=el('rec-yield-unit'); if(ryuEdit) ryuEdit.value=r.yieldUnit||'portions'; // Load steps
   _recSteps=(r.steps&&r.steps.length)?r.steps.slice():(r.method?r.method.split('\n').filter(function(s){return s.trim();}):[]); recRenderSteps();
   _recComps=(r.components||[]).map(function(c){ return Object.assign({},c); });
-  el('rec-form-title').textContent='Edit Recipe'; compRender('rec'); showOnly('rec-form','rec-list','rec-detail');
+  el('rec-form-title').textContent='Edit Recipe'; if(el('rec-print-label-btn')) el('rec-print-label-btn').style.display=''; compRender('rec'); showOnly('rec-form','rec-list','rec-detail');
 }
 function recDel(id){
   if(id===undefined) id=_recId;
@@ -5134,6 +5142,13 @@ function plAllergenNames(type, item){
   return ids.map(function(id){ var a=ALLERGENS.find(function(x){ return x.id===id; }); return a?a.label:null; }).filter(Boolean);
 }
 
+// Jump straight to an item's Print Label form from its own edit page,
+// bypassing the search step (go('print-label') resets to search via plInit).
+function plGoTo(type, id){
+  if(!id){ alert('Save this item first, then you can print a label for it.'); return; }
+  go('print-label');
+  plSelect(type, id);
+}
 function plSelect(type, id){
   var src = type==='ingredient'?DB.ingredients:type==='yield'?DB.yields:DB.recipes;
   var item = byId(src, id);
