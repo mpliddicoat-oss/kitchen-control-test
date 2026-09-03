@@ -1283,6 +1283,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    confused about. These rules stay here only for the on-screen preview
    (#pl-preview); plPrint() keeps its own copy for the actual print. */
 .kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
+#pl-preview-rotate-wrap { position: relative; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
 .kc-label-body .kc-l-name { font-size: 24px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 13px; margin-bottom: 2px; }
@@ -2319,8 +2320,11 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     </div>
 
     <h3 class="no-print" style="margin:20px 0 10px">Preview</h3>
+    <div class="no-print" style="font-size:11px;color:var(--muted);margin-bottom:8px">Rotated to show how the printed label reads once applied -- the printer prints this content sideways onto the tape.</div>
     <div class="no-print" style="display:flex;justify-content:center;padding:20px;background:var(--light);border-radius:10px">
-      <div id="pl-preview" class="kc-label-body kc-label-preview"></div>
+      <div id="pl-preview-rotate-wrap">
+        <div id="pl-preview" class="kc-label-body kc-label-preview"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -5202,9 +5206,34 @@ function plUpdate(){
   el('pl-use-by').textContent = useByStr || 'Enter shelf life above';
 
   el('pl-preview').innerHTML = plBodyHtml(useBy, useByStr);
+  plRotatePreview();
 
   var printBtn = el('pl-print-btn');
   if(printBtn) printBtn.disabled = !useBy;
+}
+
+// The on-screen preview never goes through the printer driver, so it only
+// ever shows our raw (un-rotated) CSS layout -- but the driver physically
+// rotates the whole print 90 degrees onto the tape (confirmed against real
+// hardware: the printed label reads left-to-right along its longer
+// dimension, not down its 62mm width). Rotating the preview here so it
+// visually matches what actually comes out of the printer, rather than
+// showing a portrait layout that doesn't represent the real result.
+function plRotatePreview(){
+  var body = el('pl-preview'), wrap = el('pl-preview-rotate-wrap');
+  if(!body || !wrap) return;
+  body.style.position = 'static';
+  body.style.transform = 'none';
+  body.style.width = '';
+  var w = body.offsetWidth, h = body.offsetHeight;
+  wrap.style.width = h+'px';
+  wrap.style.height = w+'px';
+  body.style.width = w+'px';
+  body.style.position = 'absolute';
+  body.style.top = '0';
+  body.style.left = '0';
+  body.style.transformOrigin = 'top left';
+  body.style.transform = 'translateY(-100%) rotate(-90deg)';
 }
 
 // Builds the label content markup shared by the on-screen preview and the
