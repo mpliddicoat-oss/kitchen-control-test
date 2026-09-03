@@ -450,6 +450,16 @@ async function loadAwaitingFromSupabase(){
   } catch(e) { console.error('loadAwaiting failed:', e); }
 }
 
+// Supabase rejects an insert/update whose payload includes a column the
+// table doesn't have yet (e.g. shelf_life_* before its migration has been
+// run). Detect that specific failure so callers can retry without those
+// columns instead of failing the whole save.
+function isMissingColumnError(err){
+  if(!err) return false;
+  var msg = ((err.message||'')+' '+(err.details||'')+' '+(err.hint||'')).toLowerCase();
+  return err.code==='42703' || err.code==='PGRST204' || (msg.indexOf('column')>=0 && (msg.indexOf('does not exist')>=0 || msg.indexOf('could not find')>=0));
+}
+
 async function loadIngredients() {
   if(window.KC_DEMO){ return; }
   try {
@@ -498,6 +508,8 @@ async function loadIngredients() {
         cpu: (pSize && pCost) ? pCost/pSize : 0,
         fullIngredients: row.ingredients_list || '',
         notes: row.notes || '',
+        shelfLifeValue: parseFloat(row.shelf_life_value) || '',
+        shelfLifeUnit: row.shelf_life_unit || 'days',
         allergens: allergens,
         suppliers: matchedSupId ? [{
           supplierId: matchedSupId,
@@ -568,6 +580,8 @@ async function saveIngredientToSupabase(ing) {
     storage_type: ing.unit || 'g',
     ingredients_list: ing.fullIngredients || '',
     notes: ing.notes || '',
+    shelf_life_value: ing.shelfLifeValue || null,
+    shelf_life_unit: ing.shelfLifeUnit || 'days',
   }, allergenCols);
 
   var result;
@@ -585,6 +599,18 @@ async function saveIngredientToSupabase(ing) {
       .from('ingredients')
       .insert([row])
       .select();
+  }
+
+  // The shelf_life_* columns may not exist yet (migration not run) -- retry
+  // without them so the rest of the ingredient still saves.
+  if (result.error && isMissingColumnError(result.error)) {
+    console.warn('saveIngredientToSupabase: shelf_life columns not found, retrying without them. Run the migration in TODO.md to enable shelf life syncing.');
+    var rowNoShelf = Object.assign({}, row);
+    delete rowNoShelf.shelf_life_value;
+    delete rowNoShelf.shelf_life_unit;
+    result = isRealUUID
+      ? await supabaseClient.from('ingredients').update(rowNoShelf).eq('id', ing.id).select()
+      : await supabaseClient.from('ingredients').insert([rowNoShelf]).select();
   }
 
   if (result.error) {
@@ -632,6 +658,8 @@ async function loadYields() {
         allergens: row.allergens ? row.allergens.split(',').map(function(a){ return a.trim(); }) : [],
         notes: row.notes || '',
         method: row.method || '',
+        shelfLifeValue: parseFloat(row.shelf_life_value) || '',
+        shelfLifeUnit: row.shelf_life_unit || 'days',
       };
     });
 
@@ -662,6 +690,8 @@ async function saveYieldToSupabase(yld) {
     allergens: (yld.allergens || []).join(', '),
     notes: yld.notes || '',
     method: yld.method || '',
+    shelf_life_value: yld.shelfLifeValue || null,
+    shelf_life_unit: yld.shelfLifeUnit || 'days',
   };
 
   var result;
@@ -672,6 +702,16 @@ async function saveYieldToSupabase(yld) {
   } else {
     // New record - let Supabase generate UUID, don't send local ID
     result = await supabaseClient.from('yields').insert([row]).select();
+  }
+
+  if (result.error && isMissingColumnError(result.error)) {
+    console.warn('saveYieldToSupabase: shelf_life columns not found, retrying without them. Run the migration in TODO.md to enable shelf life syncing.');
+    var rowNoShelf = Object.assign({}, row);
+    delete rowNoShelf.shelf_life_value;
+    delete rowNoShelf.shelf_life_unit;
+    result = isRealUUID
+      ? await supabaseClient.from('yields').update(rowNoShelf).eq('id', yld.id).select()
+      : await supabaseClient.from('yields').insert([rowNoShelf]).select();
   }
 
   if (result.error) {
@@ -708,6 +748,8 @@ async function loadRecipes() {
         notes: row.notes || '',
         components: row.components || [],
         allergens: row.allergens || [],
+        shelfLifeValue: parseFloat(row.shelf_life_value) || '',
+        shelfLifeUnit: row.shelf_life_unit || 'days',
       };
     });
     save();
@@ -733,11 +775,22 @@ async function saveRecipeToSupabase(rec) {
     notes: rec.notes || '',
     components: rec.components || [],
     allergens: rec.allergens || [],
+    shelf_life_value: rec.shelfLifeValue || null,
+    shelf_life_unit: rec.shelfLifeUnit || 'days',
   };
   var isUUID = isSupabaseId(rec.id);
   var res = isUUID
     ? await supabaseClient.from('recipes').update(row).eq('id', rec.id).select()
     : await supabaseClient.from('recipes').insert([row]).select();
+  if (res.error && isMissingColumnError(res.error)) {
+    console.warn('saveRecipeToSupabase: shelf_life columns not found, retrying without them. Run the migration in TODO.md to enable shelf life syncing.');
+    var rowNoShelf = Object.assign({}, row);
+    delete rowNoShelf.shelf_life_value;
+    delete rowNoShelf.shelf_life_unit;
+    res = isUUID
+      ? await supabaseClient.from('recipes').update(rowNoShelf).eq('id', rec.id).select()
+      : await supabaseClient.from('recipes').insert([rowNoShelf]).select();
+  }
   if (res.error) { console.error('saveRecipe error:', res.error); return null; }
   return res.data && res.data[0] ? res.data[0].id : rec.id;
 }
@@ -1887,6 +1940,22 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 
 
       <h3 style="font-size:14px;margin-bottom:10px">
+        Shelf Life
+        <span style="font-weight:400;font-size:11px;text-transform:none">
+          (optional -- auto-fills Print Label)
+        </span>
+      </h3>
+
+      <div class="fr t3">
+        <div class="fg"><label>Shelf Life</label><input id="ing-shelf-life" type="number" step="1" min="1" placeholder="e.g. 3"></div>
+        <div class="fg"><label>Unit</label><select id="ing-shelf-unit"><option value="days">Days</option><option value="months">Months</option></select></div>
+      </div>
+
+
+      <div class="hr"></div>
+
+
+      <h3 style="font-size:14px;margin-bottom:10px">
         Additional Suppliers
         <span style="font-weight:400;font-size:11px;text-transform:none">
           (optional)
@@ -1950,6 +2019,12 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
         <div class="fg"><label>True Cost per Yield Unit</label><div class="calc-display highlight" id="yld-cpu">--</div></div>
       </div>
       <div class="fr t1"><div class="fg"><label>Notes (optional)</label><input id="yld-notes" placeholder="e.g. Outer leaves removed, core discarded"></div></div>
+      <div class="hr"></div>
+      <h3 style="font-size:14px;margin-bottom:10px">Shelf Life <span style="font-weight:400;font-size:11px;text-transform:none">(optional -- auto-fills Print Label)</span></h3>
+      <div class="fr t3">
+        <div class="fg"><label>Shelf Life</label><input id="yld-shelf-life" type="number" step="1" min="1" placeholder="e.g. 3"></div>
+        <div class="fg"><label>Unit</label><select id="yld-shelf-unit"><option value="days">Days</option><option value="months">Months</option></select></div>
+      </div>
       <div class="form-actions"><button class="btn btn-green" onclick="yldSave()">Save Yield</button></div>
     </div>
   </div>
@@ -1998,6 +2073,12 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div class="live-allergen-box" style="margin-top:10px">
         <h4>Allergens in this recipe</h4>
         <div class="ag" id="rec-live-allergens"><span style="font-size:12px;color:var(--muted)">Add components to see allergens</span></div>
+      </div>
+      <div class="hr" style="margin-top:14px"></div>
+      <h3 style="font-size:14px;margin-bottom:10px">Shelf Life <span style="font-weight:400;font-size:11px;text-transform:none">(optional -- auto-fills Print Label)</span></h3>
+      <div class="fr t3">
+        <div class="fg"><label>Shelf Life</label><input id="rec-shelf-life" type="number" step="1" min="1" placeholder="e.g. 3"></div>
+        <div class="fg"><label>Unit</label><select id="rec-shelf-unit"><option value="days">Days</option><option value="months">Months</option></select></div>
       </div>
     </div>
     <div class="form-actions"><button class="btn btn-green" onclick="recSave()">Save Recipe</button></div>
@@ -3159,9 +3240,10 @@ function ingNew(){
         .join('');
   }
   // Clear every form field one by one
-  ['ing-name','ing-brand','ing-size','ing-notes','ing-full-list','ing-case-size'].forEach(function(id){
+  ['ing-name','ing-brand','ing-size','ing-notes','ing-full-list','ing-case-size','ing-shelf-life'].forEach(function(id){
     var e=el(id); if(e) e.value='';
   });
+  var slu=el('ing-shelf-unit'); if(slu) slu.value='days';
   // Pack cost - check type
   var pc=el('ing-pack-cost')||el('ing-cost');
   if(pc) pc.value='';
@@ -3213,6 +3295,7 @@ function ingEdit(id){
     );
   }
   el('ing-name').value=i.name; el('ing-brand').value=i.brand||''; el('ing-size').value=i.packSize||''; el('ing-cost').value=i.packCost||''; el('ing-unit').value=i.unit||'kg'; el('ing-notes').value=i.notes||''; var flEl=el('ing-full-list'); if(flEl) flEl.value=i.fullIngredients||''; el('ing-case-size').value=i.caseSize||''; var ccFld=el('ing-case-cost'); if(ccFld&&ccFld.tagName==='INPUT') ccFld.value=i.caseCost||''; ingCalcFromPack();
+  el('ing-shelf-life').value=i.shelfLifeValue||''; el('ing-shelf-unit').value=i.shelfLifeUnit||'days';
   _ingExtraSups=(i.suppliers&&i.suppliers.length>1)?i.suppliers.slice(1).map(function(s){ return Object.assign({},s); }):[];
   ingRenderExtraSups();
   el('ing-form-title').textContent='Edit Ingredient';
@@ -3358,6 +3441,9 @@ function ingSave(){
   category: '',
 
   supplierCode: '',
+
+  shelfLifeValue: parseFloat(val('ing-shelf-life')) || null,
+  shelfLifeUnit: val('ing-shelf-unit') || 'days',
 
   id: _ingId || uid()
 };
@@ -3527,8 +3613,11 @@ function yldNew(){
     'yld-name',
     'yld-qty',
     'yld-notes',
-    'yld-base-used'
+    'yld-base-used',
+    'yld-shelf-life'
   ]);
+
+  var yslu=el('yld-shelf-unit'); if(yslu) yslu.value='days';
 
   el('yld-unit').value = 'g';
 
@@ -3593,6 +3682,9 @@ function yldEdit(id){
 
   el('yld-notes').value = y.notes || '';
 
+  el('yld-shelf-life').value = y.shelfLifeValue || '';
+  var yslu2=el('yld-shelf-unit'); if(yslu2) yslu2.value = y.shelfLifeUnit || 'days';
+
   el('yld-form-title').textContent = 'Edit Yield';
 
   yldCalc();
@@ -3646,7 +3738,7 @@ function yldSave(){
   } else {
     trueCpu = (ing.packCost||0) / qty;
   }
-  var data={name:tc(name),ingId:ingId,qty:qty,unit:val('yld-unit'),baseUsed:baseUsed,baseUnit:baseUnit,notes:val('yld-notes'),trueCpu:trueCpu,allergens:ing.allergens||[]};
+  var data={name:tc(name),ingId:ingId,qty:qty,unit:val('yld-unit'),baseUsed:baseUsed,baseUnit:baseUnit,notes:val('yld-notes'),trueCpu:trueCpu,allergens:ing.allergens||[],shelfLifeValue:parseFloat(val('yld-shelf-life'))||null,shelfLifeUnit:val('yld-shelf-unit')||'days'};
   var yldToSave;
   if(_yldId){
     // Editing existing yield
@@ -3701,6 +3793,8 @@ function recNew(){
   clr(['rec-name']);
   el('rec-portions').value='';
   el('rec-cat').value='Sauce / Base';
+  var rsl=el('rec-shelf-life'); if(rsl) rsl.value='';
+  var rsu=el('rec-shelf-unit'); if(rsu) rsu.value='days';
   el('rec-form-title').textContent='New Recipe';
   if(el('rec-print-label-btn')) el('rec-print-label-btn').style.display='none';
   recRenderSteps();
@@ -3724,7 +3818,9 @@ function addNewIngredientForRecipeSlot(i){
 }
 function recEdit(id){
   if(id===undefined) id=_recId; var r=byId(DB.recipes,id); if(!r) return;
-  _recId=id; el('rec-name').value=r.name; el('rec-cat').value=r.category; el('rec-portions').value=r.yieldQty||r.portions||1; var ryuEdit=el('rec-yield-unit'); if(ryuEdit) ryuEdit.value=r.yieldUnit||'portions'; // Load steps
+  _recId=id; el('rec-name').value=r.name; el('rec-cat').value=r.category; el('rec-portions').value=r.yieldQty||r.portions||1; var ryuEdit=el('rec-yield-unit'); if(ryuEdit) ryuEdit.value=r.yieldUnit||'portions';
+  var rsl2=el('rec-shelf-life'); if(rsl2) rsl2.value=r.shelfLifeValue||''; var rsu2=el('rec-shelf-unit'); if(rsu2) rsu2.value=r.shelfLifeUnit||'days';
+  // Load steps
   _recSteps=(r.steps&&r.steps.length)?r.steps.slice():(r.method?r.method.split('\n').filter(function(s){return s.trim();}):[]); recRenderSteps();
   _recComps=(r.components||[]).map(function(c){ return Object.assign({},c); });
   el('rec-form-title').textContent='Edit Recipe'; if(el('rec-print-label-btn')) el('rec-print-label-btn').style.display=''; compRender('rec'); showOnly('rec-form','rec-list','rec-detail');
@@ -3740,7 +3836,7 @@ function recDel(id){
 function recSave(){
   if(!canEdit()){ alert('You do not have permission to add or edit recipes.'); return; }
   var name=el('rec-name').value.trim(); if(!name){ alert('Recipe name required.'); return; }
-  var data={name:tc(name),category:val('rec-cat'),portions:parseFloat(val('rec-portions'))||1,yieldQty:parseFloat(val('rec-portions'))||1,yieldUnit:(el('rec-yield-unit')?el('rec-yield-unit').value:'portions'),steps:_recSteps.filter(function(s){return s.trim();}),method:_recSteps.filter(function(s){return s.trim();}).join('\n'),components:_recComps.filter(function(c){ return !!c.id || !!c._scannedName; })};
+  var data={name:tc(name),category:val('rec-cat'),portions:parseFloat(val('rec-portions'))||1,yieldQty:parseFloat(val('rec-portions'))||1,yieldUnit:(el('rec-yield-unit')?el('rec-yield-unit').value:'portions'),steps:_recSteps.filter(function(s){return s.trim();}),method:_recSteps.filter(function(s){return s.trim();}).join('\n'),components:_recComps.filter(function(c){ return !!c.id || !!c._scannedName; }),shelfLifeValue:parseFloat(val('rec-shelf-life'))||null,shelfLifeUnit:val('rec-shelf-unit')||'days'};
   var savedRecId = _recId;
   if(_recId) Object.assign(byId(DB.recipes,_recId),data); else { var newRec=Object.assign({id:uid()},data); DB.recipes.push(newRec); savedRecId=newRec.id; }
   _recId=null; _recSteps=[]; save(); dashUpdate(); recList();
@@ -5159,8 +5255,10 @@ function plSelect(type, id){
   el('pl-prod-date').value = todayIso;
   el('pl-prod-date').max = todayIso; // production can be backdated (e.g. decanting from a bigger batch made earlier) but never set in the future
   el('pl-made-by').value = '';
-  el('pl-shelf-life').value = '';
-  el('pl-shelf-unit').value = 'days';
+  // Auto-fill from the item's own stored shelf life default where set --
+  // still fully editable per print (e.g. a decanted/backdated batch).
+  el('pl-shelf-life').value = item.shelfLifeValue || '';
+  el('pl-shelf-unit').value = item.shelfLifeUnit || 'days';
   el('pl-batch-code').value = '';
   el('pl-notes').value = '';
   showOnly('pl-form','pl-select');

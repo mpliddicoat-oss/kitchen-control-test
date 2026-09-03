@@ -24,18 +24,26 @@ Next phase, per Matt:
   of requiring it to be typed in every time. Still editable per print
   (e.g. for a decanted/backdated batch).
 
-### Shelf life -- blocked on a Supabase schema migration
+### Shelf life -- app-side DONE (2026-09-03), needs one SQL step to fully sync
 
-This session has no Supabase schema-modification credentials, so I
-could not add a `shelf_life` column myself. Adding it to the save
-payload without the column existing would break every ingredient/
-yield/recipe save app-wide (staging and production share one
-database), so this was intentionally left undone rather than risked
-unsupervised.
+Ingredients, Yields and Recipes now all have a Shelf Life field (value +
+Days/Months unit, matching the Print Label form) in their edit forms, and
+the Print Label form auto-fills from it via `plSelect()` when you print
+from an item's own "Print Label" button (still fully editable per print,
+e.g. for a decanted/backdated batch).
 
-When you're back online, run this in the Supabase SQL editor (safe:
-nullable columns, no default that could break existing rows or
-in-flight saves):
+**Editing it is already restricted to Owner, Head Chef and Sous Chef** --
+it lives inside the same Ingredient/Yield/Recipe form as every other
+field, which is already gated by the existing `canEdit()` check on Save
+(`_userRole==='owner'||'head_chef'||'sous_chef'`), so no extra work was
+needed for that.
+
+This session still has no Supabase schema-modification credentials, so I
+could not run the migration myself. **The shelf life value currently
+saves locally and prints correctly, but won't sync to Supabase (so it
+won't show up on another device/browser) until you run this once** in
+the Supabase SQL editor (safe: nullable columns, no default that could
+break existing rows or in-flight saves):
 
 ```sql
 alter table ingredients
@@ -51,10 +59,8 @@ alter table recipes
   add column if not exists shelf_life_unit text default 'days';
 ```
 
-Once those columns exist, say the word and I'll:
-1. Add a "Shelf life" field to the Ingredient/Yield/Recipe forms
-   (value + unit, e.g. "3" / "days"), wired into the save/load
-   payloads.
-2. Auto-fill the Print Label form's shelf-life field from that
-   default when printing via the new per-item "Print Label" button
-   (still editable per print for a decanted/backdated batch).
+The save code already sends `shelf_life_value`/`shelf_life_unit` and
+gracefully retries without them if the columns are missing (so nothing
+was broken by shipping this ahead of the migration) -- once you run the
+SQL above, syncing starts working immediately with no further code
+changes or redeploy needed.
