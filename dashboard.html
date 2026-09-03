@@ -5222,7 +5222,8 @@ function plBodyHtml(useBy, useByStr){
       ? '<div class="kc-l-day-box"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'+logoImg+'</div>'
       : '<div class="kc-l-day-box kc-l-day-box-empty"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div>'+logoImg+'</div>')+
     '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
-    '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(prodDateStr)+(madeBy ? '&nbsp;&nbsp;<strong>By:</strong> '+esc(madeBy) : '')+'</div>'+
+    '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(prodDateStr)+'</div>'+
+    (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
     (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+
     (allergens.length ? '<div class="kc-l-allergens"><strong>Allergens:</strong> '+esc(allergens.join(', '))+'</div>' : '<div class="kc-l-row" style="color:var(--muted)">No allergens detected -- verify independently</div>')+
     (notes ? '<div class="kc-l-notes">'+esc(notes)+'</div>' : '');
