@@ -1282,17 +1282,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
    Chrome only ever sees one plain page with nothing else to get
    confused about. These rules stay here only for the on-screen preview
    (#pl-preview); plPrint() keeps its own copy for the actual print. */
-/* Fixed-size rotation (not JS-measured -- that's what broke the position
-   last time): the real print page is a fixed 62mm x 100mm, so the
-   un-rotated preview box matches that exactly and a plain -90deg rotate
-   swaps it to a 100mm x 62mm landscape footprint, matching the shape of
-   the real printed label. Order of content is untouched (still a plain
-   vertical stack) -- rotating the whole box doesn't change what's above
-   what, only the shape. Text reads sideways on an upright screen the
-   same way a landscape photo does -- tilt the phone to view it the
-   "right way up", same as you would with the finished printed label. */
-#pl-preview-rotate-wrap { position: relative; width: 100mm; height: 62mm; margin: 0 auto; }
-.kc-label-preview { position: absolute; top: 0; left: 0; width: 62mm; height: 100mm; transform-origin: top left; transform: rotate(-90deg) translateY(-100%); padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; overflow: hidden; }
+.kc-label-preview { width: 62mm; min-height: 30mm; padding: 3mm; background: #fff; border: 1px solid var(--border); border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); box-sizing: border-box; }
 .kc-label-body { font-family: 'Segoe UI', system-ui, sans-serif; }
 .kc-label-body .kc-l-name { font-size: 24px; font-weight: 700; margin-bottom: 4px; word-break: break-word; }
 .kc-label-body .kc-l-row { font-size: 13px; margin-bottom: 2px; }
@@ -2329,11 +2319,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     </div>
 
     <h3 class="no-print" style="margin:20px 0 10px">Preview</h3>
-    <div class="no-print" style="font-size:11px;color:var(--muted);margin-bottom:8px">Shown as the printed label reads once applied -- tilt your phone to view it right way up, same as the printed label.</div>
-    <div class="no-print" style="display:flex;justify-content:center;padding:20px;background:var(--light);border-radius:10px;overflow-x:auto">
-      <div id="pl-preview-rotate-wrap">
-        <div id="pl-preview" class="kc-label-body kc-label-preview"></div>
-      </div>
+    <div class="no-print" style="display:flex;justify-content:center;padding:20px;background:var(--light);border-radius:10px">
+      <div id="pl-preview" class="kc-label-body kc-label-preview"></div>
     </div>
   </div>
 </div>
