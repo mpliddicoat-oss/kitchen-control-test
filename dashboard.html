@@ -5216,7 +5216,7 @@ function plBodyHtml(useBy, useByStr){
   var notes = capSentences(el('pl-notes').value.trim());
   var allergens = _plSelected.allergens || [];
   var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
-  var prodDateStr = plProdDate().toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+  var prodDateStr = plProdDate().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
   var logoImg = '<img class="kc-l-logo" src="'+esc(location.origin+'/favicon.png')+'" alt="">';
   return (useByDay
       ? '<div class="kc-l-day-box"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'+logoImg+'</div>'
