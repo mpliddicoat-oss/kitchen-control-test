@@ -1989,6 +1989,22 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 
   </div>
 
+  <div id="ing-detail" style="display:none">
+    <div class="ph">
+      <div><h1 id="ing-detail-name"></h1><div class="ph-sub" id="ing-detail-sub"></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-grey" onclick="ingList()">&#8592; Back</button>
+        <button class="btn btn-purple" onclick="plGoTo('ingredient', _ingId)">Print Label</button>
+        <button class="btn btn-blue" onclick="ingEdit(_ingId)">Edit</button>
+        <button class="btn btn-red" onclick="ingDel(_ingId, event)">Delete</button>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card" id="ing-detail-info"></div>
+      <div class="card" id="ing-detail-allergens"></div>
+    </div>
+  </div>
+
 </div>
 
 <!-- YIELDS -->
@@ -2026,6 +2042,21 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
         <div class="fg"><label>Unit</label><select id="yld-shelf-unit"><option value="days">Days</option><option value="months">Months</option></select></div>
       </div>
       <div class="form-actions"><button class="btn btn-green" onclick="yldSave()">Save Yield</button></div>
+    </div>
+  </div>
+  <div id="yld-detail" style="display:none">
+    <div class="ph">
+      <div><h1 id="yld-detail-name"></h1><div class="ph-sub" id="yld-detail-sub"></div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-grey" onclick="yldList()">&#8592; Back</button>
+        <button class="btn btn-purple" onclick="plGoTo('yield', _yldId)">Print Label</button>
+        <button class="btn btn-blue" onclick="yldEdit(_yldId)">Edit</button>
+        <button class="btn btn-red" onclick="yldDel(_yldId, event)">Delete</button>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card" id="yld-detail-info"></div>
+      <div class="card" id="yld-detail-allergens"></div>
     </div>
   </div>
 </div>
@@ -2094,6 +2125,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div style="display:flex;gap:8px">
         <button class="btn btn-grey" onclick="recList()">&#8592; Back</button>
         <button class="btn btn-green no-print" onclick="window.print()">&#128424; Print Recipe</button>
+        <button class="btn btn-purple no-print" onclick="plGoTo('recipe', _recId)">Print Label</button>
         <button class="btn btn-blue no-print" onclick="recEdit()">Edit</button>
         <button class="btn btn-red no-print" onclick="recDel()">Delete</button>
       </div>
@@ -3224,7 +3256,32 @@ function deleteAwaiting(id){
 }
 var _promotingAwaitingId = null;
 
-function ingList(){ _ingId=null; _ingA={}; _promotingAwaitingId=null; showOnly('ing-list','ing-form'); ingRender(); }
+function ingList(){ _ingId=null; _ingA={}; _promotingAwaitingId=null; showOnly('ing-list','ing-form','ing-detail'); ingRender(); }
+// Read-only view -- open by clicking an ingredient, no edit permission needed.
+// Print Label is here so non-editors can still print without touching Edit.
+function ingShowDetail(id){
+  var i=byId(DB.ingredients,id); if(!i){ alert('Not found.'); return; }
+  _ingId=id;
+  showOnly('ing-detail','ing-list','ing-form');
+  el('ing-detail-name').textContent=i.name;
+  el('ing-detail-sub').textContent=ingCpuLabel(i);
+  var sup=DB.suppliers.find(function(s){ return s.id===i.supplierId || String(s.id)===String(i.supplierId); });
+  var shelfStr='Not set';
+  if(i.shelfLifeValue){
+    var unitLabel=i.shelfLifeUnit==='months'?(i.shelfLifeValue==1?'month':'months'):(i.shelfLifeValue==1?'day':'days');
+    shelfStr=i.shelfLifeValue+' '+unitLabel;
+  }
+  el('ing-detail-info').innerHTML=
+    fld('Brand', i.brand?esc(i.brand):null)+
+    fld('Supplier', sup?esc(sup.name):null)+
+    fld('Pack Size', i.packSize?(i.packSize+' '+esc(i.unit)):null)+
+    fld('Pack Cost', i.packCost?fmt(i.packCost):null)+
+    fld('Cost per '+esc(i.unit), ingCpuLabel(i))+
+    fld('Product Code / Notes', i.notes?esc(i.notes):null)+
+    fld('Shelf Life', shelfStr);
+  var aSet={}; aFromIng(i).forEach(function(a){ aSet[a]=true; });
+  el('ing-detail-allergens').innerHTML='<h3 style="margin-bottom:10px">Allergens</h3><div class="ag">'+((i.allergens||[]).indexOf('none')>=0?'<span style="color:#065f46">No allergens</span>':chipHTML(aSet,true))+'</div>';
+}
 function ingNew(){
   // GUARANTEED FULL RESET before every new ingredient
   _ingId = null;
@@ -3268,7 +3325,7 @@ function ingNew(){
   el('ing-print-label-btn').style.display='none';
   ingPickerBuild();
   ingRenderExtraSups();
-  showOnly('ing-form','ing-list');
+  showOnly('ing-form','ing-list','ing-detail');
 }
 function ingEdit(id){
   var i=byId(DB.ingredients,id); if(!i){ alert('Not found.'); return; }
@@ -3300,7 +3357,7 @@ function ingEdit(id){
   ingRenderExtraSups();
   el('ing-form-title').textContent='Edit Ingredient';
   el('ing-print-label-btn').style.display='';
-  ingCalc(); ingPickerBuild(); showOnly('ing-form','ing-list');
+  ingCalc(); ingPickerBuild(); showOnly('ing-form','ing-list','ing-detail');
 }
 function ingAddSup(){
   _ingExtraSups.push({supplierId:'',packSize:'',packCost:'',unit:'kg',cpu:0});
@@ -3539,7 +3596,7 @@ function ingDel(id,ev){
 function ingRow(i){
   var aDisp=(i.allergens||[]).indexOf('none')>=0?'<span style="color:#065f46">No allergens</span>':aFromIng(i).map(function(a){ var f=ALLERGENS.find(function(x){ return x.id===a; }); return f?f.e:''; }).join(' ')||'Not set';
   var hasLabel=i.fullIngredients?'<span style="font-size:10px;margin-left:6px;padding:1px 6px;background:#dbeafe;color:#1e40af;border-radius:10px;font-weight:600">Label</span>':'';
-  return '<div class="card-row"><div onclick="ingEdit(\''+i.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(i.name)+hasLabel+'</div><div class="cr-sub">'+ingCpuLabel(i)+' &middot; '+aDisp+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="ingEdit(\''+i.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="ingDel(\''+i.id+'\',event)">Del</button></div></div>';
+  return '<div class="card-row"><div onclick="ingShowDetail(\''+i.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(i.name)+hasLabel+'</div><div class="cr-sub">'+ingCpuLabel(i)+' &middot; '+aDisp+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="ingEdit(\''+i.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="ingDel(\''+i.id+'\',event)">Del</button></div></div>';
 }
 
 function ingGoBack(){
@@ -3600,9 +3657,34 @@ function ingRender(f){
 var _yldId=null;
 function yldList(){
   _yldId = null;
-  showOnly('yld-list','yld-form');
+  showOnly('yld-list','yld-form','yld-detail');
   yldRender();
 }
+// Read-only view -- open by clicking a yield, no edit permission needed.
+// Print Label is here so non-editors can still print without touching Edit.
+function yldShowDetail(id){
+  var y=byId(DB.yields,id); if(!y){ alert('Not found.'); return; }
+  _yldId=id;
+  showOnly('yld-detail','yld-list','yld-form');
+  var ing=byId(DB.ingredients,y.ingId);
+  el('yld-detail-name').textContent=y.name;
+  el('yld-detail-sub').textContent='True cost: £'+(y.trueCpu?y.trueCpu.toFixed(4):'0.0000')+'/'+y.unit;
+  var shelfStr='Not set';
+  if(y.shelfLifeValue){
+    var unitLabel=y.shelfLifeUnit==='months'?(y.shelfLifeValue==1?'month':'months'):(y.shelfLifeValue==1?'day':'days');
+    shelfStr=y.shelfLifeValue+' '+unitLabel;
+  }
+  el('yld-detail-info').innerHTML=
+    fld('Base Ingredient', ing?esc(ing.name):null)+
+    fld('Amount of Base Used', y.baseUsed?(y.baseUsed+' '+esc(y.baseUnit)):null)+
+    fld('Yield Quantity', y.qty?(y.qty+' '+esc(y.unit)):null)+
+    fld('True Cost per '+esc(y.unit), '£'+(y.trueCpu?y.trueCpu.toFixed(4):'0.0000'))+
+    fld('Notes', y.notes?esc(y.notes):null)+
+    fld('Shelf Life', shelfStr);
+  var aSet={}; (y.allergens||[]).forEach(function(a){ if(a!=='none') aSet[a]=true; });
+  el('yld-detail-allergens').innerHTML='<h3 style="margin-bottom:10px">Allergens</h3><div class="ag">'+((y.allergens||[]).indexOf('none')>=0?'<span style="color:#065f46">No allergens</span>':chipHTML(aSet,true))+'</div>';
+}
+function yldShowDetailIdx(i){ if(window._yldRenderItems&&window._yldRenderItems[i]) yldShowDetail(window._yldRenderItems[i].id); }
 
 function yldNew(){
 
@@ -3644,7 +3726,7 @@ function yldNew(){
 
   el('yld-form-title').textContent = 'New Yield';
 
-  showOnly('yld-form','yld-list');
+  showOnly('yld-form','yld-list','yld-detail');
 
 }
 function yldEdit(id){
@@ -3689,7 +3771,7 @@ function yldEdit(id){
 
   yldCalc();
 
-  showOnly('yld-form','yld-list');
+  showOnly('yld-form','yld-list','yld-detail');
 
 }
 
@@ -3767,7 +3849,7 @@ function yldRender(f){
     var cpu=y.trueCpu?y.trueCpu.toFixed(4):'0.0000';
     var sub=(ing?'From: '+esc(ing.name)+' - ':'')+y.qty+' '+y.unit+' - True cost: &pound;'+cpu+'/'+y.unit;
     html+='<div class="card-row">';
-    html+='<div style="flex:1;cursor:pointer" onclick="yldEditIdx('+i+')">';
+    html+='<div style="flex:1;cursor:pointer" onclick="yldShowDetailIdx('+i+')">';
     html+='<div class="cr-title">'+esc(y.name)+'</div>';
     html+='<div class="cr-sub">'+sub+'</div>';
     html+='</div>';
