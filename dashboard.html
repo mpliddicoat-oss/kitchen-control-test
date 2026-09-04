@@ -3953,7 +3953,8 @@ function recShowDetail(id){
   el('rec-detail-name').textContent=r.name;
   var yQty=r.yieldQty||r.portions||1;
   var yUnit=r.yieldUnit||'portions';
-  el('rec-detail-sub').textContent=r.category+' · Yields: '+yQty+' '+yUnit;
+  var slLabel=shelfLifeLabel(r);
+  el('rec-detail-sub').textContent=r.category+' · Yields: '+yQty+' '+yUnit+(slLabel?' · Shelf life: '+slLabel:'');
 
   // Build ingredients table
   var t=0, tbody='', ingRows=[], missingCount=0;
