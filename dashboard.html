@@ -3953,8 +3953,7 @@ function recShowDetail(id){
   el('rec-detail-name').textContent=r.name;
   var yQty=r.yieldQty||r.portions||1;
   var yUnit=r.yieldUnit||'portions';
-  var slLabel=shelfLifeLabel(r);
-  el('rec-detail-sub').textContent=r.category+' · Yields: '+yQty+' '+yUnit+(slLabel?' · Shelf life: '+slLabel:'');
+  el('rec-detail-sub').textContent=r.category+' · Yields: '+yQty+' '+yUnit;
 
   // Build ingredients table
   var t=0, tbody='', ingRows=[], missingCount=0;
@@ -3995,8 +3994,10 @@ function recShowDetail(id){
 
   // Method steps
   var steps=r.steps&&r.steps.length?r.steps:(r.method?[r.method]:[]);
+  var slLabel=shelfLifeLabel(r);
   el('rec-detail-allergens').innerHTML=
     (steps.length?'<h3 style="margin-bottom:10px">Method</h3>'+recGetStepsHTML(steps,false)+'<div class="hr"></div>':'')+
+    (slLabel?'<h3 style="margin-bottom:10px">Shelf Life</h3><p style="margin-bottom:10px">'+esc(slLabel)+'</p><div class="hr"></div>':'')+
     '<h3 style="margin-bottom:10px">Allergens</h3><div class="ag">'+chipHTML(aFromRec(r),true)+'</div>';
 
   // Build print card
