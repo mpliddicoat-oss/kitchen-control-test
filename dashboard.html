@@ -5632,10 +5632,14 @@ function ppdsIngredientsHtml(dish){
       var baseIng=byId(DB.ingredients,y.ingId); subText=baseIng?(baseIng.fullIngredients||''):'';
     } else if(c.type==='recipe'){
       var r=byId(DB.recipes,c.id); if(!r) return '';
-      name=r.name; allergens=Object.keys(aFromRec(r));
-      // Each base ingredient here is a real Ingredient record, so it gets
-      // its own allergen emphasis too, not just the recipe as a whole --
-      // already-built HTML, unlike the free-text breakdowns below.
+      name=r.name;
+      // Allergens are shown against the specific sub-ingredient that
+      // actually carries them (in the breakdown below), not aggregated onto
+      // the recipe name itself -- otherwise e.g. milk from the butter in
+      // Mushy Peas would show up twice: once vaguely on "Mushy Peas" and
+      // once, correctly, on "Salted Butter". Each base ingredient here is a
+      // real Ingredient record with its own allergen data, already-built
+      // HTML unlike the free-text breakdowns below.
       subText=baseIngredientsOf(r.components).map(ppdsIngredientLabel).join(', ');
       subIsHtml=true;
     } else return '';
