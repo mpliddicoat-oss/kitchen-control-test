@@ -1,5 +1,27 @@
 # TODO / Notes for next session
 
+## Next session -- PPDS disclaimer
+
+Matt wants a disclaimer added somewhere on/around the PPDS label output
+(exact wording and placement to confirm with him). Likely context, given
+what's been built so far: the label pulls allergens automatically from
+structured ingredient data, but a few things still rely on the chef getting
+the underlying data right rather than the app verifying it independently --
+worth covering in the disclaimer:
+
+- Free-text "Full Ingredients List" breakdowns on compound ingredients
+  (e.g. Beer Batter's own pasted list) aren't allergen-checked word by
+  word -- only manually-capitalised words in that text get bolded.
+- No QUID percentages (ingredient % by weight) on the label yet.
+- No "may contain" / cross-contamination trace-allergen line yet -- only
+  the 14 direct allergens are tracked.
+- Ultimately reflects whatever's been entered against each ingredient --
+  garbage in, garbage out, same as the rest of the app's allergen data.
+
+Similar in spirit to the existing "No allergens detected -- verify
+independently" note already shown on the standard (non-PPDS) Print Label
+when an item has no allergens set.
+
 ## Print Label — phase 2 (2026-09-03)
 
 Print Label (single-item, Days/Months shelf life, USE BY box, allergens,
