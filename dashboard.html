@@ -1376,7 +1376,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-ppds-body .kc-ppds-ingredients-label { font-size: calc(9px * var(--ppds-scale, 1)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1px; }
 .kc-ppds-body .kc-ppds-ingredients { font-size: calc(10px * var(--ppds-scale, 1)); line-height: 1.35; word-break: break-word; }
 .kc-ppds-body .kc-ppds-ingredients strong { font-weight: 700; }
-.kc-ppds-body .kc-ppds-useby { font-size: calc(10px * var(--ppds-scale, 1)); font-weight: 600; margin-top: 4px; }
+.kc-ppds-body .kc-ppds-bottom { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: 4px; }
+.kc-ppds-body .kc-ppds-useby { font-size: calc(10px * var(--ppds-scale, 1)); font-weight: 600; }
+.kc-ppds-body .kc-ppds-price { font-size: calc(13px * var(--ppds-scale, 1)); font-weight: 700; white-space: nowrap; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -5521,6 +5523,15 @@ function plUpdate(){
 // for descending weight -- components in incompatible units (each vs g vs
 // portions) aren't truly comparable, so treat this as a starting point to
 // sanity-check, not a guarantee of exact legal ordering.
+// Chefs already flag allergens by typing them in capitals within free-text
+// fields like Full Ingredients (e.g. "wheat flour, MILK powder, sugar") --
+// rather than guessing which words are allergens ourselves (rejected
+// elsewhere as too risky for legal accuracy), we trust that existing
+// capitalisation signal and simply render it in bold too.
+function boldCapsWords(text){
+  var parts = String(text||'').split(/(\b[A-Z]{2,}\b)/);
+  return parts.map(function(p, i){ return i % 2 === 1 ? '<strong>'+esc(p)+'</strong>' : esc(p); }).join('');
+}
 function ppdsIngredientsHtml(dish){
   var comps = (dish.components||[]).filter(function(c){ return !!c.id; });
   comps = comps.slice().sort(function(a,b){ return (parseFloat(b.qty)||0)-(parseFloat(a.qty)||0); });
@@ -5539,8 +5550,8 @@ function ppdsIngredientsHtml(dish){
       subText=baseIngredientsOf(r.components).map(function(i){ return i.name; }).join(', ');
     } else return '';
     var hasAllergen = (allergens||[]).filter(function(a){ return a!=='none'; }).length>0;
-    var label = hasAllergen ? '<strong>'+esc(name)+'</strong>' : esc(name);
-    return label + (subText && subText.trim() ? ' ('+esc(subText.trim())+')' : '');
+    var label = hasAllergen ? '<strong>'+esc(name)+'</strong>' : boldCapsWords(name);
+    return label + (subText && subText.trim() ? ' ('+boldCapsWords(subText.trim())+')' : '');
   }).filter(Boolean);
   return parts.join(', ');
 }
@@ -5552,11 +5563,13 @@ function ppdsBodyHtml(useBy, useByStr){
   var dish = byId(DB.dishes, _plSelected.id) || {};
   var desc = capSentences((dish.notes||'').trim());
   var ingredientsHtml = ppdsIngredientsHtml(dish);
+  var price = dish.actualSell ? fmt(dish.actualSell) : '';
   return '<div class="kc-ppds-name">'+esc(_plSelected.name)+'</div>'+
     (desc ? '<div class="kc-ppds-desc">'+esc(desc)+'</div>' : '')+
     '<div class="kc-ppds-ingredients-label">Ingredients</div>'+
     '<div class="kc-ppds-ingredients">'+(ingredientsHtml||'<span style="color:#999">No components added</span>')+'</div>'+
-    '<div class="kc-ppds-useby">Use by: '+(useByStr?esc(useByStr):'Enter shelf life above')+'</div>';
+    '<div class="kc-ppds-bottom"><span class="kc-ppds-useby">Use by: '+(useByStr?esc(useByStr):'Enter shelf life above')+'</span>'+
+    (price ? '<span class="kc-ppds-price">'+price+'</span>' : '')+'</div>';
 }
 
 // Builds the label content markup shared by the on-screen preview and the
@@ -5666,7 +5679,9 @@ function ppdsPrint(useBy, useByStr){
     '.kc-ppds-ingredients-label{font-size:calc(9px * var(--ppds-scale,1));font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1px}'+
     '.kc-ppds-ingredients{font-size:calc(10px * var(--ppds-scale,1));line-height:1.35;word-break:break-word}'+
     '.kc-ppds-ingredients strong{font-weight:700}'+
-    '.kc-ppds-useby{font-size:calc(10px * var(--ppds-scale,1));font-weight:600;margin-top:4px}'+
+    '.kc-ppds-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:4px}'+
+    '.kc-ppds-useby{font-size:calc(10px * var(--ppds-scale,1));font-weight:600}'+
+    '.kc-ppds-price{font-size:calc(13px * var(--ppds-scale,1));font-weight:700;white-space:nowrap}'+
     '</style></head><body><div class="kc-ppds-body">'+ppdsBodyHtml(useBy, useByStr)+'</div></body></html>';
 
   var iframe = el('pl-print-frame');
