@@ -1364,6 +1364,20 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-body .kc-l-day-date { display: block; font-size: 11px; font-weight: 600; margin-top: 1px; }
 .kc-label-body .kc-l-logo { flex: 0 0 auto; display: block; width: 15mm; height: 15mm; object-fit: contain; opacity: 1; }
 
+/* PPDS label -- a completely different stacked format from the prep label
+   above (Name, Description, Ingredients with allergens emphasised, a small
+   Use By at the bottom), used only for Dishes sold prepacked. Same 100mm x
+   62mm physical size as the prep label, same landscape orientation, but its
+   own layout. --ppds-scale is set by ppdsPrint()'s shrink-to-fit pass when a
+   long ingredients list would otherwise overflow the fixed label height. */
+.kc-ppds-body { font-family: 'Segoe UI', system-ui, sans-serif; }
+.kc-ppds-body .kc-ppds-name { font-size: calc(16px * var(--ppds-scale, 1)); font-weight: 700; margin-bottom: 2px; word-break: break-word; }
+.kc-ppds-body .kc-ppds-desc { font-size: calc(11px * var(--ppds-scale, 1)); color: #444; margin-bottom: 4px; word-break: break-word; }
+.kc-ppds-body .kc-ppds-ingredients-label { font-size: calc(9px * var(--ppds-scale, 1)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1px; }
+.kc-ppds-body .kc-ppds-ingredients { font-size: calc(10px * var(--ppds-scale, 1)); line-height: 1.35; word-break: break-word; }
+.kc-ppds-body .kc-ppds-ingredients strong { font-weight: 700; }
+.kc-ppds-body .kc-ppds-useby { font-size: calc(10px * var(--ppds-scale, 1)); font-weight: 600; margin-top: 4px; }
+
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
 .search-dropdown { position:absolute; top:100%; left:0; right:0; background:white; border:1px solid var(--border); border-radius:8px; max-height:220px; overflow-y:auto; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,0.12); display:none; }
@@ -5478,10 +5492,66 @@ function plUpdate(){
   var useByStr = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'}) : '';
   el('pl-use-by').textContent = useByStr || 'Enter shelf life above';
 
-  el('pl-preview').innerHTML = plBodyHtml(useBy, useByStr);
+  var previewEl = el('pl-preview');
+  if(_plSelected.type==='dish'){
+    previewEl.className = 'kc-ppds-body kc-label-preview';
+    previewEl.innerHTML = ppdsBodyHtml(useBy, useByStr);
+  } else {
+    previewEl.className = 'kc-label-body kc-label-preview';
+    previewEl.innerHTML = plBodyHtml(useBy, useByStr);
+  }
 
   var printBtn = el('pl-print-btn');
   if(printBtn) printBtn.disabled = !useBy;
+}
+
+// Compiles a dish's components into one descending-order ingredients line
+// for a PPDS label, bolding any component the app already knows carries an
+// allergen (from its own allergen picker -- not by scanning free text for
+// allergen words, which would risk getting it wrong). A compound component
+// (a bought-in ingredient, a prepared yield, or a sub-recipe) gets its own
+// recorded sub-ingredients listed in brackets right after it, one level
+// deep, matching how a real PPDS label declares a compound ingredient.
+// Ordering is by each component's recorded quantity as a best-effort proxy
+// for descending weight -- components in incompatible units (each vs g vs
+// portions) aren't truly comparable, so treat this as a starting point to
+// sanity-check, not a guarantee of exact legal ordering.
+function ppdsIngredientsHtml(dish){
+  var comps = (dish.components||[]).filter(function(c){ return !!c.id; });
+  comps = comps.slice().sort(function(a,b){ return (parseFloat(b.qty)||0)-(parseFloat(a.qty)||0); });
+  var parts = comps.map(function(c){
+    var name='', allergens=[], subText='';
+    if(c.type==='ingredient'){
+      var ing=byId(DB.ingredients,c.id); if(!ing) return '';
+      name=ing.name; allergens=aFromIng(ing); subText=ing.fullIngredients||'';
+    } else if(c.type==='yield'){
+      var y=byId(DB.yields,c.id); if(!y) return '';
+      name=y.name; allergens=y.allergens||[];
+      var baseIng=byId(DB.ingredients,y.ingId); subText=baseIng?(baseIng.fullIngredients||''):'';
+    } else if(c.type==='recipe'){
+      var r=byId(DB.recipes,c.id); if(!r) return '';
+      name=r.name; allergens=Object.keys(aFromRec(r));
+      subText=baseIngredientsOf(r.components).map(function(i){ return i.name; }).join(', ');
+    } else return '';
+    var hasAllergen = (allergens||[]).filter(function(a){ return a!=='none'; }).length>0;
+    var label = hasAllergen ? '<strong>'+esc(name)+'</strong>' : esc(name);
+    return label + (subText && subText.trim() ? ' ('+esc(subText.trim())+')' : '');
+  }).filter(Boolean);
+  return parts.join(', ');
+}
+
+// PPDS label body -- a completely different stacked format from the prep
+// label (plBodyHtml): Name, Description, Ingredients with allergens
+// emphasised, then a small Use By at the bottom. Dishes only.
+function ppdsBodyHtml(useBy, useByStr){
+  var dish = byId(DB.dishes, _plSelected.id) || {};
+  var desc = capSentences((dish.notes||'').trim());
+  var ingredientsHtml = ppdsIngredientsHtml(dish);
+  return '<div class="kc-ppds-name">'+esc(_plSelected.name)+'</div>'+
+    (desc ? '<div class="kc-ppds-desc">'+esc(desc)+'</div>' : '')+
+    '<div class="kc-ppds-ingredients-label">Ingredients</div>'+
+    '<div class="kc-ppds-ingredients">'+(ingredientsHtml||'<span style="color:#999">No components added</span>')+'</div>'+
+    '<div class="kc-ppds-useby">Use by: '+(useByStr?esc(useByStr):'Enter shelf life above')+'</div>';
 }
 
 // Builds the label content markup shared by the on-screen preview and the
@@ -5518,6 +5588,8 @@ function plPrint(){
   if(!useBy){ alert('Please enter a shelf life first so the Use By date can be calculated.'); return; }
   var useByStr = useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
   plUpdate();
+
+  if(_plSelected.type==='dish'){ ppdsPrint(useBy, useByStr); return; }
 
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label</title><style>'+
     '*{box-sizing:border-box;margin:0;padding:0}'+
@@ -5570,6 +5642,63 @@ function plPrint(){
   } else {
     setTimeout(doPrint, 50);
   }
+}
+
+// Prints a PPDS label (dishes only) -- same standalone-iframe approach as
+// plPrint(), fixed at the same 100mm x 62mm physical size, but its own
+// stacked layout. Also does a shrink-to-fit pass: a full ingredients list
+// can easily run longer than a single ingredient's label, so rather than
+// let it silently overflow the fixed height (which is how the earlier
+// phantom-blank-page bug happened), the font scale steps down until the
+// content actually fits inside the printable area.
+function ppdsPrint(useBy, useByStr){
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label</title><style>'+
+    '*{box-sizing:border-box;margin:0;padding:0}'+
+    '@page{size:100mm 62mm;margin:3mm 3mm 1mm 3mm}'+
+    'body{font-family:\'Segoe UI\',system-ui,sans-serif}'+
+    '.kc-ppds-name{font-size:calc(16px * var(--ppds-scale,1));font-weight:700;margin-bottom:2px;word-break:break-word}'+
+    '.kc-ppds-desc{font-size:calc(11px * var(--ppds-scale,1));color:#444;margin-bottom:4px;word-break:break-word}'+
+    '.kc-ppds-ingredients-label{font-size:calc(9px * var(--ppds-scale,1));font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1px}'+
+    '.kc-ppds-ingredients{font-size:calc(10px * var(--ppds-scale,1));line-height:1.35;word-break:break-word}'+
+    '.kc-ppds-ingredients strong{font-weight:700}'+
+    '.kc-ppds-useby{font-size:calc(10px * var(--ppds-scale,1));font-weight:600;margin-top:4px}'+
+    '</style></head><body><div class="kc-ppds-body">'+ppdsBodyHtml(useBy, useByStr)+'</div></body></html>';
+
+  var iframe = el('pl-print-frame');
+  if(!iframe){
+    iframe = document.createElement('iframe');
+    iframe.id = 'pl-print-frame';
+    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    document.body.appendChild(iframe);
+  }
+  var doc = iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  // Shrink-to-fit against the real printable height (58mm, inside the
+  // 3mm+1mm top/bottom margins), measured via a probe element rather than
+  // a hand-computed mm-to-px conversion, so it matches whatever this
+  // browser/driver actually renders.
+  var probe = doc.createElement('div');
+  probe.style.cssText = 'position:absolute;visibility:hidden;height:58mm;width:0;';
+  doc.body.appendChild(probe);
+  var maxHeightPx = probe.offsetHeight;
+  doc.body.removeChild(probe);
+  var scales = [1, 0.9, 0.8, 0.7, 0.6, 0.5];
+  for(var i=0;i<scales.length;i++){
+    doc.documentElement.style.setProperty('--ppds-scale', scales[i]);
+    if(doc.body.scrollHeight <= maxHeightPx) break;
+  }
+
+  var printed = false;
+  function doPrint(){
+    if(printed) return;
+    printed = true;
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  }
+  setTimeout(doPrint, 50);
 }
 
 // ================================================================
