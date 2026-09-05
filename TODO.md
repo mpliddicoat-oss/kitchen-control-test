@@ -40,3 +40,26 @@ is already gated by the existing `canEdit()` check on Save
 Matt ran the `shelf_life_value`/`shelf_life_unit` migration on the shared
 Supabase project (no errors), so syncing across devices is now fully
 live for staging and production alike -- no further action needed.
+
+## PPDS labelling -- "Single Ingredient" flag (staging only)
+
+The PPDS warning on a dish (missing ingredients breakdown) used to fire for
+*any* ingredient with no Full Ingredients List recorded -- including raw,
+single-item ingredients like a lime or an egg, which don't have a product
+label to paste from and are frustrating to have to fill in just to clear
+the warning.
+
+Added a "This is a single, unprocessed ingredient" checkbox to the
+Ingredient form. When ticked, the ingredient is treated as its own complete
+declaration and the PPDS warning no longer flags it, without needing
+anything typed into Full Ingredients List. Existing ingredients default to
+unticked, so nothing already flagged (e.g. ketchup, mayo) silently stops
+being flagged -- it's an explicit per-ingredient opt-in, not a change to
+the default behaviour.
+
+Needs a migration on the shared Supabase project (same pattern as shelf
+life -- saves gracefully degrade via `isMissingColumnError` until it's run):
+
+```sql
+alter table ingredients add column if not exists single_ingredient boolean default false;
+```
