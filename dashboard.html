@@ -1382,6 +1382,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-ppds-body .kc-ppds-ingredients-label { font-size: calc(9px * var(--ppds-scale, 1)); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1px; }
 .kc-ppds-body .kc-ppds-ingredients { font-size: calc(10px * var(--ppds-scale, 1)); line-height: 1.35; word-break: break-word; }
 .kc-ppds-body .kc-ppds-ingredients strong { font-weight: 700; }
+.kc-ppds-body .kc-ppds-allergens-summary { font-size: calc(10px * var(--ppds-scale, 1)); line-height: 1.35; word-break: break-word; margin-top: 3px; }
 .kc-ppds-body .kc-ppds-bottom { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: 4px; }
 .kc-ppds-body .kc-ppds-useby { font-size: calc(10px * var(--ppds-scale, 1)); font-weight: 600; }
 .kc-ppds-body .kc-ppds-price { font-size: calc(13px * var(--ppds-scale, 1)); font-weight: 700; white-space: nowrap; }
@@ -5653,15 +5654,26 @@ function ppdsIngredientsHtml(dish){
 // PPDS label body -- a completely different stacked format from the prep
 // label (plBodyHtml): Name, Description, Ingredients with allergens
 // emphasised, then a small Use By at the bottom. Dishes only.
+// A deduplicated "Allergens: X, Y, Z" summary line beneath the ingredients
+// list, matching standard PPDS label layout (e.g. Kafoodle-style labels) --
+// built from the same aggregated allergen data already used for the
+// allergen matrix, so it can never drift out of step with the ingredients
+// list above it.
+function ppdsAllergensSummary(dish){
+  var s = aFromDish(dish);
+  return ALLERGENS.filter(function(a){ return s[a.id]; }).map(function(a){ return a.label; });
+}
 function ppdsBodyHtml(useBy, useByStr){
   var dish = byId(DB.dishes, _plSelected.id) || {};
   var desc = capSentences((dish.notes||'').trim());
   var ingredientsHtml = ppdsIngredientsHtml(dish);
+  var allergenNames = ppdsAllergensSummary(dish);
   var price = dish.actualSell ? fmt(dish.actualSell) : '';
   return '<div class="kc-ppds-name">'+esc(_plSelected.name)+'</div>'+
     (desc ? '<div class="kc-ppds-desc">'+esc(desc)+'</div>' : '')+
     '<div class="kc-ppds-ingredients-label">Ingredients</div>'+
     '<div class="kc-ppds-ingredients">'+(ingredientsHtml||'<span style="color:#999">No components added</span>')+'</div>'+
+    (allergenNames.length ? '<div class="kc-ppds-allergens-summary"><span class="kc-ppds-ingredients-label">Allergens</span> <strong>'+esc(allergenNames.join(', '))+'</strong></div>' : '')+
     '<div class="kc-ppds-bottom"><span class="kc-ppds-useby">Use by: '+(useByStr?esc(useByStr):'Enter shelf life above')+'</span>'+
     (price ? '<span class="kc-ppds-price">'+price+'</span>' : '')+'</div>';
 }
@@ -5773,6 +5785,7 @@ function ppdsPrint(useBy, useByStr){
     '.kc-ppds-ingredients-label{font-size:calc(9px * var(--ppds-scale,1));font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:1px}'+
     '.kc-ppds-ingredients{font-size:calc(10px * var(--ppds-scale,1));line-height:1.35;word-break:break-word}'+
     '.kc-ppds-ingredients strong{font-weight:700}'+
+    '.kc-ppds-allergens-summary{font-size:calc(10px * var(--ppds-scale,1));line-height:1.35;word-break:break-word;margin-top:3px}'+
     '.kc-ppds-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:4px}'+
     '.kc-ppds-useby{font-size:calc(10px * var(--ppds-scale,1));font-weight:600}'+
     '.kc-ppds-price{font-size:calc(13px * var(--ppds-scale,1));font-weight:700;white-space:nowrap}'+
