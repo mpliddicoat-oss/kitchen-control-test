@@ -5602,11 +5602,27 @@ function boldCapsWords(text){
   var parts = String(text||'').split(/(\b[A-Z]{2,}\b)/);
   return parts.map(function(p, i){ return i % 2 === 1 ? '<strong>'+esc(p)+'</strong>' : esc(p); }).join('');
 }
+// Natasha's Law emphasis: an ingredient name stays normal weight -- it's the
+// allergen(s) it contains that get called out in bold capitals, in brackets
+// right after the name (e.g. "Haddock (FISH)"), rather than bolding the
+// whole ingredient name.
+function allergenSuffix(allergens){
+  var names = (allergens||[]).filter(function(a){ return a!=='none'; }).map(function(a){
+    var f = ALLERGENS.find(function(x){ return x.id===a; });
+    return f ? f.label.toUpperCase() : '';
+  }).filter(Boolean);
+  return names.length ? ' (<strong>'+esc(names.join(', '))+'</strong>)' : '';
+}
+// Name + allergen emphasis for one real Ingredient record (has structured
+// allergen data, unlike the free-text Full Ingredients List breakdowns).
+function ppdsIngredientLabel(ing){
+  return boldCapsWords(ing.labelName||ing.name) + allergenSuffix(aFromIng(ing));
+}
 function ppdsIngredientsHtml(dish){
   var comps = (dish.components||[]).filter(function(c){ return !!c.id; });
   comps = comps.slice().sort(function(a,b){ return (parseFloat(b.qty)||0)-(parseFloat(a.qty)||0); });
   var parts = comps.map(function(c){
-    var name='', allergens=[], subText='';
+    var name='', allergens=[], subText='', subIsHtml=false;
     if(c.type==='ingredient'){
       var ing=byId(DB.ingredients,c.id); if(!ing) return '';
       name=ing.labelName||ing.name; allergens=aFromIng(ing); subText=ing.fullIngredients||'';
@@ -5617,18 +5633,15 @@ function ppdsIngredientsHtml(dish){
     } else if(c.type==='recipe'){
       var r=byId(DB.recipes,c.id); if(!r) return '';
       name=r.name; allergens=Object.keys(aFromRec(r));
-      subText=baseIngredientsOf(r.components).map(function(i){ return i.labelName||i.name; }).join(', ');
+      // Each base ingredient here is a real Ingredient record, so it gets
+      // its own allergen emphasis too, not just the recipe as a whole --
+      // already-built HTML, unlike the free-text breakdowns below.
+      subText=baseIngredientsOf(r.components).map(ppdsIngredientLabel).join(', ');
+      subIsHtml=true;
     } else return '';
-    // Natasha's Law emphasis: the ingredient name itself stays normal weight --
-    // it's the allergen(s) it contains that get called out in bold capitals,
-    // in brackets right after the name (e.g. "Haddock (FISH)"), rather than
-    // bolding the whole ingredient name.
-    var allergenNames = (allergens||[]).filter(function(a){ return a!=='none'; }).map(function(a){
-      var f = ALLERGENS.find(function(x){ return x.id===a; });
-      return f ? f.label.toUpperCase() : '';
-    }).filter(Boolean);
-    var label = boldCapsWords(name) + (allergenNames.length ? ' (<strong>'+esc(allergenNames.join(', '))+'</strong>)' : '');
-    return label + (subText && subText.trim() ? ' ('+boldCapsWords(subText.trim())+')' : '');
+    var label = boldCapsWords(name) + allergenSuffix(allergens);
+    if(!subText || !subText.trim()) return label;
+    return label + ' ('+(subIsHtml ? subText.trim() : boldCapsWords(subText.trim()))+')';
   }).filter(Boolean);
   return parts.join(', ');
 }
