@@ -5384,8 +5384,14 @@ function ordRenderHistory(){
 // PRINT LABEL
 // ================================================================
 var _plSelected = null; // {type:'ingredient'|'yield'|'recipe', id, name}
+// Set by plGoTo() when jumping straight into Print Label from an item's own
+// page, so the form's Back/Cancel button can return there instead of the
+// Print Label search screen. Cleared whenever Print Label is entered normally.
+var _plReturnPage = null;
+var _plReturnPageByType = {ingredient:'ingredients', yield:'yields', recipe:'recipes', dish:'dishes'};
 
 function plInit(){
+  _plReturnPage = null;
   showOnly('pl-select','pl-form');
   el('pl-search').value = '';
   plRenderList('');
@@ -5420,6 +5426,7 @@ function plAllergenNames(type, item){
 function plGoTo(type, id){
   if(!id){ alert('Save this item first, then you can print a label for it.'); return; }
   go('print-label');
+  _plReturnPage = _plReturnPageByType[type] || null;
   plSelect(type, id);
 }
 function plSelect(type, id){
@@ -5450,6 +5457,7 @@ function plSelect(type, id){
 }
 
 function plBackToSelect(){
+  if(_plReturnPage){ var p=_plReturnPage; _plReturnPage=null; go(p); return; }
   showOnly('pl-select','pl-form');
 }
 
