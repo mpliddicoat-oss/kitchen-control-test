@@ -508,6 +508,7 @@ async function loadIngredients() {
         cpu: (pSize && pCost) ? pCost/pSize : 0,
         fullIngredients: row.ingredients_list || '',
         singleIngredient: !!row.single_ingredient,
+        labelName: row.label_name || '',
         notes: row.notes || '',
         shelfLifeValue: parseFloat(row.shelf_life_value) || '',
         shelfLifeUnit: row.shelf_life_unit || 'days',
@@ -581,6 +582,7 @@ async function saveIngredientToSupabase(ing) {
     storage_type: ing.unit || 'g',
     ingredients_list: ing.fullIngredients || '',
     single_ingredient: !!ing.singleIngredient,
+    label_name: ing.labelName || '',
     notes: ing.notes || '',
     shelf_life_value: ing.shelfLifeValue || null,
     shelf_life_unit: ing.shelfLifeUnit || 'days',
@@ -606,11 +608,12 @@ async function saveIngredientToSupabase(ing) {
   // The shelf_life_*/single_ingredient columns may not exist yet (migration
   // not run) -- retry without them so the rest of the ingredient still saves.
   if (result.error && isMissingColumnError(result.error)) {
-    console.warn('saveIngredientToSupabase: shelf_life/single_ingredient columns not found, retrying without them. Run the migration in TODO.md to enable these.');
+    console.warn('saveIngredientToSupabase: shelf_life/single_ingredient/label_name columns not found, retrying without them. Run the migration in TODO.md to enable these.');
     var rowNoShelf = Object.assign({}, row);
     delete rowNoShelf.shelf_life_value;
     delete rowNoShelf.shelf_life_unit;
     delete rowNoShelf.single_ingredient;
+    delete rowNoShelf.label_name;
     result = isRealUUID
       ? await supabaseClient.from('ingredients').update(rowNoShelf).eq('id', ing.id).select()
       : await supabaseClient.from('ingredients').insert([rowNoShelf]).select();
@@ -1781,6 +1784,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
           <input
             id="ing-name"
             placeholder="e.g. Plain Flour"
+            oninput="ingNameInput()"
           >
         </div>
 
@@ -1790,6 +1794,19 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
           <div id="ing-supplier-wrap"></div><input type="hidden" id="ing-supplier" value="">
         </div>
 
+      </div>
+
+      <div class="fr">
+        <div class="fg">
+          <label>Label Name
+            <span style="font-weight:400;font-size:11px;text-transform:none">(what prints on labels -- defaults to the ingredient name above, e.g. shorten "Lime -- Sea Freight" to just "Lime")</span>
+          </label>
+          <input
+            id="ing-label-name"
+            placeholder="e.g. Lime"
+            oninput="_ingLabelNameTouched=true"
+          >
+        </div>
       </div>
 
 
@@ -3306,6 +3323,10 @@ async function promoteAwaiting(id){
     if(h) h.value = preSupObj ? preSupObj.name : '';
   }
   el('ing-name').value=item.name||'';
+  var lnEl=el('ing-label-name'); if(lnEl) lnEl.value=item.name||'';
+  _ingLabelNameTouched=false;
+  var singleEl=el('ing-single'); if(singleEl) singleEl.checked=false;
+  ingToggleSingle();
   el('ing-size').value=item.packSize||'';
   el('ing-cost').value=item.packCost||'';
   // Map invoice units to valid dropdown values
@@ -3370,6 +3391,7 @@ function ingShowDetail(id){
     fld('Pack Cost', i.packCost?fmt(i.packCost):null)+
     fld('Cost per '+esc(i.unit), ingCpuLabel(i))+
     fld('Product Code / Notes', i.notes?esc(i.notes):null)+
+    fld('Label Name', (i.labelName && i.labelName!==i.name)?esc(i.labelName):null)+
     fld('Ingredients List', i.singleIngredient?'Single, unprocessed ingredient -- no list needed':(i.fullIngredients?esc(i.fullIngredients):null));
   var aSet={}; aFromIng(i).forEach(function(a){ aSet[a]=true; });
   el('ing-detail-allergens').innerHTML=
@@ -3396,6 +3418,8 @@ function ingNew(){
   });
   var singleEl=el('ing-single'); if(singleEl) singleEl.checked=false;
   ingToggleSingle();
+  var lnEl=el('ing-label-name'); if(lnEl) lnEl.value='';
+  _ingLabelNameTouched=false;
   var slu=el('ing-shelf-unit'); if(slu) slu.value='days';
   // Pack cost - check type
   var pc=el('ing-pack-cost')||el('ing-cost');
@@ -3447,7 +3471,7 @@ function ingEdit(id){
       '-- Search suppliers --'
     );
   }
-  el('ing-name').value=i.name; el('ing-brand').value=i.brand||''; el('ing-size').value=i.packSize||''; el('ing-cost').value=i.packCost||''; el('ing-unit').value=i.unit||'kg'; el('ing-notes').value=i.notes||''; var flEl=el('ing-full-list'); if(flEl) flEl.value=i.fullIngredients||''; el('ing-case-size').value=i.caseSize||''; var ccFld=el('ing-case-cost'); if(ccFld&&ccFld.tagName==='INPUT') ccFld.value=i.caseCost||''; var singleEl=el('ing-single'); if(singleEl) singleEl.checked=!!i.singleIngredient; ingToggleSingle(); ingCalcFromPack();
+  el('ing-name').value=i.name; el('ing-brand').value=i.brand||''; el('ing-size').value=i.packSize||''; el('ing-cost').value=i.packCost||''; el('ing-unit').value=i.unit||'kg'; el('ing-notes').value=i.notes||''; var flEl=el('ing-full-list'); if(flEl) flEl.value=i.fullIngredients||''; el('ing-case-size').value=i.caseSize||''; var ccFld=el('ing-case-cost'); if(ccFld&&ccFld.tagName==='INPUT') ccFld.value=i.caseCost||''; var singleEl=el('ing-single'); if(singleEl) singleEl.checked=!!i.singleIngredient; ingToggleSingle(); var lnEl=el('ing-label-name'); if(lnEl) lnEl.value=i.labelName||i.name; _ingLabelNameTouched=!!(i.labelName && i.labelName!==i.name); ingCalcFromPack();
   el('ing-shelf-life').value=i.shelfLifeValue||''; el('ing-shelf-unit').value=i.shelfLifeUnit||'days';
   _ingExtraSups=(i.suppliers&&i.suppliers.length>1)?i.suppliers.slice(1).map(function(s){ return Object.assign({},s); }):[];
   ingRenderExtraSups();
@@ -3556,6 +3580,15 @@ function ingCalc(){
     }
   }
 }
+// Label Name mirrors Ingredient Name live (e.g. so "Lime" auto-fills as you
+// type) until the chef manually edits it -- e.g. to shorten a scanned
+// invoice's "Lime -- Sea Freight" down to just "Lime" for the printed label.
+// Once touched, further edits to the ingredient name stop overwriting it.
+var _ingLabelNameTouched = false;
+function ingNameInput(){
+  var lnEl = el('ing-label-name');
+  if(lnEl && !_ingLabelNameTouched) lnEl.value = el('ing-name').value;
+}
 // A single, unprocessed ingredient (a lime, an egg) IS its own complete
 // declaration -- there's nothing to paste into Full Ingredients List, so
 // hide that field rather than leave it sitting there unused.
@@ -3583,11 +3616,14 @@ function ingSave(){
   suppliers.forEach(function(s){ s.isCheapest = (s===cheapest); });
   var flEl=el('ing-full-list');
   var isSingle = el('ing-single') ? el('ing-single').checked : false;
+  var labelNameVal = el('ing-label-name') ? el('ing-label-name').value.trim() : '';
   var data = {
   name: tc(name),
   brand: val('ing-brand'),
 
   supplierId: val('ing-supplier').toString(),
+
+  labelName: _ingLabelNameTouched ? labelNameVal : '',
 
   fullIngredients: isSingle ? '' : (flEl ? flEl.value : ''),
   singleIngredient: isSingle,
@@ -3705,7 +3741,8 @@ function ingRow(i){
   var aDisp=(i.allergens||[]).indexOf('none')>=0?'<span style="color:#065f46">No allergens</span>':aFromIng(i).map(function(a){ var f=ALLERGENS.find(function(x){ return x.id===a; }); return f?f.e:''; }).join(' ')||'Not set';
   var hasLabel=i.singleIngredient?'<span style="font-size:10px;margin-left:6px;padding:1px 6px;background:#dcfce7;color:#166534;border-radius:10px;font-weight:600">Single Ingredient</span>':(i.fullIngredients?'<span style="font-size:10px;margin-left:6px;padding:1px 6px;background:#dbeafe;color:#1e40af;border-radius:10px;font-weight:600">Label</span>':'');
   var slLabel=shelfLifeLabel(i); var slDisp=slLabel?(' &middot; Shelf life: '+slLabel):'';
-  return '<div class="card-row"><div onclick="ingShowDetail(\''+i.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(i.name)+hasLabel+'</div><div class="cr-sub">'+ingCpuLabel(i)+' &middot; '+aDisp+slDisp+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="ingEdit(\''+i.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="ingDel(\''+i.id+'\',event)">Del</button></div></div>';
+  var labelNameDisp=(i.labelName && i.labelName!==i.name)?(' &middot; Label: '+esc(i.labelName)):'';
+  return '<div class="card-row"><div onclick="ingShowDetail(\''+i.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(i.name)+hasLabel+'</div><div class="cr-sub">'+ingCpuLabel(i)+' &middot; '+aDisp+slDisp+labelNameDisp+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="ingEdit(\''+i.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="ingDel(\''+i.id+'\',event)">Del</button></div></div>';
 }
 
 function ingGoBack(){
@@ -5457,8 +5494,9 @@ function plSelect(type, id){
   var src = type==='ingredient'?DB.ingredients:type==='yield'?DB.yields:type==='dish'?DB.dishes:DB.recipes;
   var item = byId(src, id);
   if(!item) return;
-  _plSelected = {type:type, id:id, name:item.name, allergens:plAllergenNames(type, item)};
-  el('pl-item-name').textContent = item.name;
+  var labelName = item.labelName || item.name;
+  _plSelected = {type:type, id:id, name:item.name, labelName:labelName, allergens:plAllergenNames(type, item)};
+  el('pl-item-name').textContent = item.name + (labelName!==item.name ? ' (label: '+labelName+')' : '');
   var ppdsEl = el('pl-ppds-warning');
   if(ppdsEl) ppdsEl.innerHTML = type==='dish' ? ppdsWarningHTML(item.components) : '';
   var todayIso = plDateToIso(new Date());
@@ -5571,7 +5609,7 @@ function ppdsIngredientsHtml(dish){
     var name='', allergens=[], subText='';
     if(c.type==='ingredient'){
       var ing=byId(DB.ingredients,c.id); if(!ing) return '';
-      name=ing.name; allergens=aFromIng(ing); subText=ing.fullIngredients||'';
+      name=ing.labelName||ing.name; allergens=aFromIng(ing); subText=ing.fullIngredients||'';
     } else if(c.type==='yield'){
       var y=byId(DB.yields,c.id); if(!y) return '';
       name=y.name; allergens=y.allergens||[];
@@ -5579,7 +5617,7 @@ function ppdsIngredientsHtml(dish){
     } else if(c.type==='recipe'){
       var r=byId(DB.recipes,c.id); if(!r) return '';
       name=r.name; allergens=Object.keys(aFromRec(r));
-      subText=baseIngredientsOf(r.components).map(function(i){ return i.name; }).join(', ');
+      subText=baseIngredientsOf(r.components).map(function(i){ return i.labelName||i.name; }).join(', ');
     } else return '';
     var hasAllergen = (allergens||[]).filter(function(a){ return a!=='none'; }).length>0;
     var label = hasAllergen ? '<strong>'+esc(name)+'</strong>' : boldCapsWords(name);
@@ -5617,7 +5655,7 @@ function plBodyHtml(useBy, useByStr){
   return (useByDay
       ? '<div class="kc-l-day-box"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'+logoImg+'</div>'
       : '<div class="kc-l-day-box kc-l-day-box-empty"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div>'+logoImg+'</div>')+
-    '<div class="kc-l-name">'+esc(_plSelected.name)+'</div>'+
+    '<div class="kc-l-name">'+esc(_plSelected.labelName||_plSelected.name)+'</div>'+
     '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(prodDateStr)+'</div>'+
     (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
     (batchCode ? '<div class="kc-l-row"><strong>Batch Code:</strong> '+esc(batchCode)+'</div>' : '')+

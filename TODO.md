@@ -63,3 +63,26 @@ life -- saves gracefully degrade via `isMissingColumnError` until it's run):
 ```sql
 alter table ingredients add column if not exists single_ingredient boolean default false;
 ```
+
+## PPDS labelling -- "Label Name" field (staging only)
+
+Ingredients pulled in from a scanned invoice often carry the supplier's
+full product description (e.g. "Lime -- Sea Freight"), which isn't what
+should print on a label or appear in a dish's PPDS ingredients list.
+
+Added a "Label Name" field to the Ingredient form, right under Ingredient
+Name. It live-mirrors the ingredient name as you type (so it auto-fills
+with no extra effort in the common case) until manually edited, at which
+point it stops auto-syncing -- e.g. type "Lime" over the auto-filled
+"Lime -- Sea Freight" once and it stays "Lime" from then on. Falls back to
+the ingredient's own name everywhere if never customised. Used for: the
+name shown on that ingredient's own Print Label, and the name shown for it
+within a dish's PPDS ingredients list (including via yields/recipes that
+use it).
+
+Needs a migration on the shared Supabase project (same graceful-degradation
+pattern):
+
+```sql
+alter table ingredients add column if not exists label_name text default '';
+```
