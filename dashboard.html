@@ -5619,8 +5619,15 @@ function ppdsIngredientsHtml(dish){
       name=r.name; allergens=Object.keys(aFromRec(r));
       subText=baseIngredientsOf(r.components).map(function(i){ return i.labelName||i.name; }).join(', ');
     } else return '';
-    var hasAllergen = (allergens||[]).filter(function(a){ return a!=='none'; }).length>0;
-    var label = hasAllergen ? '<strong>'+esc(name)+'</strong>' : boldCapsWords(name);
+    // Natasha's Law emphasis: the ingredient name itself stays normal weight --
+    // it's the allergen(s) it contains that get called out in bold capitals,
+    // in brackets right after the name (e.g. "Haddock (FISH)"), rather than
+    // bolding the whole ingredient name.
+    var allergenNames = (allergens||[]).filter(function(a){ return a!=='none'; }).map(function(a){
+      var f = ALLERGENS.find(function(x){ return x.id===a; });
+      return f ? f.label.toUpperCase() : '';
+    }).filter(Boolean);
+    var label = boldCapsWords(name) + (allergenNames.length ? ' (<strong>'+esc(allergenNames.join(', '))+'</strong>)' : '');
     return label + (subText && subText.trim() ? ' ('+boldCapsWords(subText.trim())+')' : '');
   }).filter(Boolean);
   return parts.join(', ');
