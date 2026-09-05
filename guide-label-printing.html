@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Printing Food Labels From Kitchen Control: Setup & Printer Guide | Kitchen Control</title>
+<meta name="description" content="How Print Label works in Kitchen Control, and which Brother QL label printer to buy — no vendor software required, just a browser and a label roll.">
+<meta name="keywords" content="allergen management, allergen management software, kitchen management, kitchen management software, menu costing, menu costing software, Natasha's Law compliance, HACCP software, food safety software, restaurant management software, catering software, invoice scanning software, label printing software, food cost software, back of house software, kitchen software UK, chef software, hospitality software UK, Brother QL label printer, kitchen label printer, PPDS label printer">
+<link rel="canonical" href="https://www.kitchen-control.co.uk/guide-label-printing">
+<meta property="og:title" content="Printing Food Labels From Kitchen Control: Setup & Printer Guide">
+<meta property="og:description" content="How Print Label works, and which Brother QL printer to buy — no vendor software required.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.kitchen-control.co.uk/guide-label-printing">
+<meta property="og:image" content="https://www.kitchen-control.co.uk/images/og-image.png">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-RDBRZY77BD');
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper: #F7F5F1;
+    --paper-dim: #EFEBE2;
+    --navy: #2A3950;
+    --navy-soft: #5B6779;
+    --green: #97C25A;
+    --green-dark: #75973F;
+    --grey: #8C9199;
+    --line: #DAD5C9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--navy);
+    font-family:'DM Mono', monospace;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+  }
+  .mono{font-family:'DM Mono', monospace;}
+  .display{font-family:'Oswald', sans-serif; font-weight:700; letter-spacing:-0.01em; text-transform:uppercase;}
+  a{color:inherit;}
+
+  .wrap{max-width:820px; margin:0 auto; padding:0 24px;}
+
+  header{border-bottom:1px solid var(--line); padding:20px 0;}
+  header .wrap{display:flex; justify-content:space-between; align-items:center; max-width:820px;}
+  .logo{
+    font-family:'Oswald', sans-serif; font-weight:700; font-size:1.05rem; letter-spacing:0.02em;
+    text-transform:uppercase; color:var(--navy); text-decoration:none;
+  }
+  .logo span{color:var(--green-dark);}
+  .header-cta{
+    font-family:'DM Mono', monospace; font-size:0.75rem; font-weight:500; color:var(--navy);
+    text-decoration:none; border:1px solid var(--navy); padding:9px 14px; border-radius:2px;
+  }
+
+  .hero{padding:56px 0 36px;}
+  .eyebrow{
+    font-family:'DM Mono', monospace; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--green-dark); margin-bottom:16px; display:flex; align-items:center; gap:9px;
+  }
+  .eyebrow::before{content:''; width:7px; height:7px; background:var(--green-dark); border-radius:50%; display:inline-block;}
+  h1{
+    font-family:'Oswald', sans-serif; font-weight:700; text-transform:uppercase;
+    font-size:clamp(1.8rem, 4.2vw, 2.6rem); line-height:1.1; margin-bottom:18px; max-width:19ch; color:var(--navy);
+  }
+  .lede{font-size:1.02rem; color:var(--navy-soft); max-width:60ch; margin-bottom:12px;}
+  .byline{font-family:'DM Mono', monospace; font-size:0.76rem; color:var(--grey); margin-top:20px;}
+
+  article{padding:8px 0 48px;}
+  article h2{
+    font-family:'Oswald', sans-serif; font-weight:700; text-transform:uppercase;
+    font-size:1.3rem; margin:44px 0 14px; color:var(--navy);
+  }
+  article h2:first-child{margin-top:0;}
+  article p{font-size:0.94rem; color:var(--navy-soft); margin-bottom:16px; max-width:66ch;}
+  article strong{color:var(--navy);}
+  article ol, article ul{margin:0 0 18px 20px; color:var(--navy-soft); font-size:0.94rem;}
+  article li{margin-bottom:8px;}
+
+  .check-box{background:#fff; border:1px solid var(--line); padding:24px 26px; margin:28px 0;}
+  .check-box .tag{
+    font-family:'Oswald', sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--green-dark); margin-bottom:12px; font-weight:600; display:block;
+  }
+  .check-row{display:flex; gap:10px; align-items:flex-start; padding:8px 0; font-size:0.9rem; color:var(--navy-soft);}
+  .check-row .tick{color:var(--green-dark); font-weight:700; flex-shrink:0;}
+
+  .printer-cards{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:28px 0;}
+  @media (max-width:640px){.printer-cards{grid-template-columns:1fr;}}
+  .printer-card{background:#fff; border:1px solid var(--line); padding:22px;}
+  .printer-card.reco{border-top:3px solid var(--green-dark);}
+  .printer-card .tier{
+    font-family:'Oswald', sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--green-dark); font-weight:600; margin-bottom:6px; display:block;
+  }
+  .printer-card h3{font-family:'Oswald', sans-serif; text-transform:uppercase; font-size:1.05rem; margin-bottom:10px; color:var(--navy);}
+  .printer-card .spec-row{display:flex; justify-content:space-between; font-size:0.82rem; padding:6px 0; border-bottom:1px dotted var(--line);}
+  .printer-card .spec-row:last-child{border-bottom:none;}
+  .printer-card .spec-row .label{color:var(--grey);}
+
+  .honest-box{background:var(--paper-dim); border-left:3px solid var(--navy); padding:20px 22px; margin:28px 0; font-size:0.9rem;}
+  .honest-box .tag{display:block; font-family:'Oswald', sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--navy); margin-bottom:8px; font-weight:600;}
+
+  .product-note{
+    background:#fff; border:1px solid var(--line); border-left:3px solid var(--green-dark);
+    padding:22px 24px; margin:36px 0 8px;
+  }
+  .product-note .tag{
+    font-family:'Oswald', sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--green-dark); margin-bottom:10px; font-weight:600; display:block;
+  }
+  .product-note p{margin-bottom:14px;}
+  .btn-primary{
+    font-family:'DM Mono', monospace; font-weight:500; font-size:0.82rem;
+    background:var(--navy); color:var(--paper);
+    padding:12px 20px; text-decoration:none; border-radius:2px; display:inline-block;
+  }
+  .product-note .price-tag{font-family:'DM Mono', monospace; font-size:0.78rem; color:var(--grey); margin-top:12px;}
+
+  footer{padding:28px 0; font-family:'DM Mono', monospace; font-size:0.72rem; color:var(--grey); border-top:1px solid var(--line);}
+  footer .wrap{max-width:820px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a href="/" class="logo">Kitchen<span>·</span>Control</a>
+    <a href="https://www.kitchen-control.co.uk/" class="header-cta">FIND OUT MORE</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Guide — Print Label</div>
+    <h1>Printing Food Labels From Kitchen Control</h1>
+    <p class="lede">How Print Label actually works, and which label printer to buy if you don't already have one. No vendor app, no proprietary software — just a browser and a roll of continuous label tape.</p>
+    <div class="byline mono">Kitchen Control · Guides</div>
+  </div>
+</section>
+
+<article>
+  <div class="wrap">
+
+    <h2>What Print Label does</h2>
+    <p>Every ingredient, prepared yield and recipe in Kitchen Control can be turned into a printed food label — the kind you'd stick on a prepped sauce, a batch of dough, a tub of ice cream or a tray of bakes going out prepacked. Open any item's own page and there's a <strong>Print Label</strong> button; from there it takes about ten seconds to produce a label with:</p>
+    <ul>
+      <li>The item name and its allergens, pulled automatically from the ingredient record — not retyped</li>
+      <li>A shelf life you set once on the item (or type in on the spot for a one-off batch) that calculates the Use By date for you</li>
+      <li>Day of production, so it's clear when the label was actually made</li>
+      <li>Optional Made By and Batch Code fields, for traceability</li>
+      <li>Any free-text notes that need to go on the label</li>
+    </ul>
+    <p>The label is designed for a 62mm continuous label roll and prints in landscape — 100mm wide, 62mm tall — which is the standard layout for the small food-safety labels used on trays, tubs and prepped containers.</p>
+
+    <h2>Printing labels — no permission needed</h2>
+    <p>Anyone on the team can open an item and print its label, whatever their role. Only editing the underlying recipe, ingredient or yield is restricted to Owner, Head Chef and Sous Chef — printing a label for something that's already set up isn't an edit, so it's never gated behind a permission a busy kitchen doesn't have time to chase down.</p>
+
+    <h2>Do you need a specific printer?</h2>
+    <p>Print Label works through your browser's own print dialog, so technically it'll send a job to whatever printer is set up on the device. In practice, for it to come out the right size and shape — a proper small food label rather than a portion of an A4 sheet — you want a dedicated continuous-roll label printer. That's a small, separate category of printer built exactly for this: till receipts, shipping labels, and food labels all use the same kind of hardware.</p>
+
+    <div class="check-box">
+      <span class="tag">What "no vendor software" actually means</span>
+      <div class="check-row"><span class="tick">✓</span><span>No Brother iPrint&Label app, no QZ Tray, no separate desktop program to install or keep updated</span></div>
+      <div class="check-row"><span class="tick">✓</span><span>Works through the printer's own driver — built into Windows and macOS, or Chromebook's built-in printer support</span></div>
+      <div class="check-row"><span class="tick">✓</span><span>Print Label just opens your browser's normal print dialog, exactly like printing any other page</span></div>
+    </div>
+
+    <h2>Which printer to buy</h2>
+    <p>We tested Print Label against the Brother QL range, which is the standard choice for small food and retail labels in the UK. Two models cover almost every kitchen's needs, and both are officially supported on ChromeOS as well as Mac and Windows — not every model in the range is, so it's worth checking before buying elsewhere.</p>
+
+    <div class="printer-cards">
+      <div class="printer-card">
+        <span class="tier">Entry / Wired</span>
+        <h3>Brother QL-800</h3>
+        <div class="spec-row"><span class="label">Connection</span><span>USB only</span></div>
+        <div class="spec-row"><span class="label">Compatible with</span><span>Windows, Mac, ChromeOS</span></div>
+        <div class="spec-row"><span class="label">Best for</span><span>A single fixed till point or prep station</span></div>
+      </div>
+      <div class="printer-card reco">
+        <span class="tier">Wireless</span>
+        <h3>Brother QL-820NWB</h3>
+        <div class="spec-row"><span class="label">Connection</span><span>Wi-Fi, Bluetooth, USB, Ethernet</span></div>
+        <div class="spec-row"><span class="label">Compatible with</span><span>Windows, Mac, ChromeOS</span></div>
+        <div class="spec-row"><span class="label">Best for</span><span>Printing from any device, anywhere in the kitchen</span></div>
+      </div>
+    </div>
+
+    <p>Both take Brother's standard DK continuous label rolls — a 62mm roll matches what Print Label is designed for. Genuine Brother DK tape is worth paying for over third-party compatible rolls; several UK wholesalers stock compatible tape that's noticeably cheaper but isn't the real thing, which is a false economy if it jams or the adhesive doesn't hold in a chiller.</p>
+
+    <div class="honest-box">
+      <span class="tag">If you already have a QL-600</span>
+      The QL-600 is a capable printer, but it isn't on Brother's official ChromeOS compatibility list, which is why it can behave inconsistently on a Mac or Chromebook depending on setup. If you're buying new, the QL-800 or QL-820NWB avoid that problem entirely; if you already own a QL-600 and it's working fine on Windows, there's no need to replace it.
+    </div>
+
+    <h2>Where to buy</h2>
+    <p>Brother QL printers are available from most major UK electronics and office suppliers, as well as trade hardware wholesalers who can also set up direct shipping to your own customers without their own branded paperwork, if that matters for your business.</p>
+
+    <div class="product-note">
+      <span class="tag">Try it before you buy anything</span>
+      <p>Print Label is included in every Kitchen Control plan — you can build out your ingredients, yields and recipes and try the print flow on your existing printer before deciding whether a dedicated label printer is worth it for your kitchen.</p>
+      <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
+      <div class="price-tag">Then £12.99/month. Cancel any time.</div>
+    </div>
+
+  </div>
+</article>
+
+<footer>
+  <div class="wrap" style="margin-bottom:12px;">
+    <a href="/compare-spreadsheets.html">vs Spreadsheets</a> · <a href="/compare-menuiq.html">vs MenuIQ</a> · <a href="/compare-jelly.html">vs Jelly</a> · <a href="/for-independent-businesses.html">For Independent Businesses</a> · <a href="/for-small-kitchens.html">For Small Kitchens</a> · <a href="/for-takeaways.html">For Takeaways</a> · <a href="/for-cafes.html">For Cafes</a> · <a href="/for-pubs.html">For Pubs</a> · <a href="/for-outside-catering.html">For Outside Catering</a> · <a href="/for-food-vans.html">For Food Vans</a> · <a href="/for-bakeries.html">For Bakeries</a> · <a href="/for-sandwich-shops.html">For Sandwich Shops</a> · <a href="/for-cake-makers.html">For Cake Makers</a> · <a href="/for-ice-cream-shops.html">For Ice Cream Shops</a> · <a href="/for-private-chefs.html">For Private Chefs</a> · <a href="/guide-allergen-law.html">Allergen Law Guide</a> · <a href="/guide-label-printing.html">Label Printing Guide</a>
+  </div>
+  <div class="wrap">
+    KITCHEN CONTROL LTD · COMPANIES HOUSE NO. 17239504 · KITCHEN-CONTROL.CO.UK · &copy; 2026<br>
+    Printer names and specifications are provided for general guidance and may change — check current specs with the manufacturer before buying.
+  </div>
+</footer>
+
+</body>
+</html>

@@ -256,6 +256,24 @@ nav {
   position: relative;
 }
 
+.audience-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 32px;
+  position: relative;
+}
+.audience-chips span {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+}
+
 /* TRUST BAR */
 .trust-bar {
   background: var(--dark2);
@@ -592,6 +610,28 @@ section { padding: 100px 24px; }
 }
 .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.15); }
 
+/* VERTICALS */
+.verticals { background: white; }
+.verticals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 40px;
+}
+.vertical-link {
+  display: block;
+  background: var(--cream);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  color: var(--dark);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 600;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+.vertical-link:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); border-color: var(--green); }
+
 /* FOOTER */
 footer {
   background: var(--dark);
@@ -624,6 +664,7 @@ footer a:hover { color: var(--green-light); }
   .hero-inner { grid-template-columns: 1fr; gap: 44px; }
   .hero-copy { text-align: center; }
   .hero-actions { justify-content: center; }
+  .audience-chips { justify-content: center; }
   .hero-chip { right: 8px; top: -14px; font-size: 12px; padding: 8px 14px; }
   .hero-logo-plate { left: 8px; bottom: -14px; padding: 10px 14px; }
   .hero-logo-plate img { height: 28px; }
@@ -653,7 +694,7 @@ footer a:hover { color: var(--green-light); }
   "applicationCategory": "BusinessApplication",
   "applicationSubCategory": "Restaurant Management Software",
   "operatingSystem": "Web-based, iOS, Android",
-  "description": "Allergen management, recipe costing and AI invoice scanning for professional kitchens. Built by a working chef for independent hospitality businesses.",
+  "description": "Allergen management, recipe costing, AI invoice scanning and food label printing for restaurants, pubs, cafes, takeaways, bakeries, food vans, sandwich shops, cake makers, ice cream shops, outside caterers and private chefs. Built by a working chef for independent hospitality businesses.",
   "url": "https://www.kitchen-control.co.uk/",
   "image": "https://www.kitchen-control.co.uk/images/hero-allergen.jpg",
   "offers": {
@@ -710,7 +751,10 @@ footer a:hover { color: var(--green-light); }
     <div class="hero-copy">
       <div class="hero-badge">Built by a chef with 32 years in professional kitchens</div>
       <h1>Your kitchen.<br><em>Under control.</em></h1>
-      <p class="hero-sub">The kitchen management software for allergen tracking, recipe costing and AI invoice scanning — all in one place. Built for professional kitchens. Priced for independent ones.</p>
+      <p class="hero-sub">The kitchen management software for allergen tracking, recipe costing, AI invoice scanning and food label printing — all in one place. Priced for independent ones.</p>
+      <div class="audience-chips">
+        <span>Restaurants</span><span>Pubs</span><span>Cafes</span><span>Takeaways</span><span>Bakeries</span><span>Food Vans</span><span>Sandwich Shops</span><span>Cake Makers</span><span>Ice Cream Shops</span><span>Outside Caterers</span><span>Private Chefs</span>
+      </div>
       <div class="hero-actions">
         <a href="signup.html" class="btn-primary">Start Free 30-Day Trial →</a>
         <a href="demo.html" class="btn-demo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Try the live demo</a>
@@ -795,6 +839,11 @@ footer a:hover { color: var(--green-light); }
         <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg></div>
         <h3>Recipe Import</h3>
         <p>Photograph a page from your recipe book — handwritten or printed — and Kitchen Control reads it. Ingredients are matched to your stock automatically, and anything it can't find is flagged clearly rather than guessed.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></div>
+        <h3>Food Label Printing</h3>
+        <p>Print an allergen and use-by label for any ingredient, prepped item or recipe in seconds — allergens pulled automatically, shelf life calculated for you. Works with a standard Brother QL label printer.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg></div>
@@ -946,6 +995,29 @@ footer a:hover { color: var(--green-light); }
   </div>
 </section>
 
+<!-- VERTICALS -->
+<section class="verticals">
+  <div class="container">
+    <p class="section-label">Who it's for</p>
+    <h2 class="section-title">Built for every kind of kitchen</h2>
+    <p class="section-sub">Independent food businesses of every shape run into the same allergen and costing problems. See how Kitchen Control fits yours.</p>
+    <div class="verticals-grid">
+      <a class="vertical-link" href="for-cafes.html">Cafes</a>
+      <a class="vertical-link" href="for-pubs.html">Pubs</a>
+      <a class="vertical-link" href="for-takeaways.html">Takeaways</a>
+      <a class="vertical-link" href="for-outside-catering.html">Outside Catering</a>
+      <a class="vertical-link" href="for-food-vans.html">Food Vans</a>
+      <a class="vertical-link" href="for-bakeries.html">Bakeries</a>
+      <a class="vertical-link" href="for-sandwich-shops.html">Sandwich Shops</a>
+      <a class="vertical-link" href="for-cake-makers.html">Cake Makers</a>
+      <a class="vertical-link" href="for-ice-cream-shops.html">Ice Cream Shops</a>
+      <a class="vertical-link" href="for-private-chefs.html">Private Chefs</a>
+      <a class="vertical-link" href="for-small-kitchens.html">Small Kitchens</a>
+      <a class="vertical-link" href="for-independent-businesses.html">Independent Businesses</a>
+    </div>
+  </div>
+</section>
+
 <!-- FOOTER -->
 <footer>
   <img src="logo.png" alt="Kitchen Control">
@@ -953,6 +1025,8 @@ footer a:hover { color: var(--green-light); }
     <a href="login.html">Log in</a> &middot;
     <a href="signup.html">Start free trial</a> &middot;
     <a href="userguide.html">Help &amp; Guides</a> &middot;
+    <a href="guide-allergen-law.html">Allergen Law Guide</a> &middot;
+    <a href="guide-label-printing.html">Label Printing Guide</a> &middot;
     <a href="privacy.html">Privacy Policy</a> &middot;
     <a href="mailto:hello@kitchen-control.co.uk">hello@kitchen-control.co.uk</a> &middot;
     <a href="https://www.facebook.com/profile.php?id=61590153583631" target="_blank" rel="noopener">&#128100; Facebook</a>

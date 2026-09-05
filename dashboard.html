@@ -2454,7 +2454,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
         <div class="fg"><label>Day of Production</label><input type="date" id="pl-prod-date" oninput="plUpdate()"></div>
       </div>
       <div id="pl-ppds-warning"></div>
-      <div class="fr">
+      <div class="fr" id="pl-madebatch-row">
         <div class="fg"><label>Made By <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><input type="text" id="pl-made-by" placeholder="e.g. Sarah" oninput="plUpdate()"></div>
         <div class="fg"><label>Batch Code <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><input type="text" id="pl-batch-code" placeholder="e.g. B240901-1" oninput="plUpdate()"></div>
       </div>
@@ -2465,7 +2465,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div class="fr">
         <div class="fg"><label>Use By</label><div class="calc-display" id="pl-use-by" style="font-weight:700;color:var(--dark)">Enter shelf life above</div></div>
       </div>
-      <div class="fg"><label>Notes <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><textarea id="pl-notes" placeholder="Anything else that needs to go on the label..." oninput="plUpdate()"></textarea></div>
+      <div class="fg" id="pl-notes-row"><label>Notes <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><textarea id="pl-notes" placeholder="Anything else that needs to go on the label..." oninput="plUpdate()"></textarea></div>
       <div class="form-actions">
         <button class="btn btn-green no-print" id="pl-print-btn" onclick="plPrint()">&#128424; Print Label</button>
         <button class="btn btn-grey no-print" onclick="plBackToSelect()">Cancel</button>
@@ -5438,6 +5438,11 @@ function plSelect(type, id){
   el('pl-shelf-unit').value = item.shelfLifeUnit || 'days';
   el('pl-batch-code').value = '';
   el('pl-notes').value = '';
+  // PPDS labels (dishes) don't carry made-by, batch code or notes -- only
+  // show the fields that actually appear on the label being printed.
+  var isDish = type==='dish';
+  var madebatchRow = el('pl-madebatch-row'); if(madebatchRow) madebatchRow.style.display = isDish ? 'none' : '';
+  var notesRow = el('pl-notes-row'); if(notesRow) notesRow.style.display = isDish ? 'none' : '';
   showOnly('pl-form','pl-select');
   plUpdate();
 }
