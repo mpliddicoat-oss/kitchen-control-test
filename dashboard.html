@@ -820,6 +820,8 @@ async function loadDishes() {
         actualSell: parseFloat(row.actual_sell) || 0,
         components: row.components || [],
         image: row.photo_url || null,
+        shelfLifeValue: parseFloat(row.shelf_life_value) || '',
+        shelfLifeUnit: row.shelf_life_unit || 'days',
       };
     });
     save();
@@ -847,11 +849,22 @@ async function saveDishToSupabase(dish) {
     wastage: dish.wastage || 0,
     actual_sell: dish.actualSell || 0,
     components: dish.components || [],
+    shelf_life_value: dish.shelfLifeValue || null,
+    shelf_life_unit: dish.shelfLifeUnit || 'days',
   };
   var isUUID = isSupabaseId(dish.id);
   var res = isUUID
     ? await supabaseClient.from('dishes').update(row).eq('id', dish.id).select()
     : await supabaseClient.from('dishes').insert([row]).select();
+  if (res.error && isMissingColumnError(res.error)) {
+    console.warn('saveDishToSupabase: shelf_life columns not found, retrying without them. Run the migration in TODO.md to enable shelf life syncing.');
+    var rowNoShelf = Object.assign({}, row);
+    delete rowNoShelf.shelf_life_value;
+    delete rowNoShelf.shelf_life_unit;
+    res = isUUID
+      ? await supabaseClient.from('dishes').update(rowNoShelf).eq('id', dish.id).select()
+      : await supabaseClient.from('dishes').insert([rowNoShelf]).select();
+  }
   if (res.error) {
     console.error('saveDish error:', res.error);
     alert('Could not save dish. Please try again.');
@@ -2160,7 +2173,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <div id="dish-items"></div>
   </div>
   <div id="dish-form" style="display:none">
-    <div class="ph"><div><h1 id="dish-form-title">New Dish</h1></div><div><button class="btn btn-grey" onclick="dishList()">&#8592; Back</button></div></div>
+    <div class="ph"><div><h1 id="dish-form-title">New Dish</h1></div><div><button id="dish-print-label-btn" class="btn btn-blue" style="display:none" onclick="plGoTo('dish', _dishId)">Print Label</button> <button class="btn btn-grey" onclick="dishList()">&#8592; Back</button></div></div>
     <div class="fs">
       <div class="fr"><div class="fg"><label>Dish Name *</label><input id="dish-name" placeholder="e.g. Custard Tart"></div><div class="fg"><label>Category</label><select id="dish-cat"><option>Starter</option><option>Main</option><option>Dessert</option><option>Side</option><option>Snack</option><option>Bread / Amuse</option><option>Children's Menu</option><option>Drinks</option></select></div></div>
       <div class="fr t1"><div class="fg"><label>Notes</label><input id="dish-notes" placeholder="e.g. Seasonal, VG option available"></div></div>
@@ -2214,6 +2227,14 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <div class="fs">
       <h3 style="margin-bottom:10px">Allergens (auto-detected from components)</h3>
       <div class="ag" id="dish-allergen-preview"></div>
+      <div id="dish-ppds-warning"></div>
+    </div>
+    <div class="fs">
+      <h3 style="font-size:14px;margin-bottom:10px">Shelf Life <span style="font-weight:400;font-size:11px;text-transform:none">(optional -- auto-fills Print Label)</span></h3>
+      <div class="fr t3">
+        <div class="fg"><label>Shelf Life</label><input id="dish-shelf-life" type="number" step="1" min="1" placeholder="e.g. 3"></div>
+        <div class="fg"><label>Unit</label><select id="dish-shelf-unit"><option value="days">Days</option><option value="months">Months</option></select></div>
+      </div>
     </div>
     <div class="form-actions"><button class="btn btn-green" onclick="dishSave()">Save Dish</button></div>
   </div>
@@ -2222,6 +2243,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div><h1 id="dish-detail-name"></h1><div class="ph-sub" id="dish-detail-sub"></div></div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-grey" onclick="dishList()">&#8592; Back</button>
+        <button class="btn btn-purple" onclick="plGoTo('dish', _dishId)">Print Label</button>
         <button class="btn btn-blue" onclick="dishEdit()">Edit</button>
         <button class="btn btn-red" onclick="dishDel()">Delete</button>
         <button class="btn btn-grey" onclick="dishList()">Back</button>
@@ -2417,6 +2439,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
         <div class="fg"><label>Item</label><div class="calc-display" id="pl-item-name" style="font-weight:600;color:var(--text)"></div></div>
         <div class="fg"><label>Day of Production</label><input type="date" id="pl-prod-date" oninput="plUpdate()"></div>
       </div>
+      <div id="pl-ppds-warning"></div>
       <div class="fr">
         <div class="fg"><label>Made By <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><input type="text" id="pl-made-by" placeholder="e.g. Sarah" oninput="plUpdate()"></div>
         <div class="fg"><label>Batch Code <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><input type="text" id="pl-batch-code" placeholder="e.g. B240901-1" oninput="plUpdate()"></div>
@@ -3008,6 +3031,48 @@ function aFromDish(d){
     al.forEach(function(a){ s[a]=true; });
   });
   return s;
+}
+// Recursively resolves a dish/recipe's components down to the base
+// ingredients actually used (through any nested yields/recipes), so PPDS
+// labelling can flag ones with no full ingredients list recorded -- needed
+// to declare what's inside a bought-in item like a sauce or ketchup.
+function baseIngredientsOf(components, vis){
+  vis = vis || {};
+  var out = [];
+  (components||[]).forEach(function(c){
+    if(!c.id) return;
+    if(c.type==='ingredient'){
+      var ing = byId(DB.ingredients, c.id);
+      if(ing) out.push(ing);
+    } else if(c.type==='yield'){
+      var y = byId(DB.yields, c.id);
+      var baseIng = y ? byId(DB.ingredients, y.ingId) : null;
+      if(baseIng) out.push(baseIng);
+    } else if(c.type==='recipe'){
+      var r = byId(DB.recipes, c.id);
+      if(r && !vis[r.id]){
+        vis[r.id] = true;
+        out = out.concat(baseIngredientsOf(r.components, vis));
+      }
+    }
+  });
+  return out;
+}
+// Names of ingredients used (directly or via a yield/recipe) that have no
+// full ingredients list recorded -- a PPDS label can't be relied on to be
+// complete without knowing what's actually inside those.
+function missingFullIngredients(components){
+  var seen = {}, missing = [];
+  baseIngredientsOf(components).forEach(function(ing){
+    if(seen[ing.id]) return; seen[ing.id]=true;
+    if(!ing.fullIngredients || !ing.fullIngredients.trim()) missing.push(ing.name);
+  });
+  return missing;
+}
+function ppdsWarningHTML(components){
+  var missing = missingFullIngredients(components);
+  if(!missing.length) return '';
+  return '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-top:10px;font-size:12px;font-weight:600">&#9888; No full ingredients list recorded for: '+esc(missing.join(', '))+'. Add these on the ingredient itself so a PPDS label can declare what\'s inside.</div>';
 }
 function manualA(dishId){ var a=DB.manual&&DB.manual[dishId]?DB.manual[dishId]:[]; var s={}; a.forEach(function(x){ s[x]=true; }); return s; }
 function chipHTML(aSet,ro){
@@ -4204,11 +4269,14 @@ var _dishId=null, _dishComps=[], _dishImg=null;
 function dishList(){ _dishId=null; showOnly('dish-list','dish-form','dish-detail'); dishRender(); }
 function dishNew(){
   _dishId=null; _dishComps=[]; _compTarget='dish'; _dishImg=null;
-  clr(['dish-name','dish-notes','dish-gp','dish-wastage','dish-sell']);
+  clr(['dish-name','dish-notes','dish-gp','dish-wastage','dish-sell','dish-shelf-life']);
+  var dslu=el('dish-shelf-unit'); if(dslu) dslu.value='days';
   el('dish-cat').value='Main'; el('dish-form-title').textContent='New Dish';
+  if(el('dish-print-label-btn')) el('dish-print-label-btn').style.display='none';
   el('dish-food-cost').innerHTML='&pound;0.00'; el('dish-wastage-amt').textContent='--'; el('dish-adj-cost').innerHTML='&pound;0.00';
   el('dish-rec-ex').textContent='--'; el('dish-vat').textContent='--'; el('dish-rec-inc').textContent='--';
   el('dish-actual-gp').textContent='Enter a sell price to calculate'; el('dish-allergen-preview').innerHTML='';
+  var dppds=el('dish-ppds-warning'); if(dppds) dppds.innerHTML='';
   el('dish-img-preview').style.display='none'; el('dish-img-placeholder').style.display='block'; el('dish-img-clear').style.display='none';
   compRender('dish'); showOnly('dish-form','dish-list','dish-detail');
 }
@@ -4247,6 +4315,8 @@ function dishEdit(id){
   _dishId=id; _dishComps=(d.components||[]).map(function(c){ return Object.assign({},c); }); _dishImg=d.photo_url||d.image||null;
   el('dish-name').value=d.name; el('dish-cat').value=d.category||'Main'; el('dish-notes').value=d.notes||'';
   el('dish-gp').value=d.targetGP||''; el('dish-wastage').value=d.wastage||''; el('dish-sell').value=d.actualSell?parseFloat(d.actualSell).toFixed(2):'';
+  var dsl=el('dish-shelf-life'); if(dsl) dsl.value=d.shelfLifeValue||''; var dsu=el('dish-shelf-unit'); if(dsu) dsu.value=d.shelfLifeUnit||'days';
+  if(el('dish-print-label-btn')) el('dish-print-label-btn').style.display='';
   if(_dishImg){ el('dish-img-preview').src=_dishImg; el('dish-img-preview').style.display='block'; el('dish-img-placeholder').style.display='none'; el('dish-img-clear').style.display='inline-flex'; }
   else{ el('dish-img-preview').style.display='none'; el('dish-img-placeholder').style.display='block'; el('dish-img-clear').style.display='none'; }
   el('dish-form-title').textContent='Edit Dish'; compRender('dish'); showOnly('dish-form','dish-list','dish-detail');
@@ -4273,11 +4343,12 @@ function dishCalc(){
   else el('dish-actual-gp').textContent='Enter a sell price to calculate';
   var a={}; _dishComps.forEach(function(c){ Object.assign(a,compAllergens(c)); });
   el('dish-allergen-preview').innerHTML=chipHTML(a,true);
+  var ppdsEl=el('dish-ppds-warning'); if(ppdsEl) ppdsEl.innerHTML=ppdsWarningHTML(_dishComps);
 }
 function dishSave(){
   if(!canEdit()){ alert('You do not have permission to add or edit dishes.'); return; }
   var name=el('dish-name').value.trim(); if(!name){ alert('Dish name required.'); return; }
-  var data={name:tc(name),category:val('dish-cat'),notes:val('dish-notes'),targetGP:parseFloat(val('dish-gp'))||0,wastage:parseFloat(val('dish-wastage'))||0,actualSell:parseFloat(val('dish-sell'))||0,photo_url:_dishImg||null,components:_dishComps.filter(function(c){ return !!c.id; }),image:_dishImg||null};
+  var data={name:tc(name),category:val('dish-cat'),notes:val('dish-notes'),targetGP:parseFloat(val('dish-gp'))||0,wastage:parseFloat(val('dish-wastage'))||0,actualSell:parseFloat(val('dish-sell'))||0,photo_url:_dishImg||null,components:_dishComps.filter(function(c){ return !!c.id; }),image:_dishImg||null,shelfLifeValue:parseFloat(val('dish-shelf-life'))||null,shelfLifeUnit:val('dish-shelf-unit')||'days'};
   var savedDishId = _dishId;
   if(_dishId) Object.assign(byId(DB.dishes,_dishId),data);
   else { var newDish=Object.assign({id:uid()},data); DB.dishes.push(newDish); savedDishId=newDish.id; }
@@ -4304,7 +4375,7 @@ function dishShowDetail(id){
   el('dish-detail-comps').innerHTML=compH;
   var w=d.wastage||0, wa=total*w/100, adj=total+wa, sell=d.actualSell||0, exVAT=sell>0?sell/1.2:0, gpA=exVAT>0?(exVAT-adj)/exVAT*100:null;
   el('dish-detail-costs').innerHTML='<h3 style="margin-bottom:10px">Costing</h3><div class="cost-box"><div class="cr2"><span>Food Cost</span><span>'+fmt(total)+'</span></div>'+(w?'<div class="cr2"><span>Wastage ('+w+'%)</span><span>+'+fmt(wa)+'</span></div><div class="cr2"><span>Adjusted Cost</span><span>'+fmt(adj)+'</span></div>':'')+(d.targetGP?'<div class="cr2"><span>Target GP</span><span>'+d.targetGP+'%</span></div>':'')+(sell?'<div class="cr2"><span>Sell Price (inc VAT)</span><span>'+fmt(sell)+'</span></div><div class="cr2"><span>Sell Price (ex VAT)</span><span>'+fmt(exVAT)+'</span></div>':'')+(gpA!==null?'<div class="cr2 total"><span>Actual GP</span><span><span class="badge '+gpClass(gpA)+'">'+pct(gpA)+'</span></span></div>':'')+'</div>';
-  var a=aFromDish(d); el('dish-detail-allergens').innerHTML='<h3 style="margin-bottom:10px">Allergens</h3><div class="ag">'+chipHTML(a,true)+'</div>';
+  var a=aFromDish(d); el('dish-detail-allergens').innerHTML='<h3 style="margin-bottom:10px">Allergens</h3><div class="ag">'+chipHTML(a,true)+'</div>'+ppdsWarningHTML(d.components);
   el('dish-scale-n').value=1; dishScale();
 }
 function dishScale(){
@@ -4347,7 +4418,8 @@ function dishSetSort(mode){
 }
 function dishRowHtml(d){
   var cost=adjDishCost(d),sell=d.actualSell||0,exVAT=sell>0?sell/1.2:0,gp=exVAT>0?(exVAT-cost)/exVAT*100:null;
-  return '<div class="card-row"><div onclick="dishShowDetail(\''+d.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(d.name)+(d.photo_url||d.image?' 📷':'')+' <span class="badge bg-blue" style="margin-left:4px">'+esc(d.category)+'</span></div><div class="cr-sub">Cost: '+fmt(cost)+(sell?' &middot; Sell: '+fmt(sell):'')+(gp!==null?' &middot; '+pct(gp)+' GP':'')+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="dishEdit(\''+d.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="dishDel(\''+d.id+'\')">Del</button></div></div>';
+  var slLabel=shelfLifeLabel(d); var slDisp=slLabel?(' &middot; Shelf life: '+slLabel):'';
+  return '<div class="card-row"><div onclick="dishShowDetail(\''+d.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(d.name)+(d.photo_url||d.image?' 📷':'')+' <span class="badge bg-blue" style="margin-left:4px">'+esc(d.category)+'</span></div><div class="cr-sub">Cost: '+fmt(cost)+(sell?' &middot; Sell: '+fmt(sell):'')+(gp!==null?' &middot; '+pct(gp)+' GP':'')+slDisp+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="dishEdit(\''+d.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="dishDel(\''+d.id+'\')">Del</button></div></div>';
 }
 function dishRender(f){
   if(f!==undefined) _dishSearch=f;
@@ -5309,6 +5381,7 @@ function plRenderList(q){
   (DB.ingredients||[]).forEach(function(i){ items.push({type:'ingredient', id:i.id, name:i.name, badge:'<span class="badge bg-green">Ingredient</span>'}); });
   (DB.yields||[]).forEach(function(y){ items.push({type:'yield', id:y.id, name:y.name, badge:'<span class="badge bg-purple">Yield</span>'}); });
   (DB.recipes||[]).forEach(function(r){ items.push({type:'recipe', id:r.id, name:r.name, badge:'<span class="badge bg-teal">Recipe</span>'}); });
+  (DB.dishes||[]).forEach(function(d){ items.push({type:'dish', id:d.id, name:d.name, badge:'<span class="badge bg-blue">Dish</span>'}); });
   if(q) items = items.filter(function(it){ return (it.name||'').toLowerCase().indexOf(q)>=0; });
   items.sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
   var cont = el('pl-items');
@@ -5321,6 +5394,7 @@ function plRenderList(q){
 function plAllergenNames(type, item){
   var ids = type==='ingredient' ? aFromIng(item)
     : type==='yield' ? aFromYield(item)
+    : type==='dish' ? Object.keys(aFromDish(item))
     : Object.keys(aFromRec(item));
   return ids.map(function(id){ var a=ALLERGENS.find(function(x){ return x.id===id; }); return a?a.label:null; }).filter(Boolean);
 }
@@ -5333,11 +5407,13 @@ function plGoTo(type, id){
   plSelect(type, id);
 }
 function plSelect(type, id){
-  var src = type==='ingredient'?DB.ingredients:type==='yield'?DB.yields:DB.recipes;
+  var src = type==='ingredient'?DB.ingredients:type==='yield'?DB.yields:type==='dish'?DB.dishes:DB.recipes;
   var item = byId(src, id);
   if(!item) return;
   _plSelected = {type:type, id:id, name:item.name, allergens:plAllergenNames(type, item)};
   el('pl-item-name').textContent = item.name;
+  var ppdsEl = el('pl-ppds-warning');
+  if(ppdsEl) ppdsEl.innerHTML = type==='dish' ? ppdsWarningHTML(item.components) : '';
   var todayIso = plDateToIso(new Date());
   el('pl-prod-date').value = todayIso;
   el('pl-prod-date').max = todayIso; // production can be backdated (e.g. decanting from a bigger batch made earlier) but never set in the future
@@ -5417,7 +5493,7 @@ function plBodyHtml(useBy, useByStr){
   var allergens = _plSelected.allergens || [];
   var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
   var prodDateStr = plProdDate().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
-  var logoImg = '<img class="kc-l-logo" src="'+esc(location.origin+'/favicon.png')+'" alt="">';
+  var logoImg = '<img class="kc-l-logo" src="'+esc(window._companyLogoUrl || (location.origin+'/favicon.png'))+'" alt="">';
   return (useByDay
       ? '<div class="kc-l-day-box"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'+logoImg+'</div>'
       : '<div class="kc-l-day-box kc-l-day-box-empty"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div>'+logoImg+'</div>')+
