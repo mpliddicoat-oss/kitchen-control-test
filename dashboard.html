@@ -5622,70 +5622,122 @@ function plUpdate(){
   if(printBtn) printBtn.disabled = !useBy;
 }
 
-// Compiles a dish's components into one descending-order ingredients line
-// for a PPDS label, bolding any component the app already knows carries an
-// allergen (from its own allergen picker -- not by scanning free text for
-// allergen words, which would risk getting it wrong). A compound component
-// (a bought-in ingredient, a prepared yield, or a sub-recipe) gets its own
-// recorded sub-ingredients listed in brackets right after it, one level
-// deep, matching how a real PPDS label declares a compound ingredient.
-// Ordering is by each component's recorded quantity as a best-effort proxy
-// for descending weight -- components in incompatible units (each vs g vs
-// portions) aren't truly comparable, so treat this as a starting point to
-// sanity-check, not a guarantee of exact legal ordering.
-// Chefs already flag allergens by typing them in capitals within free-text
-// fields like Full Ingredients (e.g. "wheat flour, MILK powder, sugar") --
-// rather than guessing which words are allergens ourselves (rejected
-// elsewhere as too risky for legal accuracy), we trust that existing
-// capitalisation signal and simply render it in bold too.
-function boldCapsWords(text){
-  var parts = String(text||'').split(/(\b[A-Z]{2,}\b)/);
-  return parts.map(function(p, i){ return i % 2 === 1 ? '<strong>'+esc(p)+'</strong>' : esc(p); }).join('');
+// Maps each of the 14 UK allergen categories to specific words that
+// typically name them within an ingredients list (e.g. "wheat" for
+// gluten), matching the official FSA PPDS label example, which bolds the
+// allergen word in place -- lowercase, no artificial capitalisation --
+// wherever it already appears in the text, rather than only ever
+// appending a separate tag. This never changes WHICH allergens are
+// declared (always the ingredient's own ticked allergen data, never
+// guessed from free text) -- it only decides where the required emphasis
+// is placed. Any allergen whose keyword isn't found literally in the text
+// still gets appended in brackets (see ppdsComponentLabel), so nothing is
+// ever silently dropped.
+var ALLERGEN_KEYWORDS = {
+  gluten: ['gluten','wheat','barley','rye','oats?','spelt','kamut'],
+  crustaceans: ['crustaceans?','crab','prawns?','shrimps?','lobsters?','crayfish'],
+  eggs: ['eggs?'],
+  fish: ['fish'],
+  peanuts: ['peanuts?'],
+  soya: ['soya?'],
+  milk: ['milk'],
+  nuts: ['almonds?','hazelnuts?','walnuts?','cashews?','pecans?','brazil nuts?','pistachios?','macadamias?'],
+  celery: ['celery','celeriac'],
+  mustard: ['mustard'],
+  sesame: ['sesame'],
+  sulphites: ['sulphites?','sulfites?','sulphur dioxide','sulfur dioxide'],
+  lupin: ['lupin'],
+  molluscs: ['molluscs?','mussels?','oysters?','squid','snails?','clams?','scallops?']
+};
+function allergenLabel(id){
+  var f = ALLERGENS.find(function(x){ return x.id===id; });
+  return f ? f.label.toLowerCase() : id;
 }
-// Natasha's Law emphasis: an ingredient name stays normal weight -- it's the
-// allergen(s) it contains that get called out in bold capitals, in brackets
-// right after the name (e.g. "Haddock (FISH)"), rather than bolding the
-// whole ingredient name.
-function allergenSuffix(allergens){
-  var names = (allergens||[]).filter(function(a){ return a!=='none'; }).map(function(a){
-    var f = ALLERGENS.find(function(x){ return x.id===a; });
-    return f ? f.label.toUpperCase() : '';
-  }).filter(Boolean);
-  return names.length ? ' (<strong>'+esc(names.join(', '))+'</strong>)' : '';
+// Bolds any allergen keyword literally present in `text`, preserving the
+// text's own casing (e.g. "wheat" stays lowercase, matching the FSA
+// example, rather than being forced to capitals). Returns which of the
+// given allergen ids were actually found, so the caller knows which ones
+// still need appending.
+function emphasiseAllergensInText(text, allergenIds){
+  text = String(text||'');
+  var activeIds = (allergenIds||[]).filter(function(id){ return id!=='none' && ALLERGEN_KEYWORDS[id]; });
+  var matched = {};
+  if(!text || !activeIds.length) return {html: esc(text), matched: matched};
+  var patterns = [];
+  activeIds.forEach(function(id){ patterns = patterns.concat(ALLERGEN_KEYWORDS[id]); });
+  var parts = text.split(new RegExp('(\\b(?:'+patterns.join('|')+')\\b)', 'gi'));
+  var html = parts.map(function(p, i){
+    if(i % 2 === 0 || !p) return esc(p);
+    activeIds.forEach(function(id){
+      if(new RegExp('^(?:'+ALLERGEN_KEYWORDS[id].join('|')+')$', 'i').test(p)) matched[id] = true;
+    });
+    return '<strong>'+esc(p)+'</strong>';
+  }).join('');
+  return {html: html, matched: matched};
 }
-// Name + allergen emphasis for one real Ingredient record (has structured
+// Builds "name (breakdown, ...)" for one dish component, with every
+// allergen it carries emphasised somewhere -- inline within the name or
+// breakdown where the word already appears there, otherwise appended in
+// brackets (bold, lowercase) so it's never missed. `subText` is either raw
+// free text (a Full Ingredients List paste -- subIsHtml false) or already-
+// built HTML from a nested call to this same function (a recipe's base
+// ingredients -- subIsHtml true), which is used as-is rather than
+// re-processed.
+function ppdsComponentLabel(name, allergenIds, subText, subIsHtml){
+  allergenIds = (allergenIds||[]).filter(function(id){ return id!=='none'; });
+  var nameR = emphasiseAllergensInText(name, allergenIds);
+  var subHtml = '', subMatched = {};
+  if(subText && subText.trim()){
+    if(subIsHtml){
+      subHtml = subText.trim();
+    } else {
+      var subR = emphasiseAllergensInText(subText.trim(), allergenIds);
+      subHtml = subR.html; subMatched = subR.matched;
+    }
+  }
+  var remaining = allergenIds.filter(function(id){ return !nameR.matched[id] && !subMatched[id]; });
+  var fallback = remaining.length ? '<strong>'+esc(remaining.map(allergenLabel).join(', '))+'</strong>' : '';
+  var bracket = [subHtml, fallback].filter(Boolean).join(', ');
+  return nameR.html + (bracket ? ' ('+bracket+')' : '');
+}
+// Label + allergen emphasis for one real Ingredient record (has structured
 // allergen data, unlike the free-text Full Ingredients List breakdowns).
 function ppdsIngredientLabel(ing){
-  return boldCapsWords(ing.labelName||ing.name) + allergenSuffix(aFromIng(ing));
+  return ppdsComponentLabel(ing.labelName||ing.name, aFromIng(ing), ing.fullIngredients, false);
 }
+// Compiles a dish's components into one descending-order ingredients line
+// for a PPDS label. A compound component (a bought-in ingredient, a
+// prepared yield, or a sub-recipe) gets its own recorded sub-ingredients
+// listed in brackets right after it, one level deep, matching how a real
+// PPDS label declares a compound ingredient. Ordering is by each
+// component's recorded quantity as a best-effort proxy for descending
+// weight -- components in incompatible units (each vs g vs portions)
+// aren't truly comparable, so treat this as a starting point to
+// sanity-check, not a guarantee of exact legal ordering.
 function ppdsIngredientsHtml(dish){
   var comps = (dish.components||[]).filter(function(c){ return !!c.id; });
   comps = comps.slice().sort(function(a,b){ return (parseFloat(b.qty)||0)-(parseFloat(a.qty)||0); });
   var parts = comps.map(function(c){
-    var name='', allergens=[], subText='', subIsHtml=false;
     if(c.type==='ingredient'){
       var ing=byId(DB.ingredients,c.id); if(!ing) return '';
-      name=ing.labelName||ing.name; allergens=aFromIng(ing); subText=ing.fullIngredients||'';
+      return ppdsIngredientLabel(ing);
     } else if(c.type==='yield'){
       var y=byId(DB.yields,c.id); if(!y) return '';
-      name=y.name; allergens=y.allergens||[];
-      var baseIng=byId(DB.ingredients,y.ingId); subText=baseIng?(baseIng.fullIngredients||''):'';
+      var baseIng=byId(DB.ingredients,y.ingId);
+      return ppdsComponentLabel(y.name, y.allergens||[], baseIng?baseIng.fullIngredients:'', false);
     } else if(c.type==='recipe'){
       var r=byId(DB.recipes,c.id); if(!r) return '';
-      name=r.name;
       // Allergens are shown against the specific sub-ingredient that
       // actually carries them (in the breakdown below), not aggregated onto
       // the recipe name itself -- otherwise e.g. milk from the butter in
       // Mushy Peas would show up twice: once vaguely on "Mushy Peas" and
       // once, correctly, on "Salted Butter". Each base ingredient here is a
       // real Ingredient record with its own allergen data, already-built
-      // HTML unlike the free-text breakdowns below.
-      subText=baseIngredientsOf(r.components).map(ppdsIngredientLabel).join(', ');
-      subIsHtml=true;
-    } else return '';
-    var label = boldCapsWords(name) + allergenSuffix(allergens);
-    if(!subText || !subText.trim()) return label;
-    return label + ' ('+(subIsHtml ? subText.trim() : boldCapsWords(subText.trim()))+')';
+      // HTML unlike the free-text breakdowns handled elsewhere.
+      var subText = baseIngredientsOf(r.components).map(ppdsIngredientLabel).join(', ');
+      return ppdsComponentLabel(r.name, [], subText, true);
+    }
+    return '';
   }).filter(Boolean);
   return parts.join(', ');
 }
