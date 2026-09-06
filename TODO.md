@@ -22,6 +22,27 @@ Similar in spirit to the existing "No allergens detected -- verify
 independently" note already shown on the standard (non-PPDS) Print Label
 when an item has no allergens set.
 
+## Found while writing the Natasha's Law guide page (2026-09-06): PPDS label is missing the business name/address
+
+While writing `guide-natashas-law.html` I had to research the full PPDS
+labelling requirements to describe them honestly, and found a real gap:
+the PPDS Label doesn't print the food business's name and address anywhere.
+
+Natasha's Law itself only specifically requires the ingredients list +
+allergen emphasis (which the label does correctly). But the wider Food
+Information Regulations 2014 generally also require packaged food to show
+the business's name and address -- so as it stands, a printed PPDS label
+on its own is very likely not fully compliant for a real business, even
+though the Natasha's-Law-specific part is solid.
+
+Flagged honestly in the guide page's "What you're still responsible for"
+section rather than glossed over. Worth fixing properly: add a business
+name/address field to Settings (there's already a company logo upload
+there to build on) and print it on the PPDS label, likely near the bottom
+next to Use By/Price. Should ask Matt before building -- may want to
+confirm exact wording/placement, and whether it should also appear on the
+standard (non-PPDS) prep label.
+
 ## Print Label — phase 2 (2026-09-03)
 
 Print Label (single-item, Days/Months shelf life, USE BY box, allergens,
