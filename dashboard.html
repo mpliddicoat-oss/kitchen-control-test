@@ -2215,7 +2215,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <div id="dish-items"></div>
   </div>
   <div id="dish-form" style="display:none">
-    <div class="ph"><div><h1 id="dish-form-title">New Dish</h1></div><div><button id="dish-print-label-btn" class="btn btn-blue" style="display:none" onclick="plGoTo('dish', _dishId)">Print Label</button> <button class="btn btn-grey" onclick="dishList()">&#8592; Back</button></div></div>
+    <div class="ph"><div><h1 id="dish-form-title">New Dish</h1></div><div><button id="dish-print-label-btn" class="btn btn-blue" style="display:none" onclick="plGoTo('dish', _dishId)">PPDS Label</button> <button class="btn btn-grey" onclick="dishList()">&#8592; Back</button></div></div>
     <div class="fs">
       <div class="fr"><div class="fg"><label>Dish Name *</label><input id="dish-name" placeholder="e.g. Custard Tart"></div><div class="fg"><label>Category</label><select id="dish-cat"><option>Starter</option><option>Main</option><option>Dessert</option><option>Side</option><option>Snack</option><option>Bread / Amuse</option><option>Children's Menu</option><option>Drinks</option></select></div></div>
       <div class="fr t1"><div class="fg"><label>Notes</label><input id="dish-notes" placeholder="e.g. Seasonal, VG option available"></div></div>
@@ -2272,7 +2272,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div id="dish-ppds-warning"></div>
     </div>
     <div class="fs">
-      <h3 style="font-size:14px;margin-bottom:10px">Shelf Life <span style="font-weight:400;font-size:11px;text-transform:none">(optional -- auto-fills Print Label)</span></h3>
+      <h3 style="font-size:14px;margin-bottom:10px">Shelf Life <span style="font-weight:400;font-size:11px;text-transform:none">(optional -- auto-fills PPDS Label)</span></h3>
       <div class="fr t3">
         <div class="fg"><label>Shelf Life</label><input id="dish-shelf-life" type="number" step="1" min="1" placeholder="e.g. 3"></div>
         <div class="fg"><label>Unit</label><select id="dish-shelf-unit"><option value="days">Days</option><option value="months">Months</option></select></div>
@@ -2285,7 +2285,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div><h1 id="dish-detail-name"></h1><div class="ph-sub" id="dish-detail-sub"></div></div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-grey" onclick="dishList()">&#8592; Back</button>
-        <button class="btn btn-purple" onclick="plGoTo('dish', _dishId)">Print Label</button>
+        <button class="btn btn-purple" onclick="plGoTo('dish', _dishId)">PPDS Label</button>
         <button class="btn btn-blue" onclick="dishEdit()">Edit</button>
         <button class="btn btn-red" onclick="dishDel()">Delete</button>
         <button class="btn btn-grey" onclick="dishList()">Back</button>
@@ -2475,7 +2475,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   </div>
 
   <div id="pl-form" style="display:none">
-    <div class="ph no-print"><div><h1>Label Details</h1></div><div><button class="btn btn-grey" onclick="plBackToSelect()">&#8592; Back</button></div></div>
+    <div class="ph no-print"><div><h1 id="pl-form-title">Label Details</h1></div><div><button class="btn btn-grey" onclick="plBackToSelect()">&#8592; Back</button></div></div>
     <div class="fs no-print">
       <div class="fr">
         <div class="fg"><label>Item</label><div class="calc-display" id="pl-item-name" style="font-weight:600;color:var(--text)"></div></div>
@@ -2496,6 +2496,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div class="fg" id="pl-notes-row"><label>Notes <span style="font-weight:400;text-transform:none;font-size:11px;color:var(--muted)">(optional)</span></label><textarea id="pl-notes" placeholder="Anything else that needs to go on the label..." oninput="plUpdate()"></textarea></div>
       <div class="form-actions">
         <button class="btn btn-green no-print" id="pl-print-btn" onclick="plPrint()">&#128424; Print Label</button>
+        <!-- text is swapped to "Print PPDS Label" for dishes by plSelect() -->
         <button class="btn btn-grey no-print" onclick="plBackToSelect()">Cancel</button>
       </div>
     </div>
@@ -5515,6 +5516,10 @@ function plSelect(type, id){
   var isDish = type==='dish';
   var madebatchRow = el('pl-madebatch-row'); if(madebatchRow) madebatchRow.style.display = isDish ? 'none' : '';
   var notesRow = el('pl-notes-row'); if(notesRow) notesRow.style.display = isDish ? 'none' : '';
+  // Dishes print a PPDS label, not the prep label -- make that plain rather
+  // than calling both "Print Label".
+  var formTitleEl = el('pl-form-title'); if(formTitleEl) formTitleEl.textContent = isDish ? 'PPDS Label Details' : 'Label Details';
+  var printBtnEl = el('pl-print-btn'); if(printBtnEl) printBtnEl.innerHTML = isDish ? '&#128424; Print PPDS Label' : '&#128424; Print Label';
   showOnly('pl-form','pl-select');
   plUpdate();
 }
