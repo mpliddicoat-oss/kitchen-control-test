@@ -52,8 +52,9 @@ Newquay, Cornwall, TR7 1AB". Only shows if at least one of the two is set,
 so it doesn't leave a stray blank line for anyone who hasn't filled it in
 yet.
 
-Not yet added to the standard (non-PPDS) prep label -- Matt to confirm
-whether that's wanted too.
+Confirmed with Matt (2026-09-06): keep this PPDS-only. The standard
+(non-PPDS) prep label for Ingredients/Yields/Recipes does not get the
+business name/address -- no change needed there, it was never added.
 
 Needs a migration on the shared Supabase project (same graceful-degradation
 pattern -- saves and the sidebar/logo lookup both retry without the column
