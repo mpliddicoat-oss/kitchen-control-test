@@ -3125,6 +3125,32 @@ function ppdsWarningHTML(components){
   if(!missing.length) return '';
   return '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-top:10px;font-size:12px;font-weight:600">&#9888; No full ingredients list recorded for: '+esc(missing.join(', '))+'. Add these on the ingredient itself so a PPDS label can declare what\'s inside.</div>';
 }
+// Everything legally required on a PPDS label that Kitchen Control can
+// actually check for -- used to block printing outright (ppdsPrint won't
+// run while any of these hold) rather than just warn, since a PPDS label
+// missing this information isn't compliant. Descending-weight ordering and
+// allergen emphasis are handled automatically and aren't user-omittable,
+// so there's nothing to check for those.
+function ppdsComplianceIssues(dish){
+  var issues = [];
+  var comps = (dish.components||[]).filter(function(c){ return !!c.id; });
+  if(!comps.length){
+    issues.push('Add at least one ingredient, yield or recipe to this dish -- a PPDS label needs a full ingredients list.');
+  }
+  var missing = missingFullIngredients(dish.components);
+  if(missing.length){
+    issues.push('No full ingredients list recorded for: '+missing.join(', ')+'. Add these on the ingredient itself (or tick "single ingredient" if it has none).');
+  }
+  if(!(window._companyName && window._companyName.trim()) || !(window._companyBusinessAddress && window._companyBusinessAddress.trim())){
+    issues.push('Set your business name and address in Settings -- both are legally required on a PPDS label.');
+  }
+  return issues;
+}
+function ppdsComplianceHTML(dish){
+  var issues = ppdsComplianceIssues(dish);
+  if(!issues.length) return '';
+  return '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-top:10px;font-size:12px;font-weight:600">&#9888; This dish can\'t print a PPDS label yet:<ul style="margin:6px 0 0 18px;font-weight:400">'+issues.map(function(i){ return '<li>'+esc(i)+'</li>'; }).join('')+'</ul></div>';
+}
 function manualA(dishId){ var a=DB.manual&&DB.manual[dishId]?DB.manual[dishId]:[]; var s={}; a.forEach(function(x){ s[x]=true; }); return s; }
 function chipHTML(aSet,ro){
   var ids=Object.keys(aSet); if(!ids.length) return '<span style="font-size:12px;color:var(--muted)">No allergens detected -- verify independently</span>';
@@ -5507,7 +5533,7 @@ function plSelect(type, id){
   _plSelected = {type:type, id:id, name:item.name, labelName:labelName, allergens:plAllergenNames(type, item)};
   el('pl-item-name').textContent = item.name + (labelName!==item.name ? ' (label: '+labelName+')' : '');
   var ppdsEl = el('pl-ppds-warning');
-  if(ppdsEl) ppdsEl.innerHTML = type==='dish' ? ppdsWarningHTML(item.components) : '';
+  if(ppdsEl) ppdsEl.innerHTML = type==='dish' ? ppdsComplianceHTML(item) : '';
   var todayIso = plDateToIso(new Date());
   el('pl-prod-date').value = todayIso;
   el('pl-prod-date').max = todayIso; // production can be backdated (e.g. decanting from a bigger batch made earlier) but never set in the future
@@ -5734,7 +5760,16 @@ function plPrint(){
   var useByStr = useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
   plUpdate();
 
-  if(_plSelected.type==='dish'){ ppdsPrint(useBy, useByStr); return; }
+  if(_plSelected.type==='dish'){
+    var dish = byId(DB.dishes, _plSelected.id) || {};
+    var issues = ppdsComplianceIssues(dish);
+    if(issues.length){
+      alert('This PPDS label can\'t be printed yet:\n\n' + issues.map(function(i){ return '- '+i; }).join('\n'));
+      return;
+    }
+    ppdsPrint(useBy, useByStr);
+    return;
+  }
 
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Label</title><style>'+
     '*{box-sizing:border-box;margin:0;padding:0}'+
