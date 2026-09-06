@@ -3142,15 +3142,28 @@ function ppdsComplianceIssues(dish){
   if(missing.length){
     issues.push('No full ingredients list recorded for: '+missing.join(', ')+'. Add these on the ingredient itself (or tick "single ingredient" if it has none).');
   }
-  if(!(window._companyName && window._companyName.trim()) || !(window._companyBusinessAddress && window._companyBusinessAddress.trim())){
-    issues.push('Set your business name and address in Settings -- both are legally required on a PPDS label.');
-  }
   return issues;
+}
+// Not legally required for a PPDS label, unlike ppdsComplianceIssues above --
+// just best practice -- so these are shown but never block printing.
+function ppdsRecommendations(dish){
+  var recs = [];
+  if(!(window._companyName && window._companyName.trim()) || !(window._companyBusinessAddress && window._companyBusinessAddress.trim())){
+    recs.push('Add your business name and address in Settings -- not a legal requirement for a PPDS label, but best practice.');
+  }
+  return recs;
 }
 function ppdsComplianceHTML(dish){
   var issues = ppdsComplianceIssues(dish);
-  if(!issues.length) return '';
-  return '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-top:10px;font-size:12px;font-weight:600">&#9888; This dish can\'t print a PPDS label yet:<ul style="margin:6px 0 0 18px;font-weight:400">'+issues.map(function(i){ return '<li>'+esc(i)+'</li>'; }).join('')+'</ul></div>';
+  var recs = ppdsRecommendations(dish);
+  var html = '';
+  if(issues.length){
+    html += '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-top:10px;font-size:12px;font-weight:600">&#9888; This dish can\'t print a PPDS label yet:<ul style="margin:6px 0 0 18px;font-weight:400">'+issues.map(function(i){ return '<li>'+esc(i)+'</li>'; }).join('')+'</ul></div>';
+  }
+  if(recs.length){
+    html += '<div style="background:#eff6ff;color:#1e40af;border-radius:6px;padding:8px 10px;margin-top:10px;font-size:12px;font-weight:600">&#128161; Recommended:<ul style="margin:6px 0 0 18px;font-weight:400">'+recs.map(function(i){ return '<li>'+esc(i)+'</li>'; }).join('')+'</ul></div>';
+  }
+  return html;
 }
 function manualA(dishId){ var a=DB.manual&&DB.manual[dishId]?DB.manual[dishId]:[]; var s={}; a.forEach(function(x){ s[x]=true; }); return s; }
 function chipHTML(aSet,ro){

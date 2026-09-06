@@ -29,11 +29,15 @@ labelling requirements to describe them honestly, and found a real gap:
 the PPDS Label doesn't print the food business's name and address anywhere.
 
 Natasha's Law itself only specifically requires the ingredients list +
-allergen emphasis (which the label does correctly). But the wider Food
-Information Regulations 2014 generally also require packaged food to show
-the business's name and address -- so as it stands, a printed PPDS label
-on its own is very likely not fully compliant for a real business, even
-though the Natasha's-Law-specific part is solid.
+allergen emphasis (which the label does correctly).
+
+Correction (2026-09-06, per Matt): a business name/address is **not** a
+legal requirement on a PPDS label -- it's best practice, not law. Built it
+as a recommendation the app shows and encourages, not something that
+blocks printing. See ppdsRecommendations() vs ppdsComplianceIssues() in
+dashboard.html -- only the latter (missing ingredients data) blocks
+plPrint() from actually printing; missing business info just shows a blue
+"Recommended" note.
 
 Flagged honestly in the guide page's "What you're still responsible for"
 section rather than glossed over.
