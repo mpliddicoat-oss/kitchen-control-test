@@ -36,12 +36,28 @@ on its own is very likely not fully compliant for a real business, even
 though the Natasha's-Law-specific part is solid.
 
 Flagged honestly in the guide page's "What you're still responsible for"
-section rather than glossed over. Worth fixing properly: add a business
-name/address field to Settings (there's already a company logo upload
-there to build on) and print it on the PPDS label, likely near the bottom
-next to Use By/Price. Should ask Matt before building -- may want to
-confirm exact wording/placement, and whether it should also appear on the
-standard (non-PPDS) prep label.
+section rather than glossed over.
+
+### DONE (2026-09-06) -- Business Address added to Settings + PPDS label
+
+Added a "Business Address" field to Settings, under Company (next to the
+existing Company Name field). Both `company_name` and `business_address`
+now print together as the very bottom line of the PPDS label, in small
+grey text below Use By/Price -- e.g. "The Harbour Kitchen, 42 High Street,
+Newquay, Cornwall, TR7 1AB". Only shows if at least one of the two is set,
+so it doesn't leave a stray blank line for anyone who hasn't filled it in
+yet.
+
+Not yet added to the standard (non-PPDS) prep label -- Matt to confirm
+whether that's wanted too.
+
+Needs a migration on the shared Supabase project (same graceful-degradation
+pattern -- saves and the sidebar/logo lookup both retry without the column
+via `isMissingColumnError` until it's run):
+
+```sql
+alter table profiles add column if not exists business_address text default '';
+```
 
 ## Print Label — phase 2 (2026-09-03)
 

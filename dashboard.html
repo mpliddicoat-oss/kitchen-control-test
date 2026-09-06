@@ -1386,6 +1386,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-ppds-body .kc-ppds-bottom { display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; margin-top: 4px; }
 .kc-ppds-body .kc-ppds-useby { font-size: calc(10px * var(--ppds-scale, 1)); font-weight: 600; }
 .kc-ppds-body .kc-ppds-price { font-size: calc(13px * var(--ppds-scale, 1)); font-weight: 700; white-space: nowrap; }
+.kc-ppds-body .kc-ppds-business { font-size: calc(7px * var(--ppds-scale, 1)); color: #666; margin-top: 2px; word-break: break-word; }
 
 /* Searchable dropdown */
 .search-select-wrap { position:relative; width:100%; }
@@ -2531,6 +2532,12 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div class="fg" style="flex:1;min-width:200px">
         <label>Your Name</label>
         <input type="text" id="set-user-name" placeholder="Chef Matt">
+      </div>
+    </div>
+    <div class="fr" style="gap:16px;flex-wrap:wrap;margin-top:16px">
+      <div class="fg" style="flex:1;min-width:280px">
+        <label>Business Address <span style="font-weight:400;font-size:11px;text-transform:none">(printed on PPDS labels -- required for compliant food labelling)</span></label>
+        <input type="text" id="set-business-address" placeholder="e.g. 42 High Street, Newquay, Cornwall, TR7 1AB">
       </div>
     </div>
     <div style="margin-top:16px">
@@ -5680,7 +5687,16 @@ function ppdsBodyHtml(useBy, useByStr){
     '<div class="kc-ppds-ingredients">'+(ingredientsHtml||'<span style="color:#999">No components added</span>')+'</div>'+
     (allergenNames.length ? '<div class="kc-ppds-allergens-summary"><span class="kc-ppds-ingredients-label">Allergens</span> <strong>'+esc(allergenNames.join(', '))+'</strong></div>' : '')+
     '<div class="kc-ppds-bottom"><span class="kc-ppds-useby">Use by: '+(useByStr?esc(useByStr):'Enter shelf life above')+'</span>'+
-    (price ? '<span class="kc-ppds-price">'+price+'</span>' : '')+'</div>';
+    (price ? '<span class="kc-ppds-price">'+price+'</span>' : '')+'</div>'+
+    ppdsBusinessLineHtml();
+}
+// Name and address of the food business -- a general food labelling
+// requirement (separate from what Natasha's Law itself specifically added),
+// set once in Settings and printed on the very bottom line of every PPDS
+// label.
+function ppdsBusinessLineHtml(){
+  var line = [window._companyName, window._companyBusinessAddress].filter(function(s){ return s && s.trim(); }).join(', ');
+  return line ? '<div class="kc-ppds-business">'+esc(line)+'</div>' : '';
 }
 
 // Builds the label content markup shared by the on-screen preview and the
@@ -5794,6 +5810,7 @@ function ppdsPrint(useBy, useByStr){
     '.kc-ppds-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:4px}'+
     '.kc-ppds-useby{font-size:calc(10px * var(--ppds-scale,1));font-weight:600}'+
     '.kc-ppds-price{font-size:calc(13px * var(--ppds-scale,1));font-weight:700;white-space:nowrap}'+
+    '.kc-ppds-business{font-size:calc(7px * var(--ppds-scale,1));color:#666;margin-top:2px;word-break:break-word}'+
     '</style></head><body><div class="kc-ppds-body">'+ppdsBodyHtml(useBy, useByStr)+'</div></body></html>';
 
   var iframe = el('pl-print-frame');
@@ -6690,13 +6707,23 @@ supabaseClient.auth.getSession().then(function(s){
   supabaseClient.auth.getSession().then(function(s){
     var uid = s && s.data && s.data.session && s.data.session.user && s.data.session.user.id;
     if(!uid) return;
-    supabaseClient.from('profiles').select('full_name,company_name,logo_url,company_id').eq('user_id', uid).maybeSingle().then(function(res){
+    // business_address may not exist yet (migration not run) -- an unknown
+    // column in an explicit select list errors the whole query, so retry
+    // without it rather than silently losing the sidebar name/logo too.
+    supabaseClient.from('profiles').select('full_name,company_name,logo_url,company_id,business_address').eq('user_id', uid).maybeSingle().then(function(res){
+      if(res.error && isMissingColumnError(res.error)){
+        return supabaseClient.from('profiles').select('full_name,company_name,logo_url,company_id').eq('user_id', uid).maybeSingle();
+      }
+      return res;
+    }).then(function(res){
       if(!res.data) return;
       var nameEl = document.getElementById('sidebar-user-name');
       var bizEl = document.getElementById('sidebar-user-biz');
       if(nameEl) nameEl.textContent = res.data.full_name || 'Chef';
       if(bizEl) bizEl.textContent = res.data.company_name || '';
-      if(res.data.company_id){ 
+      window._companyName = res.data.company_name || '';
+      window._companyBusinessAddress = res.data.business_address || '';
+      if(res.data.company_id){
         _companyId = res.data.company_id;
       }
       // Load logo from companies table (accessible by all company members)
@@ -6956,12 +6983,16 @@ async function settingsRender(){
       _settingsProfile = res.data;
       var nameEl = document.getElementById('set-user-name');
       var companyEl = document.getElementById('set-company-name');
+      var addressEl = document.getElementById('set-business-address');
       if(nameEl) nameEl.value = res.data.full_name || '';
       if(companyEl) companyEl.value = res.data.company_name || '';
+      if(addressEl) addressEl.value = res.data.business_address || '';
       var sName = document.getElementById('sidebar-user-name');
       var sBiz = document.getElementById('sidebar-user-biz');
       if(sName) sName.textContent = res.data.full_name || 'Chef';
       if(sBiz) sBiz.textContent = res.data.company_name || '';
+      window._companyName = res.data.company_name || '';
+      window._companyBusinessAddress = res.data.business_address || '';
       if(res.data.logo_url){
         settingsShowLogo(res.data.logo_url);
         window._companyLogoUrl = res.data.logo_url;
@@ -7319,17 +7350,30 @@ async function settingsRemoveUser(targetUserId, userName){
 async function settingsSave(){
   var name = (document.getElementById('set-user-name').value || '').trim();
   var company = (document.getElementById('set-company-name').value || '').trim();
+  var addressEl = document.getElementById('set-business-address');
+  var businessAddress = addressEl ? addressEl.value.trim() : '';
   var userId = currentUserId();
   if(!userId) return;
 
-  var payload = { user_id: userId, full_name: name, company_name: company };
+  var payload = { user_id: userId, full_name: name, company_name: company, business_address: businessAddress };
   if(_settingsProfile && _settingsProfile.logo_url) payload.logo_url = _settingsProfile.logo_url;
 
   // Use upsert - works whether profile exists or not
   var res = await supabaseClient.from('profiles').upsert(payload, { onConflict: 'user_id' });
 
+  // business_address may not exist yet (migration not run) -- retry without
+  // it so the rest of the profile still saves.
+  if(res.error && isMissingColumnError(res.error)){
+    console.warn('settingsSave: business_address column not found, retrying without it. Run the migration in TODO.md to enable it.');
+    var payloadNoAddress = Object.assign({}, payload);
+    delete payloadNoAddress.business_address;
+    res = await supabaseClient.from('profiles').upsert(payloadNoAddress, { onConflict: 'user_id' });
+  }
+
   if(!res.error){
     _settingsProfile = Object.assign(_settingsProfile || {}, payload);
+    window._companyName = company;
+    window._companyBusinessAddress = businessAddress;
     var sName = document.getElementById('sidebar-user-name');
     var sBiz = document.getElementById('sidebar-user-biz');
     if(sName) sName.textContent = name || 'Chef';
