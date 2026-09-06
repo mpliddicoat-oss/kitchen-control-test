@@ -2507,6 +2507,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <div class="no-print" style="display:flex;justify-content:center;padding:20px;background:var(--light);border-radius:10px">
       <div id="pl-preview" class="kc-label-body kc-label-preview"></div>
     </div>
+    <div id="pl-ppds-disclaimer" class="no-print" style="display:none;font-size:11px;color:var(--muted);text-align:center;margin-top:10px">
+      This label reflects data recorded in your account and doesn't guarantee legal compliance -- see our <a href="#" onclick="settingsShowTerms();return false;">Terms &amp; Conditions</a> for full details.
+    </div>
   </div>
 </div>
 
@@ -2688,17 +2691,18 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
         <p style="margin-bottom:12px"><strong>Kitchen Control — Terms &amp; Conditions</strong></p>
         <p style="margin-bottom:12px">Kitchen Control is operated by Kitchen Control Ltd (Companies House registration number: <strong>17239504</strong>). By using this software you agree to the following terms.</p>
         <p style="margin-bottom:12px"><strong>1. Allergen Liability</strong><br>The allergen information displayed in Kitchen Control is only as accurate as the data entered by the user. Kitchen Control Ltd accepts no liability for allergen errors, omissions or inaccuracies. You must always verify allergen information independently before serving food to customers. Compliance with Natasha's Law and all food safety legislation remains the sole responsibility of the food business operator.</p>
-        <p style="margin-bottom:12px"><strong>2. Service &amp; Data</strong><br>Kitchen Control is a live cloud-based service. We take commercially reasonable precautions to protect your data. Features may be updated over time. While we take every precaution to protect your data, data loss is possible. You should always maintain your own independent records of allergen and recipe information.</p>
-        <p style="margin-bottom:12px"><strong>3. Subscription &amp; Payment</strong><br>Kitchen Control is provided on a subscription basis at £12.99 per month. A 30-day free trial is included. Your payment card will be charged automatically at the end of the trial period unless you cancel before the trial ends. Subscriptions renew automatically each month. You may cancel at any time via Settings → Subscription.</p>
-        <p style="margin-bottom:12px"><strong>4. Refunds</strong><br>We do not offer refunds for part-used subscription periods. If you cancel, you will retain access until the end of the current billing period.</p>
-        <p style="margin-bottom:12px"><strong>5. Data Storage &amp; GDPR</strong><br>Your data is stored securely via Supabase on servers within the European Economic Area. We do not sell or share your personal data with third parties. You have the right to request deletion of your data at any time by contacting support@kitchen-control.co.uk.</p>
-        <p style="margin-bottom:12px"><strong>6. Scan Usage</strong><br>Each subscription includes 1,000 AI scans per billing period. Unused scans do not roll over.</p>
-        <p style="margin-bottom:12px"><strong>7. Service Availability</strong><br>We aim to maintain 99% uptime but cannot guarantee uninterrupted service. Kitchen Control Ltd accepts no liability for losses arising from service interruptions.</p>
-        <p style="margin-bottom:12px"><strong>8. Acceptable Use</strong><br>Kitchen Control is for professional kitchen and food business management only.</p>
-        <p style="margin-bottom:12px"><strong>9. Intellectual Property</strong><br>All content, design and software within Kitchen Control remains the intellectual property of Kitchen Control Ltd.</p>
-        <p style="margin-bottom:12px"><strong>10. Limitation of Liability</strong><br>To the fullest extent permitted by law, Kitchen Control Ltd shall not be liable for any indirect, incidental or consequential damages. Our total liability shall not exceed subscription fees paid in the three months preceding any claim.</p>
-        <p style="margin-bottom:12px"><strong>11. Governing Law</strong><br>These terms are governed by the laws of England and Wales.</p>
-        <p style="margin-bottom:12px"><strong>12. Contact</strong><br>Kitchen Control Ltd<br>Email: hello@kitchen-control.co.uk<br>Support: support@kitchen-control.co.uk</p>
+        <p style="margin-bottom:12px"><strong>2. PPDS Labelling</strong><br>Where the PPDS Label feature is used to generate a label for food prepacked for direct sale, the ingredients list, allergen emphasis, ingredient ordering and any other content shown reflects only the data recorded in your account and is not independently verified by Kitchen Control Ltd. Ingredient ordering is a best-effort estimate based on recorded quantities and may not reflect true descending weight order. Kitchen Control Ltd accepts no liability for a PPDS label produced using this feature failing to comply with Natasha's Law, the Food Information Regulations, or any other applicable food labelling legislation. Compliance remains the sole responsibility of the food business operator.</p>
+        <p style="margin-bottom:12px"><strong>3. Service &amp; Data</strong><br>Kitchen Control is a live cloud-based service. We take commercially reasonable precautions to protect your data. Features may be updated over time. While we take every precaution to protect your data, data loss is possible. You should always maintain your own independent records of allergen and recipe information.</p>
+        <p style="margin-bottom:12px"><strong>4. Subscription &amp; Payment</strong><br>Kitchen Control is provided on a subscription basis at £12.99 per month. A 30-day free trial is included. Your payment card will be charged automatically at the end of the trial period unless you cancel before the trial ends. Subscriptions renew automatically each month. You may cancel at any time via Settings → Subscription.</p>
+        <p style="margin-bottom:12px"><strong>5. Refunds</strong><br>We do not offer refunds for part-used subscription periods. If you cancel, you will retain access until the end of the current billing period.</p>
+        <p style="margin-bottom:12px"><strong>6. Data Storage &amp; GDPR</strong><br>Your data is stored securely via Supabase on servers within the European Economic Area. We do not sell or share your personal data with third parties. You have the right to request deletion of your data at any time by contacting support@kitchen-control.co.uk.</p>
+        <p style="margin-bottom:12px"><strong>7. Scan Usage</strong><br>Each subscription includes 1,000 AI scans per billing period. Unused scans do not roll over.</p>
+        <p style="margin-bottom:12px"><strong>8. Service Availability</strong><br>We aim to maintain 99% uptime but cannot guarantee uninterrupted service. Kitchen Control Ltd accepts no liability for losses arising from service interruptions.</p>
+        <p style="margin-bottom:12px"><strong>9. Acceptable Use</strong><br>Kitchen Control is for professional kitchen and food business management only.</p>
+        <p style="margin-bottom:12px"><strong>10. Intellectual Property</strong><br>All content, design and software within Kitchen Control remains the intellectual property of Kitchen Control Ltd.</p>
+        <p style="margin-bottom:12px"><strong>11. Limitation of Liability</strong><br>To the fullest extent permitted by law, Kitchen Control Ltd shall not be liable for any indirect, incidental or consequential damages. Our total liability shall not exceed subscription fees paid in the three months preceding any claim.</p>
+        <p style="margin-bottom:12px"><strong>12. Governing Law</strong><br>These terms are governed by the laws of England and Wales.</p>
+        <p style="margin-bottom:12px"><strong>13. Contact</strong><br>Kitchen Control Ltd<br>Email: hello@kitchen-control.co.uk<br>Support: support@kitchen-control.co.uk</p>
         <p style="color:#9ca3af;font-size:12px;margin-top:20px">Kitchen Control Ltd &copy; 2026. All rights reserved. Last updated: May 2026.</p>
           </div>
           <div style="margin-top:20px;text-align:center">
@@ -5567,6 +5571,7 @@ function plSelect(type, id){
   // than calling both "Print Label".
   var formTitleEl = el('pl-form-title'); if(formTitleEl) formTitleEl.textContent = isDish ? 'PPDS Label Details' : 'Label Details';
   var printBtnEl = el('pl-print-btn'); if(printBtnEl) printBtnEl.innerHTML = isDish ? '&#128424; Print PPDS Label' : '&#128424; Print Label';
+  var disclaimerEl = el('pl-ppds-disclaimer'); if(disclaimerEl) disclaimerEl.style.display = isDish ? '' : 'none';
   showOnly('pl-form','pl-select');
   plUpdate();
 }
