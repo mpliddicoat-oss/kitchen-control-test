@@ -1368,7 +1368,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .kc-label-body .kc-l-day-label { display: block; font-size: 8px; font-weight: 700; letter-spacing: 1px; }
 .kc-label-body .kc-l-day-name { display: block; font-size: 18px; font-weight: 800; letter-spacing: 1px; line-height: 1.15; }
 .kc-label-body .kc-l-day-date { display: block; font-size: 11px; font-weight: 600; margin-top: 1px; }
-.kc-label-body .kc-l-logo { flex: 0 0 auto; display: block; width: 15mm; height: 15mm; object-fit: contain; opacity: 1; }
+.kc-label-body .kc-l-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; gap: 6px; }
+.kc-label-body .kc-l-header-logo { max-width: 26mm; max-height: 10mm; object-fit: contain; display: block; }
 
 /* PPDS label -- a completely different stacked format from the prep label
    above (Name, Description, Ingredients with allergens emphasised, a small
@@ -5734,10 +5735,19 @@ function plBodyHtml(useBy, useByStr){
   var allergens = _plSelected.allergens || [];
   var useByDay = useBy ? useBy.toLocaleDateString('en-GB', {weekday:'long'}).toUpperCase() : '';
   var prodDateStr = plProdDate().toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'});
-  var logoImg = '<img class="kc-l-logo" src="'+esc(window._companyLogoUrl || (location.origin+'/favicon.png'))+'" alt="">';
-  return (useByDay
-      ? '<div class="kc-l-day-box"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div>'+logoImg+'</div>'
-      : '<div class="kc-l-day-box kc-l-day-box-empty"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div>'+logoImg+'</div>')+
+  // Company logo on the left, Kitchen Control's own logo on the right --
+  // it's the chef's own label, so their branding leads. An empty spacer
+  // keeps the KC logo pinned right via space-between even when there's no
+  // company logo to show on the left.
+  var kcLogoSrc = (el('logo-img') && el('logo-img').src) || (location.origin+'/favicon.png');
+  var headerHtml = '<div class="kc-l-header">'+
+    (window._companyLogoUrl ? '<img class="kc-l-header-logo" src="'+esc(window._companyLogoUrl)+'" alt="">' : '<span></span>')+
+    '<img class="kc-l-header-logo" src="'+esc(kcLogoSrc)+'" alt="Kitchen Control">'+
+    '</div>';
+  return headerHtml +
+    (useByDay
+      ? '<div class="kc-l-day-box"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-name">'+esc(useByDay)+'</span><span class="kc-l-day-date">'+esc(useByStr)+'</span></div></div>'
+      : '<div class="kc-l-day-box kc-l-day-box-empty"><div class="kc-l-day-text"><span class="kc-l-day-label">USE BY</span><span class="kc-l-day-date">Enter shelf life above</span></div></div>')+
     '<div class="kc-l-name">'+esc(_plSelected.labelName||_plSelected.name)+'</div>'+
     '<div class="kc-l-row"><strong>Prepared:</strong> '+esc(prodDateStr)+'</div>'+
     (madeBy ? '<div class="kc-l-row"><strong>By:</strong> '+esc(madeBy)+'</div>' : '')+
@@ -5787,7 +5797,8 @@ function plPrint(){
     '.kc-l-day-label{display:block;font-size:8px;font-weight:700;letter-spacing:1px}'+
     '.kc-l-day-name{display:block;font-size:18px;font-weight:800;letter-spacing:1px;line-height:1.15}'+
     '.kc-l-day-date{display:block;font-size:11px;font-weight:600;margin-top:1px}'+
-    '.kc-l-logo{flex:0 0 auto;display:block;width:15mm;height:15mm;object-fit:contain;opacity:1}'+
+    '.kc-l-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;gap:6px}'+
+    '.kc-l-header-logo{max-width:26mm;max-height:10mm;object-fit:contain;display:block}'+
     '</style></head><body><div class="kc-label-body">'+plBodyHtml(useBy, useByStr)+'</div></body></html>';
 
   var iframe = el('pl-print-frame');
@@ -5809,15 +5820,17 @@ function plPrint(){
     iframe.contentWindow.focus();
     iframe.contentWindow.print();
   }
-  // Wait for the logo image to actually finish loading (or fail) before
-  // printing, rather than a blind delay -- a fixed timeout that's too
-  // short prints before the image request completes and the logo is
-  // silently missing. Still has a fallback timeout in case neither event
-  // fires (e.g. the request stalls).
-  var logoImg = doc.querySelector('.kc-l-logo');
-  if(logoImg && !logoImg.complete){
-    logoImg.onload = doPrint;
-    logoImg.onerror = doPrint;
+  // Wait for both header logos (company + Kitchen Control) to actually
+  // finish loading (or fail) before printing, rather than a blind delay --
+  // a fixed timeout that's too short prints before the image requests
+  // complete and a logo is silently missing. Still has a fallback timeout
+  // in case an event never fires (e.g. a request stalls).
+  var logoImgs = Array.prototype.filter.call(doc.querySelectorAll('.kc-l-header-logo'), function(img){ return !img.complete; });
+  if(logoImgs.length){
+    var remaining = logoImgs.length;
+    logoImgs.forEach(function(img){
+      img.onload = img.onerror = function(){ remaining--; if(remaining<=0) doPrint(); };
+    });
     setTimeout(doPrint, 1000);
   } else {
     setTimeout(doPrint, 50);
