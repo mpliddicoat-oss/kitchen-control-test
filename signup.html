@@ -103,7 +103,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
   <div class="form-container">
     <div class="form-header">
       <h1>Start your free trial</h1>
-      <p>Already have an account? <a href="login.html">Sign in here</a></p>
+      <p>Already have an account? <a href="login">Sign in here</a></p>
     </div>
 
     <div id="error-box" class="error-box"></div>
@@ -223,7 +223,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(
       </div>
 
       <p class="form-legal">
-        By signing up you agree to our <a href="#" onclick="showTerms();return false;">Terms &amp; Conditions</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
+        By signing up you agree to our <a href="#" onclick="showTerms();return false;">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
       </p>
       <div class="secure-badges">
         <div class="secure-badge">🔒 SSL Secured</div>
@@ -335,7 +335,7 @@ async function handleSignup(){
       document.getElementById('success-box').innerHTML =
         '<div class="icon">📧</div>' +
         '<h2>Account created!</h2>' +
-        '<p>Check your email to confirm your account, then <a href="login.html" style="color:#7fbf3f">sign in here</a>.<br><br>' +
+        '<p>Check your email to confirm your account, then <a href="login" style="color:#7fbf3f">sign in here</a>.<br><br>' +
         'You can set up billing from Settings once you are logged in.</p>';
       return;
     }

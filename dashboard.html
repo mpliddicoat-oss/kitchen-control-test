@@ -148,8 +148,8 @@ function demoInjectBanner(){
   document.body.classList.add('kc-demo-active');
   bar.innerHTML = '<span class="kc-demo-dot"></span>' +
     '<span class="kc-demo-long"><strong>Demo mode</strong>&nbsp;— explore freely, scan a real invoice or label. Nothing is saved. ' +
-    '<a href="index.html">Start your free trial →</a></span>' +
-    '<span class="kc-demo-short"><strong>Demo</strong> — nothing saves. <a href="index.html">Free trial →</a></span>';
+    '<a href="/">Start your free trial →</a></span>' +
+    '<span class="kc-demo-short"><strong>Demo</strong> — nothing saves. <a href="/">Free trial →</a></span>';
   document.body.appendChild(bar);
   var css = document.createElement('style');
   css.textContent =
@@ -204,7 +204,7 @@ function demoNudge(msg){
     '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>'+
     '<h3 style="margin:0 0 10px;color:#16222c;font-size:18px;">This is a demo</h3>'+
     '<p style="margin:0 0 20px;color:#4b5563;font-size:14px;line-height:1.6;">'+msg+'</p>'+
-    '<a href="index.html" style="display:block;background:#7fbf3f;color:#fff;text-decoration:none;padding:12px;border-radius:8px;font-weight:700;font-size:15px;margin-bottom:10px;">Start your free 30-day trial</a>'+
+    '<a href="/" style="display:block;background:#7fbf3f;color:#fff;text-decoration:none;padding:12px;border-radius:8px;font-weight:700;font-size:15px;margin-bottom:10px;">Start your free 30-day trial</a>'+
     '<button style="background:none;border:none;color:#6b7280;font-size:13px;cursor:pointer;">Keep exploring the demo</button>'+
     '</div>';
   ov.querySelector('button').onclick=function(){ ov.remove(); };
@@ -2600,8 +2600,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   <div class="card" style="margin-bottom:20px">
     <h3 style="margin-bottom:16px;color:var(--dark)">&#128216; Help &amp; Legal</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <a href="userguide.html" target="_blank" rel="noopener" class="btn btn-outline">&#128218; User Guide</a>
-      <a href="faq.html" target="_blank" rel="noopener" class="btn btn-outline">&#10067; FAQ</a>
+      <a href="userguide" target="_blank" rel="noopener" class="btn btn-outline">&#128218; User Guide</a>
+      <a href="faq" target="_blank" rel="noopener" class="btn btn-outline">&#10067; FAQ</a>
       <button class="btn btn-outline" onclick="settingsShowTerms()">&#128203; Terms &amp; Conditions</button>
       <button class="btn btn-outline" onclick="settingsShowFeedback()">&#128172; Send Feedback</button>
     </div>
@@ -2712,7 +2712,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       </div>
 
       <p class="form-legal">
-        By signing up you agree to our <a href="#" onclick="showTerms();return false;">Terms &amp; Conditions</a> and <a href="/privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.
+        By signing up you agree to our <a href="#" onclick="showTerms();return false;">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
       </p>
       <div class="secure-badges">
         <div class="secure-badge">🔒 SSL Secured</div>
