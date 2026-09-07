@@ -3426,11 +3426,28 @@ function deleteAwaiting(id){
 }
 var _promotingAwaitingId = null;
 
-function ingList(){ _ingId=null; _ingA={}; _promotingAwaitingId=null; showOnly('ing-list','ing-form','ing-detail'); ingRender(); }
+var _ingListScrollY = null;
+// Only captures when the list itself is the visible view -- otherwise a
+// detail->edit transition would overwrite it with the detail page's own
+// scroll position instead of the list's.
+function ingCaptureListScroll(){
+  var listEl = el('ing-list');
+  if(listEl && listEl.style.display !== 'none') _ingListScrollY = window.scrollY;
+}
+function ingList(){
+  _ingId=null; _ingA={}; _promotingAwaitingId=null; showOnly('ing-list','ing-form','ing-detail'); ingRender();
+  // Restore scroll position after returning from an item (edit or detail),
+  // rather than always landing back at the top of a long ingredients list.
+  if(_ingListScrollY !== null){
+    var y = _ingListScrollY; _ingListScrollY = null;
+    requestAnimationFrame(function(){ window.scrollTo(0, y); });
+  }
+}
 // Read-only view -- open by clicking an ingredient, no edit permission needed.
 // Print Label is here so non-editors can still print without touching Edit.
 function ingShowDetail(id){
   var i=byId(DB.ingredients,id); if(!i){ alert('Not found.'); return; }
+  ingCaptureListScroll();
   _ingId=id;
   showOnly('ing-detail','ing-list','ing-form');
   el('ing-detail-name').textContent=i.name;
@@ -3502,6 +3519,7 @@ function ingNew(){
 }
 function ingEdit(id){
   var i=byId(DB.ingredients,id); if(!i){ alert('Not found.'); return; }
+  ingCaptureListScroll();
   _ingId=id; _ingA={}; (i.allergens||[]).forEach(function(a){ _ingA[a]=true; });
   // Resolve the ingredient's supplier to a local supplier ID.
   // supplierId may hold an int id (from load) or a name (legacy/native select).
