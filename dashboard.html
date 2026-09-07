@@ -1152,7 +1152,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 
 /* MISC */
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.search-bar { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; margin-bottom: 12px; background: white; font-family: inherit; }
+.search-bar { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; margin-bottom: 12px; background: white; font-family: inherit; position: sticky; top: 0; z-index: 5; }
 .search-bar:focus { outline: none; border-color: var(--green); }
 .tabs { display: flex; gap: 2px; background: #e2e8f0; border-radius: 7px; padding: 3px; width: fit-content; flex-wrap: wrap; }
 .tab { padding: 5px 12px; border-radius: 5px; border: none; background: none; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted); font-family: inherit; transition: all 0.15s; }
@@ -2958,6 +2958,11 @@ function clr(ids){ ids.forEach(function(id){ var e=el(id); if(e) e.value=''; });
 function show(id){ el(id).style.display='block'; }
 function hide(id){ el(id).style.display='none'; }
 function showOnly(show_id){ var others=Array.prototype.slice.call(arguments,1); others.forEach(hide); show(show_id); }
+// The actual scrolling element for all page content -- body itself is
+// height:100vh + overflow:hidden (see .main CSS), so window.scrollY/scrollTo
+// are always 0/no-ops here. Anything that needs to read or set scroll
+// position must go through .main instead.
+function mainScrollEl(){ return document.querySelector('.main'); }
 
 function tc(s){
   return s.replace(/\w+/g,function(w){ return BIZ.indexOf(w.toLowerCase())>=0?w.toUpperCase():w[0].toUpperCase()+w.slice(1).toLowerCase(); });
@@ -3432,7 +3437,7 @@ var _ingListScrollY = null;
 // scroll position instead of the list's.
 function ingCaptureListScroll(){
   var listEl = el('ing-list');
-  if(listEl && listEl.style.display !== 'none') _ingListScrollY = window.scrollY;
+  if(listEl && listEl.style.display !== 'none') _ingListScrollY = mainScrollEl().scrollTop;
 }
 function ingList(){
   _ingId=null; _ingA={}; _promotingAwaitingId=null; showOnly('ing-list','ing-form','ing-detail'); ingRender();
@@ -3440,7 +3445,7 @@ function ingList(){
   // rather than always landing back at the top of a long ingredients list.
   if(_ingListScrollY !== null){
     var y = _ingListScrollY; _ingListScrollY = null;
-    requestAnimationFrame(function(){ window.scrollTo(0, y); });
+    requestAnimationFrame(function(){ mainScrollEl().scrollTop = y; });
   }
 }
 // Read-only view -- open by clicking an ingredient, no edit permission needed.
@@ -3875,7 +3880,7 @@ var _yldId=null;
 var _yldListScrollY = null;
 function yldCaptureListScroll(){
   var listEl = el('yld-list');
-  if(listEl && listEl.style.display !== 'none') _yldListScrollY = window.scrollY;
+  if(listEl && listEl.style.display !== 'none') _yldListScrollY = mainScrollEl().scrollTop;
 }
 function yldList(){
   _yldId = null;
@@ -3883,7 +3888,7 @@ function yldList(){
   yldRender();
   if(_yldListScrollY !== null){
     var y = _yldListScrollY; _yldListScrollY = null;
-    requestAnimationFrame(function(){ window.scrollTo(0, y); });
+    requestAnimationFrame(function(){ mainScrollEl().scrollTop = y; });
   }
 }
 // Read-only view -- open by clicking a yield, no edit permission needed.
@@ -4098,13 +4103,13 @@ var _recImportReturnSlot=null; // index in _recComps awaiting a newly-created in
 var _recListScrollY = null;
 function recCaptureListScroll(){
   var listEl = el('rec-list');
-  if(listEl && listEl.style.display !== 'none') _recListScrollY = window.scrollY;
+  if(listEl && listEl.style.display !== 'none') _recListScrollY = mainScrollEl().scrollTop;
 }
 function recList(){
   _recId=null; showOnly('rec-list','rec-form','rec-detail'); recRender();
   if(_recListScrollY !== null){
     var y = _recListScrollY; _recListScrollY = null;
-    requestAnimationFrame(function(){ window.scrollTo(0, y); });
+    requestAnimationFrame(function(){ mainScrollEl().scrollTop = y; });
   }
 }
 function recNew(){
@@ -4441,13 +4446,13 @@ var _dishId=null, _dishComps=[], _dishImg=null;
 var _dishListScrollY = null;
 function dishCaptureListScroll(){
   var listEl = el('dish-list');
-  if(listEl && listEl.style.display !== 'none') _dishListScrollY = window.scrollY;
+  if(listEl && listEl.style.display !== 'none') _dishListScrollY = mainScrollEl().scrollTop;
 }
 function dishList(){
   _dishId=null; showOnly('dish-list','dish-form','dish-detail'); dishRender();
   if(_dishListScrollY !== null){
     var y = _dishListScrollY; _dishListScrollY = null;
-    requestAnimationFrame(function(){ window.scrollTo(0, y); });
+    requestAnimationFrame(function(){ mainScrollEl().scrollTop = y; });
   }
 }
 function dishNew(){
