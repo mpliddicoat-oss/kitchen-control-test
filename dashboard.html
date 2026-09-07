@@ -3872,15 +3872,25 @@ function ingRender(f){
 // YIELDS
 // ================================================================
 var _yldId=null;
+var _yldListScrollY = null;
+function yldCaptureListScroll(){
+  var listEl = el('yld-list');
+  if(listEl && listEl.style.display !== 'none') _yldListScrollY = window.scrollY;
+}
 function yldList(){
   _yldId = null;
   showOnly('yld-list','yld-form','yld-detail');
   yldRender();
+  if(_yldListScrollY !== null){
+    var y = _yldListScrollY; _yldListScrollY = null;
+    requestAnimationFrame(function(){ window.scrollTo(0, y); });
+  }
 }
 // Read-only view -- open by clicking a yield, no edit permission needed.
 // Print Label is here so non-editors can still print without touching Edit.
 function yldShowDetail(id){
   var y=byId(DB.yields,id); if(!y){ alert('Not found.'); return; }
+  yldCaptureListScroll();
   _yldId=id;
   showOnly('yld-detail','yld-list','yld-form');
   var ing=byId(DB.ingredients,y.ingId);
@@ -3952,6 +3962,7 @@ function yldEdit(id){
     return;
   }
 
+  yldCaptureListScroll();
   _yldId = id;
   if(el('yld-print-label-btn')) el('yld-print-label-btn').style.display='';
 
@@ -4084,7 +4095,18 @@ function yldDelIdx(i,ev){ if(window._yldRenderItems&&window._yldRenderItems[i]) 
 // ================================================================
 var _recId=null, _recComps=[];
 var _recImportReturnSlot=null; // index in _recComps awaiting a newly-created ingredient
-function recList(){ _recId=null; showOnly('rec-list','rec-form','rec-detail'); recRender(); }
+var _recListScrollY = null;
+function recCaptureListScroll(){
+  var listEl = el('rec-list');
+  if(listEl && listEl.style.display !== 'none') _recListScrollY = window.scrollY;
+}
+function recList(){
+  _recId=null; showOnly('rec-list','rec-form','rec-detail'); recRender();
+  if(_recListScrollY !== null){
+    var y = _recListScrollY; _recListScrollY = null;
+    requestAnimationFrame(function(){ window.scrollTo(0, y); });
+  }
+}
 function recNew(){
   _recId=null; _recComps=[]; _recSteps=[];
   clr(['rec-name']);
@@ -4115,6 +4137,7 @@ function addNewIngredientForRecipeSlot(i){
 }
 function recEdit(id){
   if(id===undefined) id=_recId; var r=byId(DB.recipes,id); if(!r) return;
+  recCaptureListScroll();
   _recId=id; el('rec-name').value=r.name; el('rec-cat').value=r.category; el('rec-portions').value=r.yieldQty||r.portions||1; var ryuEdit=el('rec-yield-unit'); if(ryuEdit) ryuEdit.value=r.yieldUnit||'portions';
   var rsl2=el('rec-shelf-life'); if(rsl2) rsl2.value=r.shelfLifeValue||''; var rsu2=el('rec-shelf-unit'); if(rsu2) rsu2.value=r.shelfLifeUnit||'days';
   // Load steps
@@ -4154,6 +4177,7 @@ function recCalc(){
   el('rec-live-allergens').innerHTML=warning+(chipHTML(a,true)||'<span style="font-size:12px;color:var(--muted)">No allergens yet</span>');
 }
 function recShowDetail(id){
+  recCaptureListScroll();
   _recId=id;
   var r=byId(DB.recipes,id);
   showOnly('rec-detail','rec-list','rec-form');
@@ -4414,7 +4438,18 @@ function compRender(ctx){
 }
 
 var _dishId=null, _dishComps=[], _dishImg=null;
-function dishList(){ _dishId=null; showOnly('dish-list','dish-form','dish-detail'); dishRender(); }
+var _dishListScrollY = null;
+function dishCaptureListScroll(){
+  var listEl = el('dish-list');
+  if(listEl && listEl.style.display !== 'none') _dishListScrollY = window.scrollY;
+}
+function dishList(){
+  _dishId=null; showOnly('dish-list','dish-form','dish-detail'); dishRender();
+  if(_dishListScrollY !== null){
+    var y = _dishListScrollY; _dishListScrollY = null;
+    requestAnimationFrame(function(){ window.scrollTo(0, y); });
+  }
+}
 function dishNew(){
   _dishId=null; _dishComps=[]; _compTarget='dish'; _dishImg=null;
   clr(['dish-name','dish-notes','dish-gp','dish-wastage','dish-sell','dish-shelf-life']);
@@ -4460,6 +4495,7 @@ async function dishImg(inp){
 function dishImgClear(){ _dishImg=null; el('dish-img-input').value=''; el('dish-img-preview').style.display='none'; el('dish-img-placeholder').style.display='block'; el('dish-img-clear').style.display='none'; }
 function dishEdit(id){
   if(id===undefined) id=_dishId; var d=byId(DB.dishes,id); if(!d) return;
+  dishCaptureListScroll();
   _dishId=id; _dishComps=(d.components||[]).map(function(c){ return Object.assign({},c); }); _dishImg=d.photo_url||d.image||null;
   el('dish-name').value=d.name; el('dish-cat').value=d.category||'Main'; el('dish-notes').value=d.notes||'';
   el('dish-gp').value=d.targetGP||''; el('dish-wastage').value=d.wastage||''; el('dish-sell').value=d.actualSell?parseFloat(d.actualSell).toFixed(2):'';
@@ -4509,6 +4545,7 @@ function dishSave(){
   }
 }
 function dishShowDetail(id){
+  dishCaptureListScroll();
   _dishId=id; var d=byId(DB.dishes,id); showOnly('dish-detail','dish-list','dish-form');
   el('dish-detail-name').textContent=d.name; el('dish-detail-sub').textContent=d.category+(d.notes?' &middot; '+d.notes:'');
   el('dish-detail-img').innerHTML=(d.photo_url||d.image)?'<a href="'+esc(d.photo_url||d.image)+'" target="_blank" rel="noopener" title="Click to view full size"><img src="'+esc(d.photo_url||d.image)+'" style="width:100%;height:auto;max-height:180px;border-radius:8px;object-fit:contain;background:#f8fafc;cursor:pointer"></a>':'<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No photo added</div>';
