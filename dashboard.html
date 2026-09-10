@@ -5992,6 +5992,17 @@ function ppdsPrint(useBy, useByStr){
     iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
     document.body.appendChild(iframe);
   }
+  // Sized to the label's real on-page dimensions (not 0x0, unlike the plain
+  // Print Label iframe above) -- the shrink-to-fit measurement just below
+  // reads scrollHeight from THIS on-screen layout, and at width:0 every line
+  // wraps at almost no width at all, inflating the measured height by ~8x
+  // and forcing every PPDS label onto the smallest font scale regardless of
+  // whether it actually needed shrinking. Set unconditionally (not only on
+  // creation) since this same iframe element is reused across prints and a
+  // plain Print Label print earlier in the session would otherwise have
+  // already reset it back to 0x0.
+  iframe.style.width = '100mm';
+  iframe.style.height = '62mm';
   var doc = iframe.contentDocument || iframe.contentWindow.document;
   doc.open();
   doc.write(html);
