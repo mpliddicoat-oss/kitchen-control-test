@@ -5889,20 +5889,27 @@ function plBodyHtml(useBy, useByStr){
 // document). An isolated document with a single plain @page rule and
 // nothing else on it sidesteps that whole class of bug.
 function plPrint(){
-  if(!_plSelected) return;
+  // Temporary breadcrumbs while tracking down a report of PPDS printing
+  // doing nothing with no console error -- remove once resolved.
+  console.log('[plPrint] clicked, _plSelected=', _plSelected);
+  if(!_plSelected){ console.log('[plPrint] exiting: _plSelected is not set'); return; }
   var useBy = plCalcUseBy();
-  if(!useBy){ alert('Please enter a shelf life first so the Use By date can be calculated.'); return; }
+  if(!useBy){ console.log('[plPrint] exiting: no Use By (shelf life not set/valid)'); alert('Please enter a shelf life first so the Use By date can be calculated.'); return; }
   var useByStr = useBy.toLocaleDateString('en-GB', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
   plUpdate();
 
   if(_plSelected.type==='dish'){
     var dish = byId(DB.dishes, _plSelected.id) || {};
+    console.log('[plPrint] dish branch, dish=', dish);
     var issues = ppdsComplianceIssues(dish);
     if(issues.length){
+      console.log('[plPrint] exiting: PPDS compliance issues', issues);
       alert('This PPDS label can\'t be printed yet:\n\n' + issues.map(function(i){ return '- '+i; }).join('\n'));
       return;
     }
+    console.log('[plPrint] calling ppdsPrint()');
     ppdsPrint(useBy, useByStr);
+    console.log('[plPrint] ppdsPrint() returned without throwing');
     return;
   }
 
@@ -5985,6 +5992,7 @@ function ppdsPrint(useBy, useByStr){
     '.kc-ppds-business{font-size:calc(7px * var(--ppds-scale,1));color:#666;margin-top:2px;word-break:break-word}'+
     '</style></head><body><div class="kc-ppds-body">'+ppdsBodyHtml(useBy, useByStr)+'</div></body></html>';
 
+  console.log('[ppdsPrint] start, html length=', html.length);
   var iframe = el('pl-print-frame');
   if(!iframe){
     iframe = document.createElement('iframe');
@@ -6007,6 +6015,7 @@ function ppdsPrint(useBy, useByStr){
   doc.open();
   doc.write(html);
   doc.close();
+  console.log('[ppdsPrint] iframe doc written, iframe in DOM=', document.body.contains(iframe));
 
   // Shrink-to-fit against the real printable height (58mm, inside the
   // 3mm+1mm top/bottom margins), measured via a probe element rather than
@@ -6022,14 +6031,23 @@ function ppdsPrint(useBy, useByStr){
     doc.documentElement.style.setProperty('--ppds-scale', scales[i]);
     if(doc.body.scrollHeight <= maxHeightPx) break;
   }
+  console.log('[ppdsPrint] shrink-to-fit done, maxHeightPx=', maxHeightPx, 'scrollHeight=', doc.body.scrollHeight);
 
   var printed = false;
   function doPrint(){
+    console.log('[ppdsPrint] doPrint() firing, printed already=', printed);
     if(printed) return;
     printed = true;
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
+    try {
+      iframe.contentWindow.focus();
+      console.log('[ppdsPrint] iframe focused, calling print()...');
+      iframe.contentWindow.print();
+      console.log('[ppdsPrint] print() call completed without throwing');
+    } catch(e){
+      console.log('[ppdsPrint] print() THREW:', e);
+    }
   }
+  console.log('[ppdsPrint] scheduling doPrint() in 50ms');
   setTimeout(doPrint, 50);
 }
 
