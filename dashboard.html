@@ -4551,7 +4551,7 @@ function dishSave(){
 function dishShowDetail(id){
   dishCaptureListScroll();
   _dishId=id; var d=byId(DB.dishes,id); showOnly('dish-detail','dish-list','dish-form');
-  el('dish-detail-name').textContent=d.name; el('dish-detail-sub').textContent=d.category+(d.notes?' &middot; '+d.notes:'');
+  el('dish-detail-name').textContent=d.name; el('dish-detail-sub').textContent=d.category+(d.notes?' · '+d.notes:'');
   el('dish-detail-img').innerHTML=(d.photo_url||d.image)?'<a href="'+esc(d.photo_url||d.image)+'" target="_blank" rel="noopener" title="Click to view full size"><img src="'+esc(d.photo_url||d.image)+'" style="width:100%;height:auto;max-height:180px;border-radius:8px;object-fit:contain;background:#f8fafc;cursor:pointer"></a>':'<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No photo added</div>';
   var compH='<h3 style="margin-bottom:10px">Components</h3>', total=0;
   (d.components||[]).forEach(function(c){
@@ -4764,7 +4764,7 @@ function menuDel(id){
 }
 function menuShowDetail(id){
   _menuId=id; var m=byId(DB.menus,id); showOnly('menu-detail','menu-list','menu-form');
-  el('menu-detail-name').textContent=m.name; el('menu-detail-sub').textContent=m.type+(m.desc?' &middot; '+m.desc:'');
+  el('menu-detail-name').textContent=m.name; el('menu-detail-sub').textContent=m.type+(m.desc?' · '+m.desc:'');
   var html='',gc=0,gs=0;
   (m.dishes||[]).forEach(function(l){ var d=byId(DB.dishes,l.dishId); if(!d) return; var c=adjDishCost(d),s=l.sell!==''?parseFloat(l.sell)||0:d.actualSell||0; gc+=c; gs+=s; var a=Object.assign({},aFromDish(d),manualA(d.id)); html+='<div class="card" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px"><div><strong style="font-size:15px">'+esc(d.name)+'</strong> <span class="badge bg-blue">'+esc(d.category)+'</span></div><div style="text-align:right">'+(s?'<div style="font-size:16px;font-weight:700">'+fmt(s)+'</div>':'<div style="color:var(--muted);font-size:13px">No sell price</div>')+'<div style="font-size:12px;color:var(--muted)">Cost: '+fmt(c)+'</div>'+gpBadge(c,s)+'</div></div><div class="ag">'+chipHTML(a,true)+'</div></div>'; });
   var exVAT=gs/1.2,gp=exVAT>0?(exVAT-gc)/exVAT*100:null;
