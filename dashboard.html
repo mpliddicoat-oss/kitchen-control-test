@@ -8199,8 +8199,12 @@ function impIngRenderMapping(){
   }).join('');
 
   var allergenHeaderGuess = _impIngHeaders.find(function(h){ return /allerg/i.test(h); }) || '';
+  var allergenColGuesses = {};
+  ALLERGENS.forEach(function(a){
+    allergenColGuesses[a.id] = _impIngHeaders.find(function(h){ return h.toLowerCase().trim()===a.label.toLowerCase(); }) || '';
+  });
   var allergenColsHtml = ALLERGENS.map(function(a){
-    var guess = _impIngHeaders.find(function(h){ return h.toLowerCase().trim()===a.label.toLowerCase(); }) || '';
+    var guess = allergenColGuesses[a.id];
     return '<div class="fr" style="align-items:center;margin-bottom:6px">'+
       '<div class="fg" style="flex:0 0 200px"><label style="margin-bottom:0;font-weight:400">'+a.e+' '+esc(a.label)+'</label></div>'+
       '<div class="fg" style="flex:1"><select id="imp-ing-allergen-col-'+a.id+'" onchange="impIngUpdatePreview()">'+
@@ -8208,16 +8212,23 @@ function impIngRenderMapping(){
       '</select></div>'+
     '</div>';
   }).join('');
+  // Auto-detect which allergen layout the file uses: if there's no single
+  // free-text allergens column but at least two of our 14 allergen labels
+  // match a header one-to-one, it's almost certainly the "one column per
+  // allergen" style -- switch the wizard into that mode by default rather
+  // than leaving it defaulted to a single-column guess that doesn't exist.
+  var allergenColMatchCount = ALLERGENS.filter(function(a){ return !!allergenColGuesses[a.id]; }).length;
+  var perColumnDefault = !allergenHeaderGuess && allergenColMatchCount >= 2;
 
   el('imp-ing-mapping').innerHTML =
     '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">Match each Kitchen Control field to a column from your file. Only <strong>Name</strong> is required -- leave anything else as "Don\'t import" if your file doesn\'t have it.</p>'+
     rowsHtml+
     '<div style="border-top:1px solid var(--border,#e5e7eb);margin:16px 0;padding-top:14px">'+
       '<label style="display:flex;align-items:center;gap:8px;font-weight:500;text-transform:none;font-size:13px;margin-bottom:10px">'+
-        '<input type="checkbox" id="imp-ing-allergen-percolumn" onchange="impIngAllergenModeChanged()" style="width:auto"> '+
+        '<input type="checkbox" id="imp-ing-allergen-percolumn" onchange="impIngAllergenModeChanged()" style="width:auto"'+(perColumnDefault?' checked':'')+'> '+
         'My file has one column per allergen instead of a single allergens column'+
       '</label>'+
-      '<div id="imp-ing-allergen-single">'+
+      '<div id="imp-ing-allergen-single" style="display:'+(perColumnDefault?'none':'')+'">'+
         '<div class="fr" style="align-items:center;margin-bottom:8px">'+
           '<div class="fg" style="flex:0 0 200px"><label style="margin-bottom:0">Allergens</label></div>'+
           '<div class="fg" style="flex:1"><select id="imp-ing-map-allergensText" onchange="impIngUpdatePreview()">'+
@@ -8225,7 +8236,7 @@ function impIngRenderMapping(){
           '</select></div>'+
         '</div>'+
       '</div>'+
-      '<div id="imp-ing-allergen-percolumn-wrap" style="display:none">'+allergenColsHtml+'</div>'+
+      '<div id="imp-ing-allergen-percolumn-wrap" style="display:'+(perColumnDefault?'':'none')+'">'+allergenColsHtml+'</div>'+
       '<p style="color:var(--muted);font-size:12px;margin-top:6px">If a row\'s allergen data is missing or unclear, that ingredient is never guessed at -- it\'s added to your Awaiting list so you can confirm allergens before it\'s used anywhere.</p>'+
     '</div>'+
     '<h4 style="font-size:13px;margin:16px 0 8px;color:var(--dark)">Preview (first 3 rows)</h4>'+
