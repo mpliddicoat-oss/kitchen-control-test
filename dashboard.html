@@ -8231,9 +8231,18 @@ function impIngRenderMapping(){
     '<h4 style="font-size:13px;margin:16px 0 8px;color:var(--dark)">Preview (first 3 rows)</h4>'+
     '<div id="imp-ing-preview-table" style="overflow-x:auto"></div>';
 
-  show('imp-ing-mapping');
-  el('imp-ing-actions-mapping').style.display = 'flex';
-  impIngUpdatePreview();
+  // The column-matching table above is a safety net, not the main event --
+  // most files auto-map cleanly, so skip straight to the review step
+  // (still the real checkpoint: every row is shown before anything is
+  // written) and only surface this screen when we couldn't even work out
+  // which column is the Name, since we can't proceed without that one.
+  if(_impIngGuesses.name){
+    impIngShowReview();
+  } else {
+    show('imp-ing-mapping');
+    el('imp-ing-actions-mapping').style.display = 'flex';
+    impIngUpdatePreview();
+  }
 }
 
 function impIngAllergenModeChanged(){
@@ -8441,6 +8450,7 @@ function impIngShowReview(){
     return html;
   }
   el('imp-ing-review').innerHTML =
+    '<p style="color:var(--muted);font-size:12px;margin-bottom:10px">Your file\'s columns were matched automatically. If anything below looks wrong -- odd-looking names, missing details -- click <strong>&larr; Back</strong> to adjust which columns were used.</p>'+
     '<div style="background:#eff6ff;color:#1e40af;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.toCreate.length+' new ingredient'+(p.toCreate.length===1?'':'s')+' will be created'+
       (p.toCreate.length ? listHtml(p.toCreate, function(i){ return '<li>'+esc(i.name)+'</li>'; }) : '')+
     '</div>'+
@@ -8702,9 +8712,15 @@ function impRecRenderMapping(){
     '<h4 style="font-size:13px;margin:16px 0 8px;color:var(--dark)">Preview (first 5 rows)</h4>'+
     '<div id="imp-rec-preview-table" style="overflow-x:auto"></div>';
 
-  show('imp-rec-mapping');
-  el('imp-rec-actions-mapping').style.display = 'flex';
-  impRecUpdatePreview();
+  // Same auto-skip as ingredient import: only show this table when the
+  // two required columns couldn't be worked out automatically.
+  if(_impRecGuesses.recipeName && _impRecGuesses.componentName){
+    impRecShowReview();
+  } else {
+    show('imp-rec-mapping');
+    el('imp-rec-actions-mapping').style.display = 'flex';
+    impRecUpdatePreview();
+  }
 }
 
 function impRecGetMapping(){
@@ -8807,6 +8823,7 @@ function impRecShowReview(){
     return html;
   }
   el('imp-rec-review').innerHTML =
+    '<p style="color:var(--muted);font-size:12px;margin-bottom:10px">Your file\'s columns were matched automatically. If anything below looks wrong -- odd-looking names, wrong quantities -- click <strong>&larr; Back</strong> to adjust which columns were used.</p>'+
     '<div style="background:#eff6ff;color:#1e40af;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.ready.length+' recipe'+(p.ready.length===1?'':'s')+' ready to import -- every ingredient matched'+
       (p.ready.length ? listHtml(p.ready, function(r){ return '<li>'+esc(r.name)+' ('+r.components.length+' ingredients)</li>'; }) : '')+
     '</div>'+
