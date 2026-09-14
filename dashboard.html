@@ -2679,10 +2679,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   <!-- IMPORT / EXPORT DATA -->
   <div class="card" id="set-import-export-card" style="margin-bottom:20px;display:none">
     <h3 style="margin-bottom:8px;color:var(--dark)">&#128228; Import &amp; Export Data</h3>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Your data belongs to you. Export everything at any time -- ingredients, recipes, yields, dishes, menus and suppliers -- as a spreadsheet you can open anywhere, or bring back into Kitchen Control. Bringing data in from another system? Import your ingredients first, then your recipes, so ingredient names can be matched automatically. Owners and head chefs only.</p>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Your data belongs to you. Export everything at any time -- ingredients, yields, recipes, dishes, menus and suppliers -- as a spreadsheet you can open anywhere, or bring back into Kitchen Control. Bringing data in from another system? Import in this order -- Ingredients, then Yields, then Recipes, then Dishes -- so each one can be matched to what you just brought in. Owners and head chefs only.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-      <button class="btn btn-outline" onclick="openImportIngredientsModal()">&#128229; Import Ingredients (Spreadsheet)</button>
-      <button class="btn btn-outline" onclick="openImportRecipesModal()">&#128229; Import Recipes (Spreadsheet)</button>
+      <button class="btn btn-outline" onclick="openImportChooserModal()">&#128229; Import Data</button>
       <button class="btn btn-outline" onclick="exportAllData()">&#128228; Export All Data</button>
       <span id="set-export-msg" style="font-size:13px;color:var(--green);display:none"></span>
     </div>
@@ -4555,7 +4554,7 @@ function dishCalc(){
 function dishSave(){
   if(!canEdit()){ alert('You do not have permission to add or edit dishes.'); return; }
   var name=el('dish-name').value.trim(); if(!name){ alert('Dish name required.'); return; }
-  var data={name:tc(name),category:val('dish-cat'),notes:val('dish-notes'),targetGP:parseFloat(val('dish-gp'))||0,wastage:parseFloat(val('dish-wastage'))||0,actualSell:parseFloat(val('dish-sell'))||0,photo_url:_dishImg||null,components:_dishComps.filter(function(c){ return !!c.id; }),image:_dishImg||null,shelfLifeValue:parseFloat(val('dish-shelf-life'))||null,shelfLifeUnit:val('dish-shelf-unit')||'days'};
+  var data={name:tc(name),category:val('dish-cat'),notes:val('dish-notes'),targetGP:parseFloat(val('dish-gp'))||0,wastage:parseFloat(val('dish-wastage'))||0,actualSell:parseFloat(val('dish-sell'))||0,photo_url:_dishImg||null,components:_dishComps.filter(function(c){ return !!c.id || !!c._scannedName; }),image:_dishImg||null,shelfLifeValue:parseFloat(val('dish-shelf-life'))||null,shelfLifeUnit:val('dish-shelf-unit')||'days'};
   var savedDishId = _dishId;
   if(_dishId) Object.assign(byId(DB.dishes,_dishId),data);
   else { var newDish=Object.assign({id:uid()},data); DB.dishes.push(newDish); savedDishId=newDish.id; }
@@ -4572,15 +4571,24 @@ function dishShowDetail(id){
   _dishId=id; var d=byId(DB.dishes,id); showOnly('dish-detail','dish-list','dish-form');
   el('dish-detail-name').textContent=d.name; el('dish-detail-sub').textContent=d.category+(d.notes?' · '+d.notes:'');
   el('dish-detail-img').innerHTML=(d.photo_url||d.image)?'<a href="'+esc(d.photo_url||d.image)+'" target="_blank" rel="noopener" title="Click to view full size"><img src="'+esc(d.photo_url||d.image)+'" style="width:100%;height:auto;max-height:180px;border-radius:8px;object-fit:contain;background:#f8fafc;cursor:pointer"></a>':'<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No photo added</div>';
-  var compH='<h3 style="margin-bottom:10px">Components</h3>', total=0;
+  var compRows='', total=0, missingCount=0;
   (d.components||[]).forEach(function(c){
     var name='',cost=0,sub2='';
+    if(!c.id){
+      missingCount++;
+      var label=esc(c._scannedName) || (c.type==='recipe'?'Unresolved sub-recipe':c.type==='yield'?'Unresolved yield':'Unresolved ingredient');
+      name='<span class="badge" style="background:#fef3c7;color:#92400e;margin-right:6px">&#9888; Missing</span>'+label;
+      sub2=(c.qty||'--')+' '+(c.unit||'');
+      compRows+='<div class="card-row" style="cursor:default;background:#fffbeb"><div><div class="cr-title">'+name+'</div><div class="cr-sub">'+sub2+' &middot; --</div></div></div>';
+      return;
+    }
     if(c.type==='recipe'){ var r=byId(DB.recipes,c.id); if(!r) return; cost=recCostPer(r)*(parseFloat(c.qty)||1); name='<span class="badge bg-teal" style="margin-right:6px">Recipe</span>'+r.name; sub2=(c.qty||1)+' portion(s)'; }
     else if(c.type==='yield'){ var y=byId(DB.yields,c.id); if(!y) return; cost=y.trueCpu*(parseFloat(c.qty)||0); name='<span class="badge bg-purple" style="margin-right:6px">Yield</span>'+y.name; sub2=c.qty+' '+y.unit; }
     else{ var i=byId(DB.ingredients,c.id); if(!i) return; cost=lineCost(i,parseFloat(c.qty)||0,c.unit||i.unit); name=i.name; sub2=c.qty+' '+c.unit; }
-    total+=cost; compH+='<div class="card-row" style="cursor:default"><div><div class="cr-title">'+name+'</div><div class="cr-sub">'+sub2+' &middot; '+fmt(cost)+'</div></div></div>';
+    total+=cost; compRows+='<div class="card-row" style="cursor:default"><div><div class="cr-title">'+name+'</div><div class="cr-sub">'+sub2+' &middot; '+fmt(cost)+'</div></div></div>';
   });
-  el('dish-detail-comps').innerHTML=compH;
+  var missingBanner=missingCount?('<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;font-weight:600">&#9888; '+missingCount+' component'+(missingCount===1?'':'s')+' not yet linked — cost and allergens below are incomplete. Edit this dish to resolve '+(missingCount===1?'it':'them')+'.</div>'):'';
+  el('dish-detail-comps').innerHTML=missingBanner+'<h3 style="margin-bottom:10px">Components</h3>'+compRows;
   var w=d.wastage||0, wa=total*w/100, adj=total+wa, sell=d.actualSell||0, exVAT=sell>0?sell/1.2:0, gpA=exVAT>0?(exVAT-adj)/exVAT*100:null;
   el('dish-detail-costs').innerHTML='<h3 style="margin-bottom:10px">Costing</h3><div class="cost-box"><div class="cr2"><span>Food Cost</span><span>'+fmt(total)+'</span></div>'+(w?'<div class="cr2"><span>Wastage ('+w+'%)</span><span>+'+fmt(wa)+'</span></div><div class="cr2"><span>Adjusted Cost</span><span>'+fmt(adj)+'</span></div>':'')+(d.targetGP?'<div class="cr2"><span>Target GP</span><span>'+d.targetGP+'%</span></div>':'')+(sell?'<div class="cr2"><span>Sell Price (inc VAT)</span><span>'+fmt(sell)+'</span></div><div class="cr2"><span>Sell Price (ex VAT)</span><span>'+fmt(exVAT)+'</span></div>':'')+(gpA!==null?'<div class="cr2 total"><span>Actual GP</span><span><span class="badge '+gpClass(gpA)+'">'+pct(gpA)+'</span></span></div>':'')+'</div>';
   var a=aFromDish(d); el('dish-detail-allergens').innerHTML='<h3 style="margin-bottom:10px">Allergens</h3><div class="ag">'+chipHTML(a,true)+'</div>'+ppdsWarningHTML(d.components);
@@ -7813,6 +7821,24 @@ function exportBuildWorkbook(){
 
   return wb;
 }
+
+// A single "Import Data" entry point in Settings opens this small chooser
+// rather than showing 4 separate buttons for Ingredients/Yields/Recipes/
+// Dishes -- picking one closes the chooser and opens that wizard directly.
+function openImportChooserModal(){
+  if(!canImportExport()){ alert('Only owners and head chefs can import data.'); return; }
+  el('import-chooser-modal').classList.add('open');
+}
+function closeImportChooserModal(){
+  el('import-chooser-modal').classList.remove('open');
+}
+function importChooserPick(type){
+  closeImportChooserModal();
+  if(type==='ingredients') openImportIngredientsModal();
+  else if(type==='yields') openImportYieldsModal();
+  else if(type==='recipes') openImportRecipesModal();
+  else if(type==='dishes') openImportDishesModal();
+}
 function exportAllData(){
   if(!canImportExport()){ alert('Only owners and head chefs can export data.'); return; }
   var msg = document.getElementById('set-export-msg');
@@ -8997,6 +9023,581 @@ async function impRecCommit(){
 }
 
 // ============================================================
+// BULK YIELD IMPORT
+// Mirrors Bulk Ingredient Import closely -- one row per yield, matched
+// to KC fields via the shared guessColumnMapping() synonym matcher. A
+// yield's allergens are always copied from its linked ingredient (see
+// yldSave()), never entered independently, so unlike ingredient import
+// there's no allergen-mapping step here at all.
+// ============================================================
+var _impYldHeaders = [];
+var _impYldRows = [];
+var _impYldPreview = null;
+
+var IMP_YLD_FIELDS = [
+  { key:'name', label:'Name', required:true },
+  { key:'ingredientName', label:'Ingredient', required:true },
+  { key:'qty', label:'Qty', required:true },
+  { key:'unit', label:'Unit' },
+  { key:'baseUsed', label:'Base Used' },
+  { key:'baseUnit', label:'Base Unit' },
+  { key:'method', label:'Method' },
+  { key:'notes', label:'Notes' },
+  { key:'shelfLifeValue', label:'Shelf Life' },
+  { key:'shelfLifeUnit', label:'Shelf Life Unit' }
+];
+
+var IMP_YLD_SYNONYMS = {
+  name: ['yield name','item name','name'],
+  ingredientName: ['base ingredient','parent ingredient','ingredient name','ingredient'],
+  qty: ['yield qty','yield quantity','quantity','qty'],
+  unit: ['yield unit','unit of measure','uom','unit'],
+  baseUsed: ['base used','qty used','quantity used','amount used'],
+  baseUnit: ['base unit','used unit'],
+  method: ['method','instructions','procedure'],
+  notes: ['notes','comments','remarks'],
+  shelfLifeValue: ['shelf life days','shelf life'],
+  shelfLifeUnit: ['shelf life unit']
+};
+
+function openImportYieldsModal(){
+  if(!canImportExport()){ alert('Only owners and head chefs can import yields.'); return; }
+  resetImportYieldsModal();
+  el('import-yields-modal').classList.add('open');
+}
+function closeImportYieldsModal(){
+  el('import-yields-modal').classList.remove('open');
+}
+function resetImportYieldsModal(){
+  _impYldHeaders = []; _impYldRows = []; _impYldPreview = null;
+  var fileInput = el('imp-yld-file-input'); if(fileInput) fileInput.value = '';
+  show('imp-yld-upload'); hide('imp-yld-mapping'); hide('imp-yld-review'); hide('imp-yld-done');
+  el('imp-yld-actions-mapping').style.display = 'none';
+  el('imp-yld-actions-review').style.display = 'none';
+  el('imp-yld-actions-done').style.display = 'none';
+}
+
+function handleImportYieldsUpload(input){
+  var file = input.files[0];
+  if(!file) return;
+  if(typeof XLSX === 'undefined'){
+    alert('The spreadsheet reader isn\'t available right now (couldn\'t load it). Please check your connection and try again.');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onerror = function(){ alert('Couldn\'t read that file.'); };
+  reader.onload = function(e){
+    try{
+      var wb = XLSX.read(e.target.result, { type:'array' });
+      var sheetName = wb.SheetNames.find(function(n){ return n.toLowerCase().trim()==='yields'; }) || wb.SheetNames[0];
+      var ws = wb.Sheets[sheetName];
+      var rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
+      while(rows.length && rows[rows.length-1].every(function(c){ return String(c||'').trim()===''; })) rows.pop();
+      if(rows.length < 2){ alert('That file doesn\'t have any data rows below the header.'); return; }
+      var headers = rows[0].map(function(h){ return String(h||'').trim(); });
+      var dataRows = rows.slice(1).map(function(r){
+        var obj = {};
+        headers.forEach(function(h, i){ obj[h] = r[i]!=null ? String(r[i]) : ''; });
+        return obj;
+      });
+      _impYldHeaders = headers;
+      _impYldRows = dataRows;
+      impYldRenderMapping();
+    }catch(err){
+      alert('Couldn\'t read that file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function impYldRenderMapping(){
+  hide('imp-yld-upload');
+  var headerOptions = '<option value="">-- Don\'t import --</option>' +
+    _impYldHeaders.map(function(h){ return '<option value="'+esc(h)+'">'+esc(h)+'</option>'; }).join('');
+  var _impYldGuesses = guessColumnMapping(IMP_YLD_FIELDS, IMP_YLD_SYNONYMS, _impYldHeaders);
+  function guessFor(field){ return _impYldGuesses[field.key] || ''; }
+  var rowsHtml = IMP_YLD_FIELDS.map(function(f){
+    var guess = guessFor(f);
+    return '<div class="fr" style="align-items:center;margin-bottom:8px">'+
+      '<div class="fg" style="flex:0 0 200px"><label style="margin-bottom:0">'+esc(f.label)+(f.required?' <span style="color:#dc2626">*</span>':'')+'</label></div>'+
+      '<div class="fg" style="flex:1"><select id="imp-yld-map-'+f.key+'" onchange="impYldUpdatePreview()">'+
+        headerOptions.replace('value="'+esc(guess)+'"', 'value="'+esc(guess)+'" selected')+
+      '</select></div>'+
+    '</div>';
+  }).join('');
+
+  el('imp-yld-mapping').innerHTML =
+    '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">Match each Kitchen Control field to a column from your file. <strong>Name</strong>, <strong>Ingredient</strong> and <strong>Qty</strong> are required -- a yield always needs a base ingredient it\'s derived from, already in your Ingredients list.</p>'+
+    rowsHtml+
+    '<h4 style="font-size:13px;margin:16px 0 8px;color:var(--dark)">Preview (first 3 rows)</h4>'+
+    '<div id="imp-yld-preview-table" style="overflow-x:auto"></div>';
+
+  if(_impYldGuesses.name && _impYldGuesses.ingredientName && _impYldGuesses.qty){
+    impYldShowReview();
+  } else {
+    show('imp-yld-mapping');
+    el('imp-yld-actions-mapping').style.display = 'flex';
+    impYldUpdatePreview();
+  }
+}
+
+function impYldGetMapping(){
+  var m = {};
+  IMP_YLD_FIELDS.forEach(function(f){
+    var sel = el('imp-yld-map-'+f.key);
+    m[f.key] = sel ? sel.value : '';
+  });
+  return m;
+}
+
+function impYldUpdatePreview(){
+  var preview = document.getElementById('imp-yld-preview-table');
+  if(!preview) return;
+  var mapping = impYldGetMapping();
+  var cols = IMP_YLD_FIELDS.filter(function(f){ return mapping[f.key]; });
+  if(!cols.length){ preview.innerHTML = '<p style="color:var(--muted);font-size:12px">Map some fields above to see a preview.</p>'; return; }
+  var sampleRows = _impYldRows.slice(0, 3);
+  preview.innerHTML = '<table style="width:100%;font-size:12px;border-collapse:collapse">'+
+    '<tr>'+cols.map(function(f){ return '<th style="text-align:left;padding:4px 8px;border-bottom:2px solid var(--border,#e5e7eb)">'+esc(f.label)+'</th>'; }).join('')+'</tr>'+
+    sampleRows.map(function(row){
+      return '<tr>'+cols.map(function(f){ return '<td style="padding:4px 8px;border-bottom:1px solid var(--border,#e5e7eb)">'+esc((row[mapping[f.key]]||'').toString())+'</td>'; }).join('')+'</tr>';
+    }).join('')+
+    '</table>';
+}
+
+// Yield-only name match, same cascade shape as matchIngredientByName()
+// but scoped to DB.yields -- for duplicate detection on the yield being
+// CREATED (matching what it links to is a separate job, done via
+// matchIngredientByName against the Ingredient column instead).
+function matchYieldByName(name){
+  var target = normalizeMatchText(name);
+  if(!target) return null;
+  var singular = target.replace(/s$/, '');
+  return DB.yields.find(function(x){
+    var xn = normalizeMatchText(x.name);
+    return xn===target || xn===singular || xn.replace(/s$/,'')===target || xn.replace(/s$/,'')===singular;
+  }) || null;
+}
+
+function impYldBuildPreview(){
+  var mapping = impYldGetMapping();
+  var toCreate = [], toUpdate = [], noIngredient = [], noName = [];
+
+  _impYldRows.forEach(function(row){
+    var name = (mapping.name ? row[mapping.name] : '').trim();
+    if(!name) { noName.push(name); return; }
+
+    var ingRaw = mapping.ingredientName ? (row[mapping.ingredientName]||'').trim() : '';
+    var ing = matchIngredientByName(ingRaw);
+    if(!ing){ noIngredient.push({ name:name, ingredientRaw:ingRaw }); return; }
+
+    var qty = mapping.qty ? (parseFloat(row[mapping.qty])||0) : 0;
+    var baseUsed = mapping.baseUsed ? (parseFloat(row[mapping.baseUsed])||0) : 0;
+    var unit = mapping.unit ? ((row[mapping.unit]||'').trim() || 'g') : 'g';
+    var baseUnit = mapping.baseUnit ? ((row[mapping.baseUnit]||'').trim() || ing.unit) : ing.unit;
+    var cpu = ingBestCpu ? ingBestCpu(ing) : ingCpu(ing);
+    var trueCpu;
+    if(qty>0 && baseUsed>0){
+      var baseInIngUnit = cvt(baseUsed, baseUnit, ing.unit);
+      trueCpu = cpu * baseInIngUnit / qty;
+    } else {
+      trueCpu = qty>0 ? (ing.packCost||0)/qty : 0;
+    }
+
+    var yld = {
+      name: tc ? tc(name) : name, ingId: ing.id, qty: qty, unit: unit,
+      baseUsed: baseUsed, baseUnit: baseUnit, trueCpu: trueCpu,
+      allergens: ing.allergens||[],
+      method: mapping.method ? (row[mapping.method]||'').trim() : '',
+      notes: mapping.notes ? (row[mapping.notes]||'').trim() : '',
+      shelfLifeValue: mapping.shelfLifeValue ? (parseFloat(row[mapping.shelfLifeValue])||null) : null,
+      shelfLifeUnit: mapping.shelfLifeUnit ? ((row[mapping.shelfLifeUnit]||'').trim() || 'days') : 'days'
+    };
+
+    var dup = matchYieldByName(yld.name);
+    if(dup) toUpdate.push({ yld:yld, existing:dup });
+    else toCreate.push(yld);
+  });
+
+  _impYldPreview = { toCreate:toCreate, toUpdate:toUpdate, noIngredient:noIngredient, noName:noName };
+  return _impYldPreview;
+}
+
+function impYldShowReview(){
+  if(!el('imp-yld-map-name').value || !el('imp-yld-map-ingredientName').value || !el('imp-yld-map-qty').value){
+    alert('Please map Name, Ingredient and Qty before continuing -- they\'re all required.'); return;
+  }
+  var p = impYldBuildPreview();
+  function listHtml(items, renderRow){
+    var shown = items.slice(0, 20);
+    var html = '<ul style="margin:6px 0 0 18px;font-size:12px;color:var(--muted)">'+shown.map(renderRow).join('')+'</ul>';
+    if(items.length > 20) html += '<p style="font-size:12px;color:var(--muted);margin-top:4px">...and '+(items.length-20)+' more</p>';
+    return html;
+  }
+  el('imp-yld-review').innerHTML =
+    '<p style="color:var(--muted);font-size:12px;margin-bottom:10px">Your file\'s columns were matched automatically. If anything below looks wrong, click <strong>&larr; Back</strong> to adjust which columns were used.</p>'+
+    '<div style="background:#eff6ff;color:#1e40af;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.toCreate.length+' new yield'+(p.toCreate.length===1?'':'s')+' will be created'+
+      (p.toCreate.length ? listHtml(p.toCreate, function(y){ return '<li>'+esc(y.name)+'</li>'; }) : '')+
+    '</div>'+
+    (p.toUpdate.length ? '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.toUpdate.length+' look'+(p.toUpdate.length===1?'s':'')+' like existing yield'+(p.toUpdate.length===1?'':'s')+' -- skipped by default'+
+      listHtml(p.toUpdate, function(x){ return '<li>'+esc(x.yld.name)+' &rarr; matches existing "'+esc(x.existing.name)+'"</li>'; })+
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:500;text-transform:none;font-size:12px;margin-top:10px"><input type="checkbox" id="imp-yld-update-dupes" style="width:auto"> Update these existing yields with the imported data instead of skipping them</label>'+
+    '</div>' : '')+
+    (p.noIngredient.length ? '<div style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.noIngredient.length+' skipped -- couldn\'t match the ingredient '+(p.noIngredient.length===1?'it\'s':'they\'re')+' based on'+
+      listHtml(p.noIngredient, function(x){ return '<li>'+esc(x.name)+' -- looking for "'+esc(x.ingredientRaw||'(blank)')+'"</li>'; })+
+      '<p style="font-size:12px;margin-top:6px">Import that ingredient first, or check the spelling matches.</p>'+
+    '</div>' : '')+
+    (p.noName.length ? '<div style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:10px 12px;font-size:13px;font-weight:600">'+p.noName.length+' row'+(p.noName.length===1?'':'s')+' skipped (no name found)</div>' : '');
+
+  hide('imp-yld-mapping'); show('imp-yld-review');
+  el('imp-yld-actions-mapping').style.display = 'none';
+  el('imp-yld-actions-review').style.display = 'flex';
+}
+
+function impYldBackToMapping(){
+  hide('imp-yld-review'); show('imp-yld-mapping');
+  el('imp-yld-actions-review').style.display = 'none';
+  el('imp-yld-actions-mapping').style.display = 'flex';
+}
+
+async function impYldCommit(){
+  var p = _impYldPreview || impYldBuildPreview();
+  var updateDupes = el('imp-yld-update-dupes') && el('imp-yld-update-dupes').checked;
+  var btn = el('imp-yld-actions-review') ? el('imp-yld-actions-review').querySelector('.btn-green') : null;
+  if(btn){ btn.disabled = true; btn.textContent = 'Importing...'; }
+  try{
+    var createdCount = 0;
+    for(var i=0;i<p.toCreate.length;i++){
+      var yld = p.toCreate[i];
+      var newYld = Object.assign({ id: uid() }, yld);
+      DB.yields.push(newYld);
+      if(!window.KC_DEMO){
+        var newId = await saveYieldToSupabase(newYld);
+        if(newId && newId!==newYld.id) newYld.id = newId;
+      }
+      createdCount++;
+    }
+
+    var updatedCount = 0;
+    if(updateDupes && p.toUpdate.length){
+      for(var j=0;j<p.toUpdate.length;j++){
+        var pair = p.toUpdate[j];
+        var merged = Object.assign({}, pair.existing, pair.yld, { id: pair.existing.id });
+        if(!window.KC_DEMO) await saveYieldToSupabase(merged);
+        var idx = DB.yields.findIndex(function(x){ return x.id===pair.existing.id; });
+        if(idx>=0) DB.yields[idx] = merged;
+        updatedCount++;
+      }
+    }
+
+    save(); dashUpdate();
+    if(el('yields') && el('yields').classList.contains('active') && typeof yldRender==='function') yldRender();
+
+    el('imp-yld-done').innerHTML =
+      '<div style="text-align:center;padding:10px 0 4px">'+
+        '<div style="font-size:40px;margin-bottom:10px">&#10003;</div>'+
+        '<p style="font-size:14px;color:var(--dark);font-weight:600;margin-bottom:6px">Import complete</p>'+
+        '<p style="font-size:13px;color:var(--muted)">'+
+          createdCount+' created'+(updatedCount?', '+updatedCount+' updated':'')+(p.noIngredient.length?', '+p.noIngredient.length+' skipped (ingredient not found)':'')+(p.noName.length?', '+p.noName.length+' skipped (no name)':'')+
+        '</p>'+
+      '</div>';
+    hide('imp-yld-review'); show('imp-yld-done');
+    el('imp-yld-actions-review').style.display = 'none';
+    el('imp-yld-actions-done').style.display = 'flex';
+  }catch(e){
+    console.error('impYldCommit failed:', e);
+    alert('Something went wrong during import. Nothing that failed to save was lost from your file -- please try again.');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '✓ Import'; }
+  }
+}
+
+// ============================================================
+// BULK DISH IMPORT
+// Mirrors Bulk Recipe Import closely -- one row per dish component
+// line, grouped by dish name, resolved via the same
+// matchComponentByName() cascade. Also recognises this account's own
+// export the same way Recipe import does (reusing
+// impRecParseOwnExportComponentsCell -- the Components cell format is
+// identical for both sheets). Unlike Recipe import, no cross-batch
+// fixup pass is needed: dishes are never referenced BY other dishes
+// (a dish can contain a recipe/yield/ingredient, never another dish),
+// so there's no same-batch ordering problem to solve.
+// ============================================================
+var _impDishHeaders = [];
+var _impDishRows = [];
+var _impDishPreview = null;
+
+var IMP_DISH_FIELDS = [
+  { key:'dishName', label:'Dish Name', required:true },
+  { key:'componentName', label:'Ingredient / Component Name', required:true },
+  { key:'qty', label:'Quantity' },
+  { key:'unit', label:'Unit' },
+  { key:'category', label:'Category' },
+  { key:'targetGP', label:'Target GP%' },
+  { key:'wastage', label:'Wastage%' },
+  { key:'actualSell', label:'Sell Price' }
+];
+
+var IMP_DISH_SYNONYMS = {
+  dishName: ['dish name','menu item','item name','dish'],
+  componentName: ['ingredient name','component name','ingredient','component','item name','item'],
+  qty: ['quantity','qty','amount'],
+  unit: ['unit of measure','uom','unit measure','measure','unit'],
+  category: ['category','type','group'],
+  targetGP: ['target gp%','target gp','gp%','gross profit%','gross profit'],
+  wastage: ['wastage%','wastage','waste%','waste'],
+  actualSell: ['actual sell price','sell price','selling price','price']
+};
+
+function openImportDishesModal(){
+  if(!canImportExport()){ alert('Only owners and head chefs can import dishes.'); return; }
+  resetImportDishesModal();
+  el('import-dishes-modal').classList.add('open');
+}
+function closeImportDishesModal(){
+  el('import-dishes-modal').classList.remove('open');
+}
+function resetImportDishesModal(){
+  _impDishHeaders = []; _impDishRows = []; _impDishPreview = null;
+  var fileInput = el('imp-dish-file-input'); if(fileInput) fileInput.value = '';
+  show('imp-dish-upload'); hide('imp-dish-mapping'); hide('imp-dish-review'); hide('imp-dish-done');
+  el('imp-dish-actions-mapping').style.display = 'none';
+  el('imp-dish-actions-review').style.display = 'none';
+  el('imp-dish-actions-done').style.display = 'none';
+}
+
+function handleImportDishesUpload(input){
+  var file = input.files[0];
+  if(!file) return;
+  if(typeof XLSX === 'undefined'){
+    alert('The spreadsheet reader isn\'t available right now (couldn\'t load it). Please check your connection and try again.');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onerror = function(){ alert('Couldn\'t read that file.'); };
+  reader.onload = function(e){
+    try{
+      var wb = XLSX.read(e.target.result, { type:'array' });
+      var sheetName = wb.SheetNames.find(function(n){ return n.toLowerCase().trim()==='dishes'; }) || wb.SheetNames[0];
+      var ws = wb.Sheets[sheetName];
+      var rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
+      while(rows.length && rows[rows.length-1].every(function(c){ return String(c||'').trim()===''; })) rows.pop();
+      if(rows.length < 2){ alert('That file doesn\'t have any data rows below the header.'); return; }
+      var headers = rows[0].map(function(h){ return String(h||'').trim(); });
+      var dataRows = rows.slice(1).map(function(r){
+        var obj = {};
+        headers.forEach(function(h, i){ obj[h] = r[i]!=null ? String(r[i]) : ''; });
+        return obj;
+      });
+      _impDishHeaders = headers;
+      _impDishRows = dataRows;
+      impDishRenderMapping();
+    }catch(err){
+      alert('Couldn\'t read that file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function impDishRenderMapping(){
+  hide('imp-dish-upload');
+  var headerOptions = '<option value="">-- Don\'t import --</option>' +
+    _impDishHeaders.map(function(h){ return '<option value="'+esc(h)+'">'+esc(h)+'</option>'; }).join('');
+  var _impDishGuesses = guessColumnMapping(IMP_DISH_FIELDS, IMP_DISH_SYNONYMS, _impDishHeaders);
+  function guessFor(field){ return _impDishGuesses[field.key] || ''; }
+  var rowsHtml = IMP_DISH_FIELDS.map(function(f){
+    var guess = guessFor(f);
+    return '<div class="fr" style="align-items:center;margin-bottom:8px">'+
+      '<div class="fg" style="flex:0 0 220px"><label style="margin-bottom:0">'+esc(f.label)+(f.required?' <span style="color:#dc2626">*</span>':'')+'</label></div>'+
+      '<div class="fg" style="flex:1"><select id="imp-dish-map-'+f.key+'" onchange="impDishUpdatePreview()">'+
+        headerOptions.replace('value="'+esc(guess)+'"', 'value="'+esc(guess)+'" selected')+
+      '</select></div>'+
+    '</div>';
+  }).join('');
+
+  el('imp-dish-mapping').innerHTML =
+    '<p style="color:var(--muted);font-size:13px;margin-bottom:6px">This is for a structured export -- one row per dish component, with the dish name repeated on each of its rows.</p>'+
+    '<p style="color:var(--muted);font-size:13px;margin-bottom:14px"><strong>Dish Name</strong> and <strong>Ingredient / Component Name</strong> are required -- rows sharing the same Dish Name are grouped into one dish.</p>'+
+    rowsHtml+
+    '<h4 style="font-size:13px;margin:16px 0 8px;color:var(--dark)">Preview (first 5 rows)</h4>'+
+    '<div id="imp-dish-preview-table" style="overflow-x:auto"></div>';
+
+  if(impDishIsOwnExport(_impDishHeaders) || (_impDishGuesses.dishName && _impDishGuesses.componentName)){
+    impDishShowReview();
+  } else {
+    show('imp-dish-mapping');
+    el('imp-dish-actions-mapping').style.display = 'flex';
+    impDishUpdatePreview();
+  }
+}
+
+function impDishGetMapping(){
+  var m = {};
+  IMP_DISH_FIELDS.forEach(function(f){
+    var sel = el('imp-dish-map-'+f.key);
+    m[f.key] = sel ? sel.value : '';
+  });
+  return m;
+}
+
+function impDishUpdatePreview(){
+  var preview = document.getElementById('imp-dish-preview-table');
+  if(!preview) return;
+  var mapping = impDishGetMapping();
+  var cols = IMP_DISH_FIELDS.filter(function(f){ return mapping[f.key]; });
+  if(!cols.length){ preview.innerHTML = '<p style="color:var(--muted);font-size:12px">Map some fields above to see a preview.</p>'; return; }
+  var sampleRows = _impDishRows.slice(0, 5);
+  preview.innerHTML = '<table style="width:100%;font-size:12px;border-collapse:collapse">'+
+    '<tr>'+cols.map(function(f){ return '<th style="text-align:left;padding:4px 8px;border-bottom:2px solid var(--border,#e5e7eb)">'+esc(f.label)+'</th>'; }).join('')+'</tr>'+
+    sampleRows.map(function(row){
+      return '<tr>'+cols.map(function(f){ return '<td style="padding:4px 8px;border-bottom:1px solid var(--border,#e5e7eb)">'+esc((row[mapping[f.key]]||'').toString())+'</td>'; }).join('')+'</tr>';
+    }).join('')+
+    '</table>';
+}
+
+function impDishIsOwnExport(headers){
+  var norm = headers.map(function(h){ return h.toLowerCase().trim(); });
+  return norm.indexOf('components') >= 0 && norm.indexOf('kitchen control id') >= 0;
+}
+
+function impDishGroupRows(mapping){
+  var groups = {}, order = [];
+  _impDishRows.forEach(function(row){
+    var rawName = mapping.dishName ? (row[mapping.dishName]||'').trim() : '';
+    if(!rawName) return;
+    var key = normalizeMatchText(rawName);
+    if(!groups[key]){
+      groups[key] = { name: tc(rawName), category:'', targetGP:'', wastage:'', actualSell:'', lines:[] };
+      order.push(key);
+    }
+    var g = groups[key];
+    if(!g.category && mapping.category) g.category = (row[mapping.category]||'').trim();
+    if(!g.targetGP && mapping.targetGP) g.targetGP = (row[mapping.targetGP]||'').trim();
+    if(!g.wastage && mapping.wastage) g.wastage = (row[mapping.wastage]||'').trim();
+    if(!g.actualSell && mapping.actualSell) g.actualSell = (row[mapping.actualSell]||'').trim();
+    var compName = mapping.componentName ? (row[mapping.componentName]||'').trim() : '';
+    if(compName){
+      g.lines.push({
+        name: compName,
+        qty: mapping.qty ? (parseFloat(row[mapping.qty])||0) : 0,
+        unit: mapping.unit ? ((row[mapping.unit]||'').trim() || 'g') : 'g'
+      });
+    }
+  });
+  return order.map(function(k){ return groups[k]; });
+}
+
+// Own-export counterpart, same idea as impRecGroupRowsFromOwnExport --
+// unpacks the Components cell rather than reading a mapped column.
+function impDishGroupRowsFromOwnExport(){
+  return _impDishRows.map(function(row){
+    return {
+      name: (row['Name'] || '').trim(),
+      category: (row['Category'] || '').trim(),
+      targetGP: (row['Target GP%'] || '').trim(),
+      wastage: (row['Wastage%'] || '').trim(),
+      actualSell: (row['Actual Sell Price'] || '').trim(),
+      lines: impRecParseOwnExportComponentsCell(row['Components'])
+    };
+  }).filter(function(g){ return g.name; });
+}
+
+function impDishResolveComponents(group){
+  return group.lines.map(function(line){
+    var m = matchComponentByName(line.name);
+    if(m) return { type:m.type, id:m.item.id, qty:line.qty, unit:line.unit };
+    return { type:'ingredient', id:'', qty:line.qty, unit:line.unit, _scannedName:line.name };
+  });
+}
+
+function impDishBuildPreview(){
+  var groups = impDishIsOwnExport(_impDishHeaders) ? impDishGroupRowsFromOwnExport() : impDishGroupRows(impDishGetMapping());
+  var dishes = groups.map(function(g){
+    var components = impDishResolveComponents(g);
+    var unresolvedCount = components.filter(function(c){ return !c.id; }).length;
+    return {
+      name:g.name, category:g.category||'', components:components, unresolvedCount:unresolvedCount,
+      targetGP: parseFloat(g.targetGP)||0, wastage: parseFloat(g.wastage)||0, actualSell: parseFloat(g.actualSell)||0
+    };
+  });
+  var ready = dishes.filter(function(d){ return d.unresolvedCount===0 && d.components.length>0; });
+  var needsReview = dishes.filter(function(d){ return d.unresolvedCount>0 || d.components.length===0; });
+  _impDishPreview = { ready:ready, needsReview:needsReview };
+  return _impDishPreview;
+}
+
+function impDishShowReview(){
+  if(!impDishIsOwnExport(_impDishHeaders) && (!el('imp-dish-map-dishName').value || !el('imp-dish-map-componentName').value)){
+    alert('Please map both Dish Name and Ingredient / Component Name before continuing.'); return;
+  }
+  var p = impDishBuildPreview();
+  function listHtml(items, renderRow){
+    var shown = items.slice(0, 20);
+    var html = '<ul style="margin:6px 0 0 18px;font-size:12px;color:var(--muted)">'+shown.map(renderRow).join('')+'</ul>';
+    if(items.length > 20) html += '<p style="font-size:12px;color:var(--muted);margin-top:4px">...and '+(items.length-20)+' more</p>';
+    return html;
+  }
+  el('imp-dish-review').innerHTML =
+    '<p style="color:var(--muted);font-size:12px;margin-bottom:10px">Your file\'s columns were matched automatically. If anything below looks wrong, click <strong>&larr; Back</strong> to adjust which columns were used.</p>'+
+    '<div style="background:#eff6ff;color:#1e40af;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.ready.length+' dish'+(p.ready.length===1?'':'es')+' ready to import -- every ingredient matched'+
+      (p.ready.length ? listHtml(p.ready, function(d){ return '<li>'+esc(d.name)+' ('+d.components.length+' ingredients)</li>'; }) : '')+
+    '</div>'+
+    (p.needsReview.length ? '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:10px 12px;font-size:13px;font-weight:600">'+p.needsReview.length+' dish'+(p.needsReview.length===1?'':'es')+' will still be created, but need ingredient review after import'+
+      listHtml(p.needsReview, function(d){ return '<li>'+esc(d.name)+' -- '+d.unresolvedCount+' of '+d.components.length+' ingredient'+(d.components.length===1?'':'s')+' not matched</li>'; })+
+    '</div>' : '');
+
+  hide('imp-dish-mapping'); show('imp-dish-review');
+  el('imp-dish-actions-mapping').style.display = 'none';
+  el('imp-dish-actions-review').style.display = 'flex';
+}
+
+function impDishBackToMapping(){
+  hide('imp-dish-review'); show('imp-dish-mapping');
+  el('imp-dish-actions-review').style.display = 'none';
+  el('imp-dish-actions-mapping').style.display = 'flex';
+}
+
+async function impDishCommit(){
+  var p = _impDishPreview || impDishBuildPreview();
+  var btn = el('imp-dish-actions-review') ? el('imp-dish-actions-review').querySelector('.btn-green') : null;
+  if(btn){ btn.disabled = true; btn.textContent = 'Importing...'; }
+  try{
+    var all = p.ready.concat(p.needsReview);
+    for(var i=0;i<all.length;i++){
+      var d = all[i];
+      var newDish = {
+        id: uid(), name:d.name, category:d.category||'', notes:'', targetGP:d.targetGP||0,
+        wastage:d.wastage||0, actualSell:d.actualSell||0, photo_url:null, image:null,
+        components:d.components, shelfLifeValue:null, shelfLifeUnit:'days'
+      };
+      DB.dishes.push(newDish);
+      if(!window.KC_DEMO){
+        var newId = await saveDishToSupabase(newDish);
+        if(newId && newId!==newDish.id) newDish.id = newId;
+      }
+    }
+    save(); dashUpdate();
+    if(el('dishes') && el('dishes').classList.contains('active') && typeof dishList==='function') dishList();
+
+    el('imp-dish-done').innerHTML =
+      '<div style="text-align:center;padding:10px 0 4px">'+
+        '<div style="font-size:40px;margin-bottom:10px">&#10003;</div>'+
+        '<p style="font-size:14px;color:var(--dark);font-weight:600;margin-bottom:6px">Import complete</p>'+
+        '<p style="font-size:13px;color:var(--muted)">'+all.length+' dish'+(all.length===1?'':'es')+' imported'+(p.needsReview.length?' ('+p.needsReview.length+' need ingredient review -- look for the Missing badges)':'')+'</p>'+
+      '</div>';
+    hide('imp-dish-review'); show('imp-dish-done');
+    el('imp-dish-actions-review').style.display = 'none';
+    el('imp-dish-actions-done').style.display = 'flex';
+  }catch(e){
+    console.error('impDishCommit failed:', e);
+    alert('Something went wrong during import. Nothing that failed to save was lost from your file -- please try again.');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '✓ Import'; }
+  }
+}
+
+// ============================================================
 // RECIPE IMPORT - Gemini Vision via Vercel serverless function
 // Parses a photo/PDF/pasted-text recipe, matches ingredients against
 // DB.ingredients, then hands the whole thing to the normal recipe form
@@ -9638,7 +10239,7 @@ async function scanIngredientText(file) {
     <div id="imp-ing-upload" style="text-align:center;padding:20px 0;">
       <div style="font-size:48px;margin-bottom:12px;">📊</div>
       <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">Upload a spreadsheet exported from any other system — CSV or Excel. You'll match its columns to Kitchen Control's fields on the next screen, so it doesn't matter what format it's in.</p>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Ingredients only — for recipes, use <strong>Import Recipes (Spreadsheet)</strong> in Settings instead.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Ingredients only — for yields, recipes or dishes, close this and pick a different option from Settings → Import Data.</p>
       <input type="file" id="imp-ing-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportIngredientsUpload(this)">
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button class="btn btn-green" onclick="document.getElementById('imp-ing-file-input').click()">📄 Choose File</button>
@@ -9677,7 +10278,7 @@ async function scanIngredientText(file) {
     <div id="imp-rec-upload" style="text-align:center;padding:20px 0;">
       <div style="font-size:48px;margin-bottom:12px;">📊</div>
       <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">Upload a structured spreadsheet export — one row per recipe ingredient, with the recipe name repeated on each of its rows.</p>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:8px;">Recipes only — this doesn't import ingredients themselves. If you haven't already, use <strong>Import Ingredients (Spreadsheet)</strong> first, so ingredient names in your recipes can be matched automatically.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:8px;">Recipes only — this doesn't import ingredients or yields. If you haven't already, import those first (Settings → Import Data) so they can be matched automatically.</p>
       <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Got one row per recipe with everything in a single text cell instead? Use <strong>Import Recipe</strong> (photo/paste) rather than this.</p>
       <input type="file" id="imp-rec-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportRecipesUpload(this)">
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
@@ -9702,6 +10303,104 @@ async function scanIngredientText(file) {
     <div id="imp-rec-actions-done" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
       <button class="btn btn-green" onclick="closeImportRecipesModal();go('recipes')">Go to Recipes</button>
       <button class="btn btn-grey" onclick="closeImportRecipesModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT DATA CHOOSER -->
+<div class="invoice-modal" id="import-chooser-modal" onclick="if(event.target===this)closeImportChooserModal()">
+  <div class="invoice-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h2 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">📥 Import Data</h2>
+      <button onclick="closeImportChooserModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>
+    </div>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">What would you like to import? If you're bringing in everything, do them in this order so each one can match against what you just brought in.</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-outline" style="justify-content:flex-start" onclick="importChooserPick('ingredients')">1️⃣ Ingredients</button>
+      <button class="btn btn-outline" style="justify-content:flex-start" onclick="importChooserPick('yields')">2️⃣ Yields</button>
+      <button class="btn btn-outline" style="justify-content:flex-start" onclick="importChooserPick('recipes')">3️⃣ Recipes</button>
+      <button class="btn btn-outline" style="justify-content:flex-start" onclick="importChooserPick('dishes')">4️⃣ Dishes</button>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;">
+      <button class="btn btn-grey" onclick="closeImportChooserModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK YIELD IMPORT -->
+<div class="invoice-modal" id="import-yields-modal" onclick="if(event.target===this)closeImportYieldsModal()">
+  <div class="invoice-box wizard-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h2 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">📥 Import Yields (Spreadsheet)</h2>
+      <button onclick="closeImportYieldsModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>
+    </div>
+
+    <div id="imp-yld-upload" style="text-align:center;padding:20px 0;">
+      <div style="font-size:48px;margin-bottom:12px;">📊</div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">Upload a spreadsheet exported from any other system — CSV or Excel. You'll match its columns to Kitchen Control's fields on the next screen, so it doesn't matter what format it's in.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Each yield needs its base ingredient already in your Ingredients list -- import ingredients first if you haven't already.</p>
+      <input type="file" id="imp-yld-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportYieldsUpload(this)">
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-green" onclick="document.getElementById('imp-yld-file-input').click()">📄 Choose File</button>
+        <button class="btn btn-grey" onclick="closeImportYieldsModal()">Cancel</button>
+      </div>
+    </div>
+
+    <div id="imp-yld-mapping" style="display:none;"></div>
+    <div id="imp-yld-review" style="display:none;"></div>
+    <div id="imp-yld-done" style="display:none;"></div>
+
+    <div id="imp-yld-actions-mapping" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="impYldShowReview()">Continue → Review</button>
+      <button class="btn btn-grey" onclick="closeImportYieldsModal()">Cancel</button>
+    </div>
+    <div id="imp-yld-actions-review" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="impYldCommit()">✓ Import</button>
+      <button class="btn btn-outline" onclick="impYldBackToMapping()">← Back</button>
+      <button class="btn btn-grey" onclick="closeImportYieldsModal()">Cancel</button>
+    </div>
+    <div id="imp-yld-actions-done" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="closeImportYieldsModal();go('yields')">Go to Yields</button>
+      <button class="btn btn-grey" onclick="closeImportYieldsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK DISH IMPORT -->
+<div class="invoice-modal" id="import-dishes-modal" onclick="if(event.target===this)closeImportDishesModal()">
+  <div class="invoice-box wizard-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h2 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">📥 Import Dishes (Spreadsheet)</h2>
+      <button onclick="closeImportDishesModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>
+    </div>
+
+    <div id="imp-dish-upload" style="text-align:center;padding:20px 0;">
+      <div style="font-size:48px;margin-bottom:12px;">📊</div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">Upload a structured spreadsheet export — one row per dish component, with the dish name repeated on each of its rows.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Dishes reference ingredients, yields and recipes -- import those first if you haven't already, so components can be matched automatically.</p>
+      <input type="file" id="imp-dish-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportDishesUpload(this)">
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-green" onclick="document.getElementById('imp-dish-file-input').click()">📄 Choose File</button>
+        <button class="btn btn-grey" onclick="closeImportDishesModal()">Cancel</button>
+      </div>
+    </div>
+
+    <div id="imp-dish-mapping" style="display:none;"></div>
+    <div id="imp-dish-review" style="display:none;"></div>
+    <div id="imp-dish-done" style="display:none;"></div>
+
+    <div id="imp-dish-actions-mapping" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="impDishShowReview()">Continue → Review</button>
+      <button class="btn btn-grey" onclick="closeImportDishesModal()">Cancel</button>
+    </div>
+    <div id="imp-dish-actions-review" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="impDishCommit()">✓ Import</button>
+      <button class="btn btn-outline" onclick="impDishBackToMapping()">← Back</button>
+      <button class="btn btn-grey" onclick="closeImportDishesModal()">Cancel</button>
+    </div>
+    <div id="imp-dish-actions-done" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="closeImportDishesModal();go('dishes')">Go to Dishes</button>
+      <button class="btn btn-grey" onclick="closeImportDishesModal()">Close</button>
     </div>
   </div>
 </div>
