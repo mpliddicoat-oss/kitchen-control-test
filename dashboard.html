@@ -1485,9 +1485,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <button class="btn btn-green" style="width:100%;justify-content:center;margin-bottom:7px" onclick="go('print-label')">&#127991;&#65039; Print Label</button>
       <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
       <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:7px" onclick="openRecipeScanModal()">&#128214; Import Recipe</button>
-      <button class="btn btn-green" style="width:100%;justify-content:center;margin-bottom:7px" onclick="openInvoiceModal()">&#128196; Import Invoice</button>
-      <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:7px" onclick="openImportIngredientsModal()">&#128229; Import Ingredients (Spreadsheet)</button>
-      <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openImportRecipesModal()">&#128229; Import Recipes (Spreadsheet)</button>
+      <button class="btn btn-green" style="width:100%;justify-content:center" onclick="openInvoiceModal()">&#128196; Import Invoice</button>
       </div>
     <div class="disclaimer-box">
       <h3>&#9888; Allergen Responsibility</h3>
@@ -1753,9 +1751,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 
         <button class="btn btn-green" onclick="ingNew()">
           + Add Ingredient
-        </button>
-        <button class="btn btn-outline" onclick="openImportIngredientsModal()">
-          📥 Import Ingredients (Spreadsheet)
         </button>
 
       </div>
@@ -2132,7 +2127,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div><h1>Recipes</h1><div class="ph-sub">Scalable recipes with live costing and allergens</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-outline" onclick="openRecipeScanModal()">&#128248; Import Recipe</button>
-        <button class="btn btn-outline" onclick="openImportRecipesModal()">&#128229; Import Recipes (Spreadsheet)</button>
         <button class="btn btn-green" onclick="recNew()">+ New Recipe</button>
       </div>
     </div>
@@ -2682,12 +2676,16 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <p id="set-install-msg" style="font-size:13px;color:var(--green);margin-top:12px;display:none;font-weight:600">&#10003; App installed! Find Kitchen Control on your home screen.</p>
   </div>
 
-  <!-- EXPORT DATA -->
-  <div class="card" style="margin-bottom:20px">
-    <h3 style="margin-bottom:8px;color:var(--dark)">&#128228; Export Your Data</h3>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Your data belongs to you. Export everything at any time -- ingredients, recipes, yields, dishes, menus and suppliers -- as a spreadsheet you can open anywhere, or bring back into Kitchen Control.</p>
-    <button class="btn btn-outline" onclick="exportAllData()">&#128228; Export All Data</button>
-    <span id="set-export-msg" style="margin-left:12px;font-size:13px;color:var(--green);display:none"></span>
+  <!-- IMPORT / EXPORT DATA -->
+  <div class="card" id="set-import-export-card" style="margin-bottom:20px;display:none">
+    <h3 style="margin-bottom:8px;color:var(--dark)">&#128228; Import &amp; Export Data</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Your data belongs to you. Export everything at any time -- ingredients, recipes, yields, dishes, menus and suppliers -- as a spreadsheet you can open anywhere, or bring back into Kitchen Control. Bringing data in from another system? Import your ingredients first, then your recipes, so ingredient names can be matched automatically. Owners and head chefs only.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-outline" onclick="openImportIngredientsModal()">&#128229; Import Ingredients (Spreadsheet)</button>
+      <button class="btn btn-outline" onclick="openImportRecipesModal()">&#128229; Import Recipes (Spreadsheet)</button>
+      <button class="btn btn-outline" onclick="exportAllData()">&#128228; Export All Data</button>
+      <span id="set-export-msg" style="font-size:13px;color:var(--green);display:none"></span>
+    </div>
   </div>
 
   <!-- DANGER ZONE -->
@@ -2914,6 +2912,7 @@ function canDelete(){ return _userRole==='owner'||_userRole==='head_chef'; }
 function canScan(){ return _userRole==='owner'||_userRole==='head_chef'||_userRole==='sous_chef'; }
 function canManageTeam(){ return _userRole==='owner'||_userRole==='head_chef'; }
 function canManageBilling(){ return _userRole==='owner'; }
+function canImportExport(){ return _userRole==='owner'||_userRole==='head_chef'; }
 
 function applyRolePermissions(){
   var roleLabels={owner:'Owner',head_chef:'Head Chef',sous_chef:'Sous Chef',chef:'Chef'};
@@ -2922,6 +2921,8 @@ function applyRolePermissions(){
   var cancelBtn=document.querySelector('[onclick="settingsCancelSubscription()"]');
   if(manageBillingBtn) manageBillingBtn.style.display=canManageBilling()?'':'none';
   if(cancelBtn) cancelBtn.style.display=canManageBilling()?'':'none';
+  var importExportCard=document.getElementById('set-import-export-card');
+  if(importExportCard) importExportCard.style.display=canImportExport()?'':'none';
   var badge=document.getElementById('sidebar-role-badge');
   if(!badge){
     var nameEl=document.getElementById('sidebar-user-name');
@@ -7813,6 +7814,7 @@ function exportBuildWorkbook(){
   return wb;
 }
 function exportAllData(){
+  if(!canImportExport()){ alert('Only owners and head chefs can export data.'); return; }
   var msg = document.getElementById('set-export-msg');
   if(msg){ msg.style.display='inline'; msg.style.color='var(--muted)'; msg.textContent='Preparing your export...'; }
   try{
@@ -7964,9 +7966,17 @@ function startDataLoad(){
 supabaseClient.auth.getSession().then(function(s){
   var uid = s && s.data && s.data.session && s.data.session.user && s.data.session.user.id;
   if(uid){
-    supabaseClient.from('profiles').select('company_id').eq('user_id', uid).maybeSingle().then(function(r){
-      if(r.data && r.data.company_id){ 
+    supabaseClient.from('profiles').select('company_id,role').eq('user_id', uid).maybeSingle().then(function(r){
+      if(r.data && r.data.company_id){
         _companyId = r.data.company_id;
+      }
+      // Role never got fetched on a normal (returning-user) login before --
+      // only on brand new signup -- so every role-gated permission below
+      // silently fell back to the 'owner' default for everyone. Set it for
+      // real here and re-apply the UI gating now that we know it.
+      if(r.data && r.data.role){
+        _userRole = r.data.role;
+        applyRolePermissions();
       }
     });
   }
@@ -8127,7 +8137,7 @@ var IMP_ING_SYNONYMS = {
 };
 
 function openImportIngredientsModal(){
-  if(!canEdit()){ alert('Only owners, head chefs and sous chefs can import ingredients.'); return; }
+  if(!canImportExport()){ alert('Only owners and head chefs can import ingredients.'); return; }
   resetImportIngredientsModal();
   el('import-ingredients-modal').classList.add('open');
 }
@@ -8657,7 +8667,7 @@ var IMP_REC_SYNONYMS = {
 };
 
 function openImportRecipesModal(){
-  if(!canEdit()){ alert('Only owners, head chefs and sous chefs can import recipes.'); return; }
+  if(!canImportExport()){ alert('Only owners and head chefs can import recipes.'); return; }
   resetImportRecipesModal();
   el('import-recipes-modal').classList.add('open');
 }
@@ -9628,7 +9638,7 @@ async function scanIngredientText(file) {
     <div id="imp-ing-upload" style="text-align:center;padding:20px 0;">
       <div style="font-size:48px;margin-bottom:12px;">📊</div>
       <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">Upload a spreadsheet exported from any other system — CSV or Excel. You'll match its columns to Kitchen Control's fields on the next screen, so it doesn't matter what format it's in.</p>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Ingredients only — for recipes, use <strong>Import Recipes (Spreadsheet)</strong> on the Recipes page instead.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Ingredients only — for recipes, use <strong>Import Recipes (Spreadsheet)</strong> in Settings instead.</p>
       <input type="file" id="imp-ing-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportIngredientsUpload(this)">
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button class="btn btn-green" onclick="document.getElementById('imp-ing-file-input').click()">📄 Choose File</button>
