@@ -1180,6 +1180,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 .invoice-modal.open { display:flex; }
 .invoice-box { background:white;border-radius:14px;padding:28px;max-width:580px;width:100%;max-height:90vh;overflow-y:auto; }
 .invoice-box h2 { font-size:17px;font-weight:600;margin-bottom:6px; }
+/* Wider variant for the import wizards -- column-mapping needs real table width */
+.invoice-box.wizard-box { max-width:900px; text-align:left; }
 .invoice-box > p { font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.6; }
 .invoice-item-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;gap:10px;}
 .invoice-item-name{font-size:13px;font-weight:500;flex:1;}
@@ -1483,7 +1485,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <button class="btn btn-green" style="width:100%;justify-content:center;margin-bottom:7px" onclick="go('print-label')">&#127991;&#65039; Print Label</button>
       <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
       <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:7px" onclick="openRecipeScanModal()">&#128214; Import Recipe</button>
-      <button class="btn btn-green" style="width:100%;justify-content:center" onclick="openInvoiceModal()">&#128196; Import Invoice</button>
+      <button class="btn btn-green" style="width:100%;justify-content:center;margin-bottom:7px" onclick="openInvoiceModal()">&#128196; Import Invoice</button>
+      <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openImportIngredientsModal()">&#128229; Import Ingredients</button>
       </div>
     <div class="disclaimer-box">
       <h3>&#9888; Allergen Responsibility</h3>
@@ -1749,6 +1752,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
 
         <button class="btn btn-green" onclick="ingNew()">
           + Add Ingredient
+        </button>
+        <button class="btn btn-outline" onclick="openImportIngredientsModal()">
+          📥 Import Ingredients
         </button>
 
       </div>
@@ -8035,6 +8041,506 @@ function detectAllergens(text) {
 }
 
 // ============================================================
+// BULK INGREDIENT IMPORT
+// A generic spreadsheet importer for anyone switching from another
+// system -- deliberately format-agnostic (the user maps their own
+// columns rather than us guessing a specific competitor's export
+// shape). Pure client-side parsing (SheetJS, already loaded for
+// reading uploads elsewhere) + direct Supabase writes -- no AI call,
+// since the source data is already structured, not free text.
+// ============================================================
+var _impIngHeaders = [];
+var _impIngRows = [];
+var _impIngPreview = null; // built by impIngBuildPreview(), consumed by the review step + commit
+
+var IMP_ING_FIELDS = [
+  { key:'name', label:'Name', required:true },
+  { key:'brand', label:'Brand' },
+  { key:'category', label:'Category' },
+  { key:'supplierName', label:'Supplier' },
+  { key:'supplierCode', label:'Supplier Code' },
+  { key:'packSize', label:'Pack Size' },
+  { key:'packCost', label:'Pack Cost' },
+  { key:'unit', label:'Unit' },
+  { key:'fullIngredients', label:'Full Ingredients List' },
+  { key:'notes', label:'Notes' },
+  { key:'shelfLifeValue', label:'Shelf Life' },
+  { key:'shelfLifeUnit', label:'Shelf Life Unit' }
+];
+
+function openImportIngredientsModal(){
+  if(!canEdit()){ alert('Only owners, head chefs and sous chefs can import ingredients.'); return; }
+  resetImportIngredientsModal();
+  el('import-ingredients-modal').classList.add('open');
+}
+function closeImportIngredientsModal(){
+  el('import-ingredients-modal').classList.remove('open');
+}
+function resetImportIngredientsModal(){
+  _impIngHeaders = []; _impIngRows = []; _impIngPreview = null;
+  var fileInput = el('imp-ing-file-input'); if(fileInput) fileInput.value = '';
+  show('imp-ing-upload'); hide('imp-ing-mapping'); hide('imp-ing-review'); hide('imp-ing-done');
+  el('imp-ing-actions-mapping').style.display = 'none';
+  el('imp-ing-actions-review').style.display = 'none';
+  el('imp-ing-actions-done').style.display = 'none';
+}
+
+function handleImportIngredientsUpload(input){
+  var file = input.files[0];
+  if(!file) return;
+  if(typeof XLSX === 'undefined'){
+    alert('The spreadsheet reader isn\'t available right now (couldn\'t load it). Please check your connection and try again.');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onerror = function(){ alert('Couldn\'t read that file.'); };
+  reader.onload = function(e){
+    try{
+      var buf = e.target.result;
+      var wb = XLSX.read(buf, { type:'array' });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
+      // Drop fully-blank trailing rows
+      while(rows.length && rows[rows.length-1].every(function(c){ return String(c||'').trim()===''; })) rows.pop();
+      if(rows.length < 2){ alert('That file doesn\'t have any data rows below the header.'); return; }
+      var headers = rows[0].map(function(h){ return String(h||'').trim(); });
+      var dataRows = rows.slice(1).map(function(r){
+        var obj = {};
+        headers.forEach(function(h, i){ obj[h] = r[i]!=null ? String(r[i]) : ''; });
+        return obj;
+      });
+      _impIngHeaders = headers;
+      _impIngRows = dataRows;
+      impIngRenderMapping();
+    }catch(err){
+      alert('Couldn\'t read that file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function impIngRenderMapping(){
+  hide('imp-ing-upload');
+  var headerOptions = '<option value="">-- Don\'t import --</option>' +
+    _impIngHeaders.map(function(h){ return '<option value="'+esc(h)+'">'+esc(h)+'</option>'; }).join('');
+
+  // Best-effort auto-suggest: match KC field labels against the file's own
+  // headers so a well-labelled export (including our own) pre-fills itself.
+  function guessFor(field){
+    var lower = field.label.toLowerCase();
+    var found = _impIngHeaders.find(function(h){ return h.toLowerCase().trim()===lower; });
+    if(found) return found;
+    found = _impIngHeaders.find(function(h){ return h.toLowerCase().indexOf(lower)>=0; });
+    return found || '';
+  }
+
+  var rowsHtml = IMP_ING_FIELDS.map(function(f){
+    var guess = guessFor(f);
+    return '<div class="fr" style="align-items:center;margin-bottom:8px">'+
+      '<div class="fg" style="flex:0 0 200px"><label style="margin-bottom:0">'+esc(f.label)+(f.required?' <span style="color:#dc2626">*</span>':'')+'</label></div>'+
+      '<div class="fg" style="flex:1"><select id="imp-ing-map-'+f.key+'" onchange="impIngUpdatePreview()">'+
+        headerOptions.replace('value="'+esc(guess)+'"', 'value="'+esc(guess)+'" selected')+
+      '</select></div>'+
+    '</div>';
+  }).join('');
+
+  var allergenHeaderGuess = _impIngHeaders.find(function(h){ return /allerg/i.test(h); }) || '';
+  var allergenColsHtml = ALLERGENS.map(function(a){
+    var guess = _impIngHeaders.find(function(h){ return h.toLowerCase().trim()===a.label.toLowerCase(); }) || '';
+    return '<div class="fr" style="align-items:center;margin-bottom:6px">'+
+      '<div class="fg" style="flex:0 0 200px"><label style="margin-bottom:0;font-weight:400">'+a.e+' '+esc(a.label)+'</label></div>'+
+      '<div class="fg" style="flex:1"><select id="imp-ing-allergen-col-'+a.id+'" onchange="impIngUpdatePreview()">'+
+        headerOptions.replace('value="'+esc(guess)+'"', 'value="'+esc(guess)+'" selected')+
+      '</select></div>'+
+    '</div>';
+  }).join('');
+
+  el('imp-ing-mapping').innerHTML =
+    '<p style="color:var(--muted);font-size:13px;margin-bottom:14px">Match each Kitchen Control field to a column from your file. Only <strong>Name</strong> is required -- leave anything else as "Don\'t import" if your file doesn\'t have it.</p>'+
+    rowsHtml+
+    '<div style="border-top:1px solid var(--border,#e5e7eb);margin:16px 0;padding-top:14px">'+
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:500;text-transform:none;font-size:13px;margin-bottom:10px">'+
+        '<input type="checkbox" id="imp-ing-allergen-percolumn" onchange="impIngAllergenModeChanged()" style="width:auto"> '+
+        'My file has one column per allergen instead of a single allergens column'+
+      '</label>'+
+      '<div id="imp-ing-allergen-single">'+
+        '<div class="fr" style="align-items:center;margin-bottom:8px">'+
+          '<div class="fg" style="flex:0 0 200px"><label style="margin-bottom:0">Allergens</label></div>'+
+          '<div class="fg" style="flex:1"><select id="imp-ing-map-allergensText" onchange="impIngUpdatePreview()">'+
+            headerOptions.replace('value="'+esc(allergenHeaderGuess)+'"', 'value="'+esc(allergenHeaderGuess)+'" selected')+
+          '</select></div>'+
+        '</div>'+
+      '</div>'+
+      '<div id="imp-ing-allergen-percolumn-wrap" style="display:none">'+allergenColsHtml+'</div>'+
+      '<p style="color:var(--muted);font-size:12px;margin-top:6px">If a row\'s allergen data is missing or unclear, that ingredient is never guessed at -- it\'s added to your Awaiting list so you can confirm allergens before it\'s used anywhere.</p>'+
+    '</div>'+
+    '<h4 style="font-size:13px;margin:16px 0 8px;color:var(--dark)">Preview (first 3 rows)</h4>'+
+    '<div id="imp-ing-preview-table" style="overflow-x:auto"></div>';
+
+  show('imp-ing-mapping');
+  el('imp-ing-actions-mapping').style.display = 'flex';
+  impIngUpdatePreview();
+}
+
+function impIngAllergenModeChanged(){
+  var perColumn = el('imp-ing-allergen-percolumn').checked;
+  el('imp-ing-allergen-single').style.display = perColumn ? 'none' : '';
+  el('imp-ing-allergen-percolumn-wrap').style.display = perColumn ? '' : 'none';
+  impIngUpdatePreview();
+}
+
+function impIngGetMapping(){
+  var m = {};
+  IMP_ING_FIELDS.forEach(function(f){
+    var sel = el('imp-ing-map-'+f.key);
+    m[f.key] = sel ? sel.value : '';
+  });
+  m.allergenPerColumn = el('imp-ing-allergen-percolumn') && el('imp-ing-allergen-percolumn').checked;
+  if(m.allergenPerColumn){
+    m.allergenCols = {};
+    ALLERGENS.forEach(function(a){
+      var sel = el('imp-ing-allergen-col-'+a.id);
+      m.allergenCols[a.id] = sel ? sel.value : '';
+    });
+  } else {
+    var sel = el('imp-ing-map-allergensText');
+    m.allergensText = sel ? sel.value : '';
+  }
+  return m;
+}
+
+// Only ever confirms allergen data from an EXPLICIT signal -- either a
+// recognised "none/n/a" phrase, or an actual allergen keyword found in
+// the text. Anything else (blank, or text we don't recognise) comes back
+// unconfirmed rather than being silently treated as "no allergens".
+function impIngParseAllergensFreeText(text){
+  var trimmed = (text||'').trim();
+  if(!trimmed) return { allergens:null, confirmed:false };
+  var lower = trimmed.toLowerCase();
+  if(/^(none|n\/?a|no allergens?|nil|-)$/.test(lower)) return { allergens:['none'], confirmed:true };
+  var found = detectAllergens(trimmed);
+  // detectAllergens() is tuned for scanning a full product ingredients list
+  // (specific items like "prawn", "almond", "mussel"), not a short allergen
+  // column -- it has no generic keyword for crustaceans/nuts/molluscs, so
+  // also check the label of each allergen directly (e.g. a cell that just
+  // says "Crustaceans" or "Tree Nuts").
+  var foundSet = {}; found.forEach(function(id){ foundSet[id]=true; });
+  ALLERGENS.forEach(function(a){
+    if(foundSet[a.id]) return;
+    var labelLower = a.label.toLowerCase();
+    if(lower.indexOf(labelLower)>=0 || lower.indexOf(labelLower.replace(/s$/,''))>=0){ found.push(a.id); foundSet[a.id]=true; }
+  });
+  if(found.length) return { allergens:found, confirmed:true };
+  return { allergens:null, confirmed:false };
+}
+// Requires every MAPPED allergen column to have a recognisable Y/N value
+// for the row before confirming anything -- one blank or unrecognised
+// cell is enough to mark the whole row's allergen data as unknown.
+function impIngParseAllergensPerColumn(row, allergenCols){
+  var mappedIds = Object.keys(allergenCols).filter(function(id){ return allergenCols[id]; });
+  if(!mappedIds.length) return { allergens:null, confirmed:false };
+  var allergens = [];
+  var allAnswered = true;
+  mappedIds.forEach(function(id){
+    var raw = (row[allergenCols[id]]||'').toString().trim().toLowerCase();
+    if(/^(y|yes|1|true|x)$/.test(raw)) allergens.push(id);
+    else if(/^(n|no|0|false)$/.test(raw)){ /* explicit negative for this allergen */ }
+    else allAnswered = false;
+  });
+  if(!allAnswered) return { allergens:null, confirmed:false };
+  return { allergens: allergens.length?allergens:['none'], confirmed:true };
+}
+
+// Ingredient-only name match (exact -> substring -> word-overlap), the
+// same cascade as matchComponentByName() but scoped to DB.ingredients --
+// duplicate detection has no reason to also search recipes/yields.
+function matchIngredientByName(name){
+  var target = normalizeMatchText(name);
+  if(!target) return null;
+  var singular = target.replace(/s$/, '');
+  var m = DB.ingredients.find(function(x){
+    var xn = normalizeMatchText(x.name);
+    return xn===target || xn===singular || xn.replace(/s$/,'')===target || xn.replace(/s$/,'')===singular;
+  });
+  if(m) return m;
+  if(target.length > 3){
+    m = DB.ingredients.find(function(x){
+      var xn = normalizeMatchText(x.name);
+      return xn.indexOf(target)>=0 || target.indexOf(xn)>=0;
+    });
+    if(m) return m;
+  }
+  function tokenize(s){
+    return normalizeMatchText(s).replace(/[-,()]/g,' ').split(/\s+/).filter(function(w){ return w.length>1 && !/^\d/.test(w); });
+  }
+  var targetWords = tokenize(target);
+  if(!targetWords.length) return null;
+  return DB.ingredients.find(function(x){
+    var xWords = tokenize(x.name);
+    if(!xWords.length) return false;
+    var xSet = {}; xWords.forEach(function(w){ xSet[w]=true; });
+    var tSet = {}; targetWords.forEach(function(w){ tSet[w]=true; });
+    return targetWords.every(function(w){ return xSet[w]; }) || xWords.every(function(w){ return tSet[w]; });
+  }) || null;
+}
+
+// Resolves (or auto-creates) a Supplier by name. Ingredients store their
+// supplier as a NAME string (see saveIngredientToSupabase), not a
+// foreign key, so this only ever needs to return a name -- no id
+// round-trip required before ingredient rows can be built.
+function impIngEnsureSupplier(rawName){
+  var name = (rawName||'').trim();
+  if(!name) return '';
+  var existing = DB.suppliers.find(function(s){
+    return s.name.toLowerCase().indexOf(name.toLowerCase())>=0 || name.toLowerCase().indexOf(s.name.toLowerCase())>=0;
+  });
+  if(existing) return existing.name;
+  var newSup = { id:uid(), name:name, account:'', contact:'', phone:'', email:'', web:'', address:'', notes:'Auto-created from ingredient import', deliveryDays:[], cutoff:'', minOrder:0 };
+  DB.suppliers.push(newSup);
+  if(!window.KC_DEMO && typeof supabaseClient!=='undefined'){
+    supabaseClient.from('suppliers').insert([{
+      supplier_name:name, user_id:currentUserId(), company_id:_companyId||null, notes:'Auto-created from ingredient import'
+    }]).select().then(function(res){
+      if(!res.error && res.data && res.data[0]) newSup.id = res.data[0].id.toString();
+    });
+  }
+  return newSup.name;
+}
+
+// Pure (no writes) -- buckets every row so the review step can render it,
+// and can be re-run live whenever a mapping dropdown changes.
+function impIngBuildPreview(){
+  var mapping = impIngGetMapping();
+  var seenSupplierNames = {}; // pre-pass: ensure each distinct supplier exists once, not per-row
+  var toCreate = [], toUpdate = [], toAwait = [], noName = [];
+
+  _impIngRows.forEach(function(row, idx){
+    var name = (mapping.name ? row[mapping.name] : '').trim();
+    if(!name){ noName.push(idx); return; }
+
+    var supplierRaw = mapping.supplierName ? (row[mapping.supplierName]||'').trim() : '';
+    var supplierName = '';
+    if(supplierRaw){
+      if(!(supplierRaw in seenSupplierNames)) seenSupplierNames[supplierRaw] = impIngEnsureSupplier(supplierRaw);
+      supplierName = seenSupplierNames[supplierRaw];
+    }
+
+    var allergenResult = mapping.allergenPerColumn
+      ? impIngParseAllergensPerColumn(row, mapping.allergenCols)
+      : impIngParseAllergensFreeText(mapping.allergensText ? row[mapping.allergensText] : '');
+
+    var ing = {
+      name: tc ? tc(name) : name,
+      brand: mapping.brand ? (row[mapping.brand]||'').trim() : '',
+      category: mapping.category ? (row[mapping.category]||'').trim() : '',
+      supplierName: supplierName,
+      supplierCode: mapping.supplierCode ? (row[mapping.supplierCode]||'').trim() : '',
+      packSize: mapping.packSize ? (parseFloat(row[mapping.packSize])||0) : 0,
+      packCost: mapping.packCost ? (parseFloat(row[mapping.packCost])||0) : 0,
+      unit: mapping.unit ? (row[mapping.unit]||'').trim() || 'g' : 'g',
+      fullIngredients: mapping.fullIngredients ? (row[mapping.fullIngredients]||'').trim() : '',
+      singleIngredient: false,
+      labelName: '',
+      notes: mapping.notes ? (row[mapping.notes]||'').trim() : '',
+      shelfLifeValue: mapping.shelfLifeValue ? (parseFloat(row[mapping.shelfLifeValue])||'') : '',
+      shelfLifeUnit: mapping.shelfLifeUnit ? (row[mapping.shelfLifeUnit]||'').trim() || 'days' : 'days',
+      allergens: allergenResult.allergens || []
+    };
+
+    if(!allergenResult.confirmed){
+      toAwait.push(ing);
+      return;
+    }
+
+    var dup = matchIngredientByName(ing.name);
+    if(dup) toUpdate.push({ ing:ing, existing:dup });
+    else toCreate.push(ing);
+  });
+
+  _impIngPreview = { toCreate:toCreate, toUpdate:toUpdate, toAwait:toAwait, noName:noName };
+  return _impIngPreview;
+}
+
+function impIngUpdatePreview(){
+  var preview = document.getElementById('imp-ing-preview-table');
+  if(!preview) return;
+  var mapping = impIngGetMapping();
+  var cols = IMP_ING_FIELDS.filter(function(f){ return mapping[f.key]; });
+  if(!cols.length){ preview.innerHTML = '<p style="color:var(--muted);font-size:12px">Map some fields above to see a preview.</p>'; return; }
+  var sampleRows = _impIngRows.slice(0, 3);
+  var html = '<table style="width:100%;font-size:12px;border-collapse:collapse">'+
+    '<tr>'+cols.map(function(f){ return '<th style="text-align:left;padding:4px 8px;border-bottom:2px solid var(--border,#e5e7eb)">'+esc(f.label)+'</th>'; }).join('')+'</tr>'+
+    sampleRows.map(function(row){
+      return '<tr>'+cols.map(function(f){ return '<td style="padding:4px 8px;border-bottom:1px solid var(--border,#e5e7eb)">'+esc((row[mapping[f.key]]||'').toString())+'</td>'; }).join('')+'</tr>';
+    }).join('')+
+    '</table>';
+  preview.innerHTML = html;
+}
+
+function impIngShowReview(){
+  if(!el('imp-ing-map-name').value){ alert('Please map the Name column before continuing -- it\'s the only required field.'); return; }
+  var p = impIngBuildPreview();
+  function listHtml(items, renderRow){
+    var shown = items.slice(0, 20);
+    var html = '<ul style="margin:6px 0 0 18px;font-size:12px;color:var(--muted)">'+shown.map(renderRow).join('')+'</ul>';
+    if(items.length > 20) html += '<p style="font-size:12px;color:var(--muted);margin-top:4px">...and '+(items.length-20)+' more</p>';
+    return html;
+  }
+  el('imp-ing-review').innerHTML =
+    '<div style="background:#eff6ff;color:#1e40af;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.toCreate.length+' new ingredient'+(p.toCreate.length===1?'':'s')+' will be created'+
+      (p.toCreate.length ? listHtml(p.toCreate, function(i){ return '<li>'+esc(i.name)+'</li>'; }) : '')+
+    '</div>'+
+    (p.toUpdate.length ? '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.toUpdate.length+' look'+(p.toUpdate.length===1?'s':'')+' like existing ingredient'+(p.toUpdate.length===1?'':'s')+' -- skipped by default'+
+      listHtml(p.toUpdate, function(x){ return '<li>'+esc(x.ing.name)+' &rarr; matches existing "'+esc(x.existing.name)+'"</li>'; })+
+      '<label style="display:flex;align-items:center;gap:8px;font-weight:500;text-transform:none;font-size:12px;margin-top:10px"><input type="checkbox" id="imp-ing-update-dupes" style="width:auto"> Update these existing ingredients with the imported data instead of skipping them</label>'+
+    '</div>' : '')+
+    (p.toAwait.length ? '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.toAwait.length+' need'+(p.toAwait.length===1?'s':'')+' allergen review -- allergen data wasn\'t mapped or wasn\'t clear, so '+(p.toAwait.length===1?'it':'they')+'\'ll go to your Awaiting list rather than being guessed at'+
+      listHtml(p.toAwait, function(i){ return '<li>'+esc(i.name)+'</li>'; })+
+    '</div>' : '')+
+    (p.noName.length ? '<div style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:10px 12px;font-size:13px;font-weight:600">'+p.noName.length+' row'+(p.noName.length===1?'':'s')+' skipped (no name found)</div>' : '');
+
+  hide('imp-ing-mapping'); show('imp-ing-review');
+  el('imp-ing-actions-mapping').style.display = 'none';
+  el('imp-ing-actions-review').style.display = 'flex';
+}
+
+function impIngBackToMapping(){
+  hide('imp-ing-review'); show('imp-ing-mapping');
+  el('imp-ing-actions-review').style.display = 'none';
+  el('imp-ing-actions-mapping').style.display = 'flex';
+}
+
+// Builds the Supabase row shape for a bulk-imported ingredient. A
+// deliberately independent, simpler counterpart to
+// saveIngredientToSupabase()'s row-building (rather than a shared
+// refactor of that function) -- import ingredients already carry a
+// resolved supplier NAME (see impIngEnsureSupplier), so they don't need
+// that function's local-id-to-name resolution machinery at all, and
+// keeping this separate means nothing about the existing single-save
+// path (used everywhere else in the app) has to change.
+function buildImportIngredientRow(ing){
+  var allergenCols = {};
+  for(var key in ALLERGEN_COL_MAP){
+    allergenCols[ALLERGEN_COL_MAP[key]] = (ing.allergens||[]).indexOf(key) >= 0;
+  }
+  return Object.assign({
+    user_id: currentUserId(),
+    company_id: _companyId || null,
+    name: ing.name || '',
+    brand: ing.brand || '',
+    catagory: ing.category || '',
+    supplier: ing.supplierName || '',
+    barcode: ing.supplierCode || '',
+    pack_size: (ing.packSize || '').toString(),
+    cost_price: ing.packCost || 0,
+    storage_type: ing.unit || 'g',
+    ingredients_list: ing.fullIngredients || '',
+    single_ingredient: !!ing.singleIngredient,
+    label_name: ing.labelName || '',
+    notes: ing.notes || '',
+    shelf_life_value: ing.shelfLifeValue || null,
+    shelf_life_unit: ing.shelfLifeUnit || 'days'
+  }, allergenCols);
+}
+// Chunked insert (~200 rows/batch) rather than one Supabase round trip
+// per ingredient -- a straight loop of single saveIngredientToSupabase()
+// calls would mean hundreds of sequential awaits for a real migration.
+async function saveIngredientsBatchToSupabase(ings){
+  if(window.KC_DEMO || !ings.length) return [];
+  var allRows = ings.map(buildImportIngredientRow);
+  var chunks = [];
+  for(var i=0;i<allRows.length;i+=200) chunks.push(allRows.slice(i,i+200));
+  var saved = [];
+  for(var c=0;c<chunks.length;c++){
+    var res = await supabaseClient.from('ingredients').insert(chunks[c]).select();
+    if(res.error && isMissingColumnError(res.error)){
+      var noShelf = chunks[c].map(function(r){
+        var r2 = Object.assign({}, r);
+        delete r2.shelf_life_value; delete r2.shelf_life_unit; delete r2.single_ingredient; delete r2.label_name;
+        return r2;
+      });
+      res = await supabaseClient.from('ingredients').insert(noShelf).select();
+    }
+    if(res.error){ console.error('saveIngredientsBatchToSupabase error:', res.error); throw res.error; }
+    saved = saved.concat(res.data||[]);
+  }
+  return saved;
+}
+
+async function impIngCommit(){
+  var p = _impIngPreview || impIngBuildPreview();
+  var updateDupes = el('imp-ing-update-dupes') && el('imp-ing-update-dupes').checked;
+  var btn = el('imp-ing-actions-review') ? el('imp-ing-actions-review').querySelector('.btn-green') : null;
+  if(btn){ btn.disabled = true; btn.textContent = 'Importing...'; }
+
+  try{
+    var created = [];
+    if(!window.KC_DEMO){
+      created = await saveIngredientsBatchToSupabase(p.toCreate);
+    }
+    created.forEach(function(row, i){
+      var local = Object.assign({}, p.toCreate[i], { id: row.id });
+      DB.ingredients.push(local);
+    });
+
+    var updatedCount = 0;
+    if(updateDupes && p.toUpdate.length){
+      for(var i=0;i<p.toUpdate.length;i++){
+        var pair = p.toUpdate[i];
+        var merged = Object.assign({}, pair.existing, pair.ing, { id: pair.existing.id });
+        if(!window.KC_DEMO) await saveIngredientToSupabase(merged);
+        var idx = DB.ingredients.findIndex(function(x){ return x.id===pair.existing.id; });
+        if(idx>=0) DB.ingredients[idx] = merged;
+        updatedCount++;
+      }
+    }
+
+    var awaitedCount = 0;
+    for(var j=0;j<p.toAwait.length;j++){
+      var ing = p.toAwait[j];
+      var awaitItem = {
+        id: uid(), name: ing.name, packCost: ing.packCost||0, packSize: ing.packSize||'',
+        unit: ing.unit||'g', supplierId:'', supplierName: ing.supplierName||'',
+        supplierCode: ing.supplierCode||'', brand: ing.brand||'', fullIngredients: ing.fullIngredients||'',
+        priceConfirmed: !!ing.packCost, source:'import', addedAt: new Date().toISOString()
+      };
+      DB.awaiting.push(awaitItem);
+      if(!window.KC_DEMO){
+        try{
+          await supabaseClient.from('awaiting_allergens').insert({
+            company_id: _companyId||null, user_id: currentUserId(), ingredient_name: ing.name,
+            source:'import', price_confirmed: !!ing.packCost, pack_cost: ing.packCost||0,
+            pack_size: ing.packSize||'', unit: ing.unit||'g', supplier_name: ing.supplierName||'',
+            supplier_code: ing.supplierCode||''
+          });
+        }catch(e){ console.error('awaiting insert error:', e); }
+      }
+      awaitedCount++;
+    }
+
+    save(); dashUpdate();
+    if(el('ingredients') && el('ingredients').classList.contains('active') && typeof ingRender==='function') ingRender();
+
+    el('imp-ing-done').innerHTML =
+      '<div style="text-align:center;padding:10px 0 4px">'+
+        '<div style="font-size:40px;margin-bottom:10px">&#10003;</div>'+
+        '<p style="font-size:14px;color:var(--dark);font-weight:600;margin-bottom:6px">Import complete</p>'+
+        '<p style="font-size:13px;color:var(--muted)">'+
+          created.length+' created'+(updatedCount?', '+updatedCount+' updated':'')+(awaitedCount?', '+awaitedCount+' flagged for allergen review':'')+(p.noName.length?', '+p.noName.length+' skipped (no name)':'')+
+        '</p>'+
+      '</div>';
+    hide('imp-ing-review'); show('imp-ing-done');
+    el('imp-ing-actions-review').style.display = 'none';
+    el('imp-ing-actions-done').style.display = 'flex';
+  }catch(e){
+    console.error('impIngCommit failed:', e);
+    alert('Something went wrong during import. Nothing that failed to save was lost from your file -- please try again.');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '✓ Import'; }
+  }
+}
+
+// ============================================================
 // RECIPE IMPORT - Gemini Vision via Vercel serverless function
 // Parses a photo/PDF/pasted-text recipe, matches ingredients against
 // DB.ingredients, then hands the whole thing to the normal recipe form
@@ -8661,6 +9167,44 @@ async function scanIngredientText(file) {
       <button class="btn btn-green" onclick="applyInvoiceResults()">✓ Apply to Ingredients</button>
       <button class="btn btn-outline" onclick="applyInvoiceResultsAndScanAnother()">📷 Scan Another</button>
       <button class="btn btn-grey" onclick="closeInvoiceModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT INGREDIENTS MODAL -->
+<div class="invoice-modal" id="import-ingredients-modal" onclick="if(event.target===this)closeImportIngredientsModal()">
+  <div class="invoice-box wizard-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h2 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">📥 Import Ingredients</h2>
+      <button onclick="closeImportIngredientsModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>
+    </div>
+
+    <div id="imp-ing-upload" style="text-align:center;padding:20px 0;">
+      <div style="font-size:48px;margin-bottom:12px;">📊</div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Upload a spreadsheet exported from any other system — CSV or Excel. You'll match its columns to Kitchen Control's fields on the next screen, so it doesn't matter what format it's in.</p>
+      <input type="file" id="imp-ing-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportIngredientsUpload(this)">
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-green" onclick="document.getElementById('imp-ing-file-input').click()">📄 Choose File</button>
+        <button class="btn btn-grey" onclick="closeImportIngredientsModal()">Cancel</button>
+      </div>
+    </div>
+
+    <div id="imp-ing-mapping" style="display:none;"></div>
+    <div id="imp-ing-review" style="display:none;"></div>
+    <div id="imp-ing-done" style="display:none;"></div>
+
+    <div id="imp-ing-actions-mapping" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="impIngShowReview()">Continue → Review</button>
+      <button class="btn btn-grey" onclick="closeImportIngredientsModal()">Cancel</button>
+    </div>
+    <div id="imp-ing-actions-review" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="impIngCommit()">✓ Import</button>
+      <button class="btn btn-outline" onclick="impIngBackToMapping()">← Back</button>
+      <button class="btn btn-grey" onclick="closeImportIngredientsModal()">Cancel</button>
+    </div>
+    <div id="imp-ing-actions-done" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="closeImportIngredientsModal();go('ingredients')">Go to Ingredients</button>
+      <button class="btn btn-grey" onclick="closeImportIngredientsModal()">Close</button>
     </div>
   </div>
 </div>
