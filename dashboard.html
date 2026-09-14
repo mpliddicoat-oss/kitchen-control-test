@@ -1486,7 +1486,8 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <hr style="border:none;border-top:1px solid var(--border);margin:8px 0">
       <button class="btn btn-blue" style="width:100%;justify-content:center;margin-bottom:7px" onclick="openRecipeScanModal()">&#128214; Import Recipe</button>
       <button class="btn btn-green" style="width:100%;justify-content:center;margin-bottom:7px" onclick="openInvoiceModal()">&#128196; Import Invoice</button>
-      <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openImportIngredientsModal()">&#128229; Import Ingredients</button>
+      <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:7px" onclick="openImportIngredientsModal()">&#128229; Import Ingredients (Spreadsheet)</button>
+      <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="openImportRecipesModal()">&#128229; Import Recipes (Spreadsheet)</button>
       </div>
     <div class="disclaimer-box">
       <h3>&#9888; Allergen Responsibility</h3>
@@ -1754,7 +1755,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
           + Add Ingredient
         </button>
         <button class="btn btn-outline" onclick="openImportIngredientsModal()">
-          📥 Import Ingredients
+          📥 Import Ingredients (Spreadsheet)
         </button>
 
       </div>
@@ -9441,13 +9442,14 @@ async function scanIngredientText(file) {
 <div class="invoice-modal" id="import-ingredients-modal" onclick="if(event.target===this)closeImportIngredientsModal()">
   <div class="invoice-box wizard-box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
-      <h2 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">📥 Import Ingredients</h2>
+      <h2 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">📥 Import Ingredients (Spreadsheet)</h2>
       <button onclick="closeImportIngredientsModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>
     </div>
 
     <div id="imp-ing-upload" style="text-align:center;padding:20px 0;">
       <div style="font-size:48px;margin-bottom:12px;">📊</div>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">Upload a spreadsheet exported from any other system — CSV or Excel. You'll match its columns to Kitchen Control's fields on the next screen, so it doesn't matter what format it's in.</p>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">Upload a spreadsheet exported from any other system — CSV or Excel. You'll match its columns to Kitchen Control's fields on the next screen, so it doesn't matter what format it's in.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Ingredients only — for recipes, use <strong>Import Recipes (Spreadsheet)</strong> on the Recipes page instead.</p>
       <input type="file" id="imp-ing-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportIngredientsUpload(this)">
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button class="btn btn-green" onclick="document.getElementById('imp-ing-file-input').click()">📄 Choose File</button>
@@ -9486,6 +9488,7 @@ async function scanIngredientText(file) {
     <div id="imp-rec-upload" style="text-align:center;padding:20px 0;">
       <div style="font-size:48px;margin-bottom:12px;">📊</div>
       <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">Upload a structured spreadsheet export — one row per recipe ingredient, with the recipe name repeated on each of its rows.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:8px;">Recipes only — this doesn't import ingredients themselves. If you haven't already, use <strong>Import Ingredients (Spreadsheet)</strong> first, so ingredient names in your recipes can be matched automatically.</p>
       <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Got one row per recipe with everything in a single text cell instead? Use <strong>Import Recipe</strong> (photo/paste) rather than this.</p>
       <input type="file" id="imp-rec-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportRecipesUpload(this)">
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
