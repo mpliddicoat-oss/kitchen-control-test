@@ -8156,7 +8156,12 @@ function handleImportIngredientsUpload(input){
     try{
       var buf = e.target.result;
       var wb = XLSX.read(buf, { type:'array' });
-      var ws = wb.Sheets[wb.SheetNames[0]];
+      // A multi-sheet file (e.g. this account's own "Export Your Data")
+      // needs the right tab picked out -- the first sheet is Suppliers,
+      // not Ingredients. Prefer a sheet literally called "Ingredients";
+      // fall back to the first sheet for a plain single-sheet file.
+      var sheetName = wb.SheetNames.find(function(n){ return n.toLowerCase().trim()==='ingredients'; }) || wb.SheetNames[0];
+      var ws = wb.Sheets[sheetName];
       var rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
       // Drop fully-blank trailing rows
       while(rows.length && rows[rows.length-1].every(function(c){ return String(c||'').trim()===''; })) rows.pop();
@@ -8680,7 +8685,11 @@ function handleImportRecipesUpload(input){
   reader.onload = function(e){
     try{
       var wb = XLSX.read(e.target.result, { type:'array' });
-      var ws = wb.Sheets[wb.SheetNames[0]];
+      // Same tab-picking as ingredient import: prefer a sheet literally
+      // called "Recipes" (this account's own export has one), otherwise
+      // fall back to the first sheet in a plain single-sheet file.
+      var sheetName = wb.SheetNames.find(function(n){ return n.toLowerCase().trim()==='recipes'; }) || wb.SheetNames[0];
+      var ws = wb.Sheets[sheetName];
       var rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
       while(rows.length && rows[rows.length-1].every(function(c){ return String(c||'').trim()===''; })) rows.pop();
       if(rows.length < 2){ alert('That file doesn\'t have any data rows below the header.'); return; }
