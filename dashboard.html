@@ -8733,14 +8733,76 @@ function impRecRenderMapping(){
     '<div id="imp-rec-preview-table" style="overflow-x:auto"></div>';
 
   // Same auto-skip as ingredient import: only show this table when the
-  // two required columns couldn't be worked out automatically.
-  if(_impRecGuesses.recipeName && _impRecGuesses.componentName){
+  // two required columns couldn't be worked out automatically -- unless
+  // this is recognisably our own export, which needs the dedicated
+  // unpacking path below rather than column mapping at all.
+  if(impRecIsOwnExport(_impRecHeaders) || (_impRecGuesses.recipeName && _impRecGuesses.componentName)){
     impRecShowReview();
   } else {
     show('imp-rec-mapping');
     el('imp-rec-actions-mapping').style.display = 'flex';
     impRecUpdatePreview();
   }
+}
+
+// Recognises this account's own "Export Your Data" Recipes sheet -- one
+// row PER RECIPE, with every ingredient squashed into a single
+// "TypeLabel: Name (qty unit); TypeLabel: Name (qty unit)" Components
+// cell (see exportFormatComponents/exportComponentName) -- which is the
+// opposite row shape to the "one row per ingredient line" structured
+// file this wizard normally expects. A bare "Components" header could
+// plausibly appear in someone else's export too, so this only fires
+// when it's paired with "Kitchen Control ID", the column this app's own
+// export uniquely stamps onto every row.
+function impRecIsOwnExport(headers){
+  var norm = headers.map(function(h){ return h.toLowerCase().trim(); });
+  return norm.indexOf('components') >= 0 && norm.indexOf('kitchen control id') >= 0;
+}
+
+// Reverses exportComponentName's deterministic "TypeLabel: Name (qty
+// unit)" format. Uses a greedy match anchored to the LAST "(...)" in each
+// piece so a component name that itself contains parentheses (e.g. "King
+// Prawns (Raw, Peeled)") still splits correctly -- the qty/unit group is
+// always the trailing one.
+function impRecParseOwnExportComponentsCell(cell){
+  var text = (cell || '').trim();
+  if(!text) return [];
+  return text.split(';').map(function(piece){ return piece.trim(); }).filter(Boolean).map(function(piece){
+    var m = piece.match(/^[A-Za-z]+:\s*(.*)\s\(([^()]*)\)\s*$/);
+    if(!m) return { name: piece, qty: 0, unit: 'g' };
+    var name = m[1].trim();
+    var raw = m[2].trim();
+    var qty = 0, unit = 'g';
+    if(raw){
+      var sp = raw.indexOf(' ');
+      if(sp < 0){
+        if(!isNaN(parseFloat(raw))) qty = parseFloat(raw); else unit = raw;
+      } else {
+        qty = parseFloat(raw.slice(0, sp)) || 0;
+        unit = raw.slice(sp+1).trim() || 'g';
+      }
+    }
+    return { name: name, qty: qty, unit: unit };
+  });
+}
+
+// Own-export counterpart to impRecGroupRows() -- same output shape
+// ({name, category, yieldQty, yieldUnit, steps, lines}), but read
+// straight off the known export columns instead of a user-chosen
+// mapping, since each row already IS one whole recipe here.
+function impRecGroupRowsFromOwnExport(){
+  return _impRecRows.map(function(row){
+    var stepsRaw = (row['Steps'] || '').trim();
+    var steps = stepsRaw ? stepsRaw.split('\n').map(function(s){ return s.replace(/^\s*\d+\.\s*/, '').trim(); }).filter(Boolean) : [];
+    return {
+      name: (row['Name'] || '').trim(),
+      category: (row['Category'] || '').trim(),
+      yieldQty: (row['Yield Qty'] || '').trim(),
+      yieldUnit: (row['Yield Unit'] || '').trim(),
+      steps: steps,
+      lines: impRecParseOwnExportComponentsCell(row['Components'])
+    };
+  }).filter(function(g){ return g.name; });
 }
 
 function impRecGetMapping(){
@@ -8815,8 +8877,7 @@ function impRecResolveComponents(group){
 }
 
 function impRecBuildPreview(){
-  var mapping = impRecGetMapping();
-  var groups = impRecGroupRows(mapping);
+  var groups = impRecIsOwnExport(_impRecHeaders) ? impRecGroupRowsFromOwnExport() : impRecGroupRows(impRecGetMapping());
   var recipes = groups.map(function(g){
     var components = impRecResolveComponents(g);
     var unresolvedCount = components.filter(function(c){ return !c.id; }).length;
@@ -8832,7 +8893,7 @@ function impRecBuildPreview(){
 }
 
 function impRecShowReview(){
-  if(!el('imp-rec-map-recipeName').value || !el('imp-rec-map-componentName').value){
+  if(!impRecIsOwnExport(_impRecHeaders) && (!el('imp-rec-map-recipeName').value || !el('imp-rec-map-componentName').value)){
     alert('Please map both Recipe Name and Ingredient / Component Name before continuing.'); return;
   }
   var p = impRecBuildPreview();
