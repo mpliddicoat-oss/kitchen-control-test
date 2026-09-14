@@ -687,7 +687,9 @@ async function saveYieldToSupabase(yld) {
     ingredient_id: (function(){
       var localIng = DB.ingredients.find(function(i){ return i.id === yld.ingId; });
       if(localIng && isSupabaseId(localIng.id)) return localIng.id;
-      return yld.ingId || '';
+      // null (not '') for an unresolved/blank ingId -- '' is invalid
+      // syntax for a uuid column, null is the correct "no value" here.
+      return yld.ingId || null;
     })(),
     qty: yld.qty || 0,
     unit: yld.unit || 'g',
@@ -3919,7 +3921,9 @@ function yldShowDetail(id){
   el('yld-detail-name').textContent=y.name;
   el('yld-detail-sub').textContent='True cost: £'+(y.trueCpu?y.trueCpu.toFixed(4):'0.0000')+'/'+y.unit;
   var slLabel=shelfLifeLabel(y);
+  var missingBanner=ing?'':('<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-size:12px;font-weight:600">&#9888; No base ingredient linked'+(y._scannedIngredientName?' -- imported as "'+esc(y._scannedIngredientName)+'"':'')+'. Cost and allergens below are incomplete. Edit this yield to resolve it.</div>');
   el('yld-detail-info').innerHTML=
+    missingBanner+
     fld('Base Ingredient', ing?esc(ing.name):null)+
     fld('Amount of Base Used', y.baseUsed?(y.baseUsed+' '+esc(y.baseUnit)):null)+
     fld('Yield Quantity', y.qty?(y.qty+' '+esc(y.unit)):null)+
@@ -4017,6 +4021,10 @@ function yldEdit(id){
   el('yld-form-title').textContent = 'Edit Yield';
 
   yldCalc();
+  if(!y.ingId && y._scannedIngredientName){
+    var det=el('yld-ing-detail');
+    if(det) det.textContent='Select an ingredient above -- imported as "'+y._scannedIngredientName+'"';
+  }
 
   showOnly('yld-form','yld-list','yld-detail');
 
@@ -4098,7 +4106,7 @@ function yldRender(f){
     var sub=(ing?'From: '+esc(ing.name)+' - ':'')+y.qty+' '+y.unit+' - True cost: &pound;'+cpu+'/'+y.unit+(slLabel?' - Shelf life: '+slLabel:'');
     html+='<div class="card-row">';
     html+='<div style="flex:1;cursor:pointer" onclick="yldShowDetailIdx('+i+')">';
-    html+='<div class="cr-title">'+esc(y.name)+'</div>';
+    html+='<div class="cr-title">'+(ing?'':'<span class="badge" style="background:#fef3c7;color:#92400e;margin-right:6px">&#9888; Missing</span>')+esc(y.name)+'</div>';
     html+='<div class="cr-sub">'+sub+'</div>';
     html+='</div>';
     html+='<div class="cr-actions">';
@@ -9181,7 +9189,7 @@ function matchYieldByName(name){
 
 function impYldBuildPreview(){
   var mapping = impYldGetMapping();
-  var toCreate = [], toUpdate = [], noIngredient = [], noName = [];
+  var toCreate = [], toUpdate = [], noName = [];
 
   _impYldRows.forEach(function(row){
     var name = (mapping.name ? row[mapping.name] : '').trim();
@@ -9189,12 +9197,34 @@ function impYldBuildPreview(){
 
     var ingRaw = mapping.ingredientName ? (row[mapping.ingredientName]||'').trim() : '';
     var ing = matchIngredientByName(ingRaw);
-    if(!ing){ noIngredient.push({ name:name, ingredientRaw:ingRaw }); return; }
-
     var qty = mapping.qty ? (parseFloat(row[mapping.qty])||0) : 0;
     var baseUsed = mapping.baseUsed ? (parseFloat(row[mapping.baseUsed])||0) : 0;
     var unit = mapping.unit ? ((row[mapping.unit]||'').trim() || 'g') : 'g';
-    var baseUnit = mapping.baseUnit ? ((row[mapping.baseUnit]||'').trim() || ing.unit) : ing.unit;
+    var mappedBaseUnit = mapping.baseUnit ? (row[mapping.baseUnit]||'').trim() : '';
+    var common = {
+      method: mapping.method ? (row[mapping.method]||'').trim() : '',
+      notes: mapping.notes ? (row[mapping.notes]||'').trim() : '',
+      shelfLifeValue: mapping.shelfLifeValue ? (parseFloat(row[mapping.shelfLifeValue])||null) : null,
+      shelfLifeUnit: mapping.shelfLifeUnit ? ((row[mapping.shelfLifeUnit]||'').trim() || 'days') : 'days'
+    };
+
+    if(!ing){
+      // Base ingredient not found -- still create the yield, clearly
+      // flagged, instead of dropping the row. Cost and allergens can't
+      // be known without the ingredient, so they're left at zero/empty
+      // rather than guessed -- the yield detail page and list both show
+      // a "Missing" warning until someone links the real ingredient via
+      // Edit. Never offered as a match for an existing yield below: a
+      // broken row must never overwrite a working ingredient link.
+      toCreate.push(Object.assign({
+        name: tc ? tc(name) : name, ingId:'', _scannedIngredientName: ingRaw || '(blank)',
+        qty: qty, unit: unit, baseUsed: baseUsed, baseUnit: mappedBaseUnit || 'g',
+        trueCpu: 0, allergens: [], needsIngredientReview: true
+      }, common));
+      return;
+    }
+
+    var baseUnit = mappedBaseUnit || ing.unit;
     var cpu = ingBestCpu ? ingBestCpu(ing) : ingCpu(ing);
     var trueCpu;
     if(qty>0 && baseUsed>0){
@@ -9204,22 +9234,18 @@ function impYldBuildPreview(){
       trueCpu = qty>0 ? (ing.packCost||0)/qty : 0;
     }
 
-    var yld = {
+    var yld = Object.assign({
       name: tc ? tc(name) : name, ingId: ing.id, qty: qty, unit: unit,
       baseUsed: baseUsed, baseUnit: baseUnit, trueCpu: trueCpu,
-      allergens: ing.allergens||[],
-      method: mapping.method ? (row[mapping.method]||'').trim() : '',
-      notes: mapping.notes ? (row[mapping.notes]||'').trim() : '',
-      shelfLifeValue: mapping.shelfLifeValue ? (parseFloat(row[mapping.shelfLifeValue])||null) : null,
-      shelfLifeUnit: mapping.shelfLifeUnit ? ((row[mapping.shelfLifeUnit]||'').trim() || 'days') : 'days'
-    };
+      allergens: ing.allergens||[], needsIngredientReview: false
+    }, common);
 
     var dup = matchYieldByName(yld.name);
     if(dup) toUpdate.push({ yld:yld, existing:dup });
     else toCreate.push(yld);
   });
 
-  _impYldPreview = { toCreate:toCreate, toUpdate:toUpdate, noIngredient:noIngredient, noName:noName };
+  _impYldPreview = { toCreate:toCreate, toUpdate:toUpdate, noName:noName };
   return _impYldPreview;
 }
 
@@ -9228,6 +9254,8 @@ function impYldShowReview(){
     alert('Please map Name, Ingredient and Qty before continuing -- they\'re all required.'); return;
   }
   var p = impYldBuildPreview();
+  var readyToCreate = p.toCreate.filter(function(y){ return !y.needsIngredientReview; });
+  var needsReview = p.toCreate.filter(function(y){ return y.needsIngredientReview; });
   function listHtml(items, renderRow){
     var shown = items.slice(0, 20);
     var html = '<ul style="margin:6px 0 0 18px;font-size:12px;color:var(--muted)">'+shown.map(renderRow).join('')+'</ul>';
@@ -9236,16 +9264,16 @@ function impYldShowReview(){
   }
   el('imp-yld-review').innerHTML =
     '<p style="color:var(--muted);font-size:12px;margin-bottom:10px">Your file\'s columns were matched automatically. If anything below looks wrong, click <strong>&larr; Back</strong> to adjust which columns were used.</p>'+
-    '<div style="background:#eff6ff;color:#1e40af;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.toCreate.length+' new yield'+(p.toCreate.length===1?'':'s')+' will be created'+
-      (p.toCreate.length ? listHtml(p.toCreate, function(y){ return '<li>'+esc(y.name)+'</li>'; }) : '')+
+    '<div style="background:#eff6ff;color:#1e40af;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+readyToCreate.length+' new yield'+(readyToCreate.length===1?'':'s')+' will be created'+
+      (readyToCreate.length ? listHtml(readyToCreate, function(y){ return '<li>'+esc(y.name)+'</li>'; }) : '')+
     '</div>'+
+    (needsReview.length ? '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+needsReview.length+' will still be created, but need their base ingredient linked afterward -- cost and allergens are incomplete until then'+
+      listHtml(needsReview, function(y){ return '<li>'+esc(y.name)+' -- looking for "'+esc(y._scannedIngredientName)+'"</li>'; })+
+      '<p style="font-size:12px;margin-top:6px;font-weight:400">Import that ingredient first and re-run this file, or edit these yields afterward to link it.</p>'+
+    '</div>' : '')+
     (p.toUpdate.length ? '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.toUpdate.length+' look'+(p.toUpdate.length===1?'s':'')+' like existing yield'+(p.toUpdate.length===1?'':'s')+' -- skipped by default'+
       listHtml(p.toUpdate, function(x){ return '<li>'+esc(x.yld.name)+' &rarr; matches existing "'+esc(x.existing.name)+'"</li>'; })+
       '<label style="display:flex;align-items:center;gap:8px;font-weight:500;text-transform:none;font-size:12px;margin-top:10px"><input type="checkbox" id="imp-yld-update-dupes" style="width:auto"> Update these existing yields with the imported data instead of skipping them</label>'+
-    '</div>' : '')+
-    (p.noIngredient.length ? '<div style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.noIngredient.length+' skipped -- couldn\'t match the ingredient '+(p.noIngredient.length===1?'it\'s':'they\'re')+' based on'+
-      listHtml(p.noIngredient, function(x){ return '<li>'+esc(x.name)+' -- looking for "'+esc(x.ingredientRaw||'(blank)')+'"</li>'; })+
-      '<p style="font-size:12px;margin-top:6px">Import that ingredient first, or check the spelling matches.</p>'+
     '</div>' : '')+
     (p.noName.length ? '<div style="background:#fee2e2;color:#991b1b;border-radius:6px;padding:10px 12px;font-size:13px;font-weight:600">'+p.noName.length+' row'+(p.noName.length===1?'':'s')+' skipped (no name found)</div>' : '');
 
@@ -9266,7 +9294,7 @@ async function impYldCommit(){
   var btn = el('imp-yld-actions-review') ? el('imp-yld-actions-review').querySelector('.btn-green') : null;
   if(btn){ btn.disabled = true; btn.textContent = 'Importing...'; }
   try{
-    var createdCount = 0;
+    var createdCount = 0, needsReviewCount = 0;
     for(var i=0;i<p.toCreate.length;i++){
       var yld = p.toCreate[i];
       var newYld = Object.assign({ id: uid() }, yld);
@@ -9276,6 +9304,7 @@ async function impYldCommit(){
         if(newId && newId!==newYld.id) newYld.id = newId;
       }
       createdCount++;
+      if(yld.needsIngredientReview) needsReviewCount++;
     }
 
     var updatedCount = 0;
@@ -9298,7 +9327,7 @@ async function impYldCommit(){
         '<div style="font-size:40px;margin-bottom:10px">&#10003;</div>'+
         '<p style="font-size:14px;color:var(--dark);font-weight:600;margin-bottom:6px">Import complete</p>'+
         '<p style="font-size:13px;color:var(--muted)">'+
-          createdCount+' created'+(updatedCount?', '+updatedCount+' updated':'')+(p.noIngredient.length?', '+p.noIngredient.length+' skipped (ingredient not found)':'')+(p.noName.length?', '+p.noName.length+' skipped (no name)':'')+
+          createdCount+' created'+(updatedCount?', '+updatedCount+' updated':'')+(needsReviewCount?', '+needsReviewCount+' need their ingredient linked (look for the Missing badges)':'')+(p.noName.length?', '+p.noName.length+' skipped (no name)':'')+
         '</p>'+
       '</div>';
     hide('imp-yld-review'); show('imp-yld-done');
@@ -10338,7 +10367,7 @@ async function scanIngredientText(file) {
     <div id="imp-yld-upload" style="text-align:center;padding:20px 0;">
       <div style="font-size:48px;margin-bottom:12px;">📊</div>
       <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">Upload a spreadsheet exported from any other system — CSV or Excel. You'll match its columns to Kitchen Control's fields on the next screen, so it doesn't matter what format it's in.</p>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Each yield needs its base ingredient already in your Ingredients list -- import ingredients first if you haven't already.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Import ingredients first if you haven't already, so base ingredients can be matched automatically. Any yield whose ingredient can't be matched is still created, just flagged for you to link afterward.</p>
       <input type="file" id="imp-yld-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportYieldsUpload(this)">
       <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
         <button class="btn btn-green" onclick="document.getElementById('imp-yld-file-input').click()">📄 Choose File</button>
