@@ -8929,6 +8929,7 @@ async function impRecCommit(){
   if(btn){ btn.disabled = true; btn.textContent = 'Importing...'; }
   try{
     var all = p.ready.concat(p.needsReview);
+    var savedRecs = [];
     for(var i=0;i<all.length;i++){
       var r = all[i];
       var newRec = {
@@ -8941,7 +8942,30 @@ async function impRecCommit(){
         var newId = await saveRecipeToSupabase(newRec);
         if(newId && newId!==newRec.id) newRec.id = newId;
       }
+      savedRecs.push(newRec);
     }
+
+    // Second pass: a recipe that uses ANOTHER recipe from this same batch
+    // as a component (e.g. a remoulade that uses an aioli also being
+    // imported) couldn't resolve it above -- that aioli didn't exist in
+    // the database yet at the time it was looked up. Now that every
+    // recipe in this batch has been saved with a real id, retry any
+    // component that's still unresolved; anything that now matches gets
+    // fixed in place and re-saved.
+    var stillNeedsReview = 0;
+    for(var j=0;j<savedRecs.length;j++){
+      var rec = savedRecs[j];
+      var changed = false;
+      rec.components = rec.components.map(function(c){
+        if(c.id) return c;
+        var m = matchComponentByName(c._scannedName);
+        if(m){ changed = true; return { type:m.type, id:m.item.id, qty:c.qty, unit:c.unit }; }
+        return c;
+      });
+      if(changed && !window.KC_DEMO) await saveRecipeToSupabase(rec);
+      if(rec.components.some(function(c){ return !c.id; })) stillNeedsReview++;
+    }
+
     save(); dashUpdate();
     if(el('recipes') && el('recipes').classList.contains('active') && typeof recList==='function') recList();
 
@@ -8949,7 +8973,7 @@ async function impRecCommit(){
       '<div style="text-align:center;padding:10px 0 4px">'+
         '<div style="font-size:40px;margin-bottom:10px">&#10003;</div>'+
         '<p style="font-size:14px;color:var(--dark);font-weight:600;margin-bottom:6px">Import complete</p>'+
-        '<p style="font-size:13px;color:var(--muted)">'+all.length+' recipe'+(all.length===1?'':'s')+' imported'+(p.needsReview.length?' ('+p.needsReview.length+' need ingredient review -- look for the Missing badges)':'')+'</p>'+
+        '<p style="font-size:13px;color:var(--muted)">'+all.length+' recipe'+(all.length===1?'':'s')+' imported'+(stillNeedsReview?' ('+stillNeedsReview+' need ingredient review -- look for the Missing badges)':'')+'</p>'+
       '</div>';
     hide('imp-rec-review'); show('imp-rec-done');
     el('imp-rec-actions-review').style.display = 'none';
