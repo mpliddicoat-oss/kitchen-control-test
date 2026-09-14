@@ -2674,6 +2674,14 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
     <p id="set-install-msg" style="font-size:13px;color:var(--green);margin-top:12px;display:none;font-weight:600">&#10003; App installed! Find Kitchen Control on your home screen.</p>
   </div>
 
+  <!-- EXPORT DATA -->
+  <div class="card" style="margin-bottom:20px">
+    <h3 style="margin-bottom:8px;color:var(--dark)">&#128228; Export Your Data</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Your data belongs to you. Export everything at any time -- ingredients, recipes, yields, dishes, menus and suppliers -- as a spreadsheet you can open anywhere, or bring back into Kitchen Control.</p>
+    <button class="btn btn-outline" onclick="exportAllData()">&#128228; Export All Data</button>
+    <span id="set-export-msg" style="margin-left:12px;font-size:13px;color:var(--green);display:none"></span>
+  </div>
+
   <!-- DANGER ZONE -->
   <div class="card" style="border:1px solid #fecaca;margin-bottom:20px">
     <h3 style="margin-bottom:8px;color:#dc2626">&#9888; Sign Out</h3>
@@ -7664,6 +7672,143 @@ async function settingsResetPassword(){
     await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: 'https://kitchen-control.co.uk/login.html' });
     if(msg){ msg.style.display='inline'; setTimeout(function(){ msg.style.display='none'; }, 3000); }
   }catch(e){ alert('Could not send reset email. Please try again.'); }
+}
+
+// ================================================================
+// DATA EXPORT
+// ================================================================
+// Human-readable AND round-trippable: allergens as comma-joined labels
+// rather than raw booleans, components resolved to readable
+// "Type: Name (qty unit)" strings rather than raw ids. A trailing
+// "Kitchen Control ID" column carries the real id so re-uploading your
+// own export through the import wizard can be recognised as an update
+// rather than creating duplicates.
+function exportFormatAllergens(ids){
+  ids = ids || [];
+  if(!ids.length || (ids.length===1 && ids[0]==='none')) return 'None';
+  return ids.map(function(id){
+    var a = ALLERGENS.find(function(x){ return x.id===id; });
+    return a ? a.label : id;
+  }).join(', ');
+}
+function exportComponentName(c){
+  var src = c.type==='ingredient' ? DB.ingredients : c.type==='yield' ? DB.yields : DB.recipes;
+  var item = byId(src, c.id);
+  var typeLabel = c.type ? (c.type.charAt(0).toUpperCase()+c.type.slice(1)) : 'Item';
+  var name = item ? (item.labelName || item.name) : (c._scannedName || '(unknown)');
+  return typeLabel+': '+name+' ('+(c.qty||'')+' '+(c.unit||'')+')';
+}
+function exportFormatComponents(components){
+  return (components||[]).filter(function(c){ return c.id || c._scannedName; }).map(exportComponentName).join('; ');
+}
+function exportFormatDishes(dishLines){
+  return (dishLines||[]).map(function(l){
+    var d = byId(DB.dishes, l.dishId);
+    return (d?d.name:'(unknown)')+' (£'+(parseFloat(l.sell)||0).toFixed(2)+')';
+  }).join('; ');
+}
+function exportFileName(){
+  var company = (window._companyName||'').trim();
+  var datePart = new Date().toISOString().slice(0,10);
+  return 'Kitchen Control Export'+(company?' - '+company:'')+' - '+datePart+'.xlsx';
+}
+function exportBuildWorkbook(){
+  var wb = XLSX.utils.book_new();
+
+  var supplierRows = (DB.suppliers||[]).map(function(s){
+    return {
+      'Name': s.name||'', 'Account Number': s.account||'', 'Contact Name': s.contact||'',
+      'Phone': s.phone||'', 'Email': s.email||'', 'Website': s.web||'', 'Address': s.address||'',
+      'Notes': s.notes||'', 'Order Cutoff': s.cutoff||'', 'Min Order': s.minOrder||'',
+      'Delivery Days': (s.deliveryDays||[]).join(', '),
+      'Kitchen Control ID': s.id
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(supplierRows), 'Suppliers');
+
+  var ingredientRows = (DB.ingredients||[]).map(function(i){
+    var cpu = (i.packCost && i.packSize) ? (i.packCost/i.packSize) : 0;
+    return {
+      'Name': i.name||'', 'Brand': i.brand||'', 'Category': i.category||'',
+      'Supplier': i.supplierName||'', 'Supplier Code': i.supplierCode||'',
+      'Pack Size': i.packSize||'', 'Pack Cost (£)': i.packCost||0, 'Unit': i.unit||'',
+      'Cost Per Unit': cpu ? cpu.toFixed(4) : '',
+      'Allergens': exportFormatAllergens(i.allergens),
+      'Full Ingredients List': i.fullIngredients||'',
+      'Single Ingredient': i.singleIngredient ? 'Yes' : 'No',
+      'Label Name': i.labelName||'',
+      'Shelf Life': i.shelfLifeValue||'', 'Shelf Life Unit': i.shelfLifeUnit||'',
+      'Notes': i.notes||'',
+      'Kitchen Control ID': i.id
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ingredientRows), 'Ingredients');
+
+  var yieldRows = (DB.yields||[]).map(function(y){
+    var ing = byId(DB.ingredients, y.ingId);
+    return {
+      'Name': y.name||'', 'Ingredient': ing?(ing.labelName||ing.name):'',
+      'Qty': y.qty||'', 'Unit': y.unit||'', 'Base Used': y.baseUsed||'', 'Base Unit': y.baseUnit||'',
+      'True Cost Per Unit': y.trueCpu?y.trueCpu.toFixed(4):'',
+      'Allergens': exportFormatAllergens(y.allergens),
+      'Method': y.method||'', 'Notes': y.notes||'',
+      'Shelf Life': y.shelfLifeValue||'', 'Shelf Life Unit': y.shelfLifeUnit||'',
+      'Kitchen Control ID': y.id
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(yieldRows), 'Yields');
+
+  var recipeRows = (DB.recipes||[]).map(function(r){
+    return {
+      'Name': r.name||'', 'Category': r.category||'',
+      'Yield Qty': r.yieldQty||'', 'Yield Unit': r.yieldUnit||'',
+      'Components': exportFormatComponents(r.components),
+      'Steps': (r.steps||[]).map(function(s,i){ return (i+1)+'. '+s; }).join('\n'),
+      'Allergens': exportFormatAllergens(r.allergens),
+      'Notes': r.notes||'',
+      'Shelf Life': r.shelfLifeValue||'', 'Shelf Life Unit': r.shelfLifeUnit||'',
+      'Kitchen Control ID': r.id
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recipeRows), 'Recipes');
+
+  var dishRows = (DB.dishes||[]).map(function(d){
+    var overrides = DB.manual[d.id]||[];
+    return {
+      'Name': d.name||'', 'Category': d.category||'',
+      'Components': exportFormatComponents(d.components),
+      'Target GP%': d.targetGP||'', 'Wastage%': d.wastage||'', 'Actual Sell Price': d.actualSell||'',
+      'Allergen Overrides (manual)': overrides.length ? exportFormatAllergens(overrides) : '',
+      'Shelf Life': d.shelfLifeValue||'', 'Shelf Life Unit': d.shelfLifeUnit||'',
+      'Notes': d.notes||'',
+      'Kitchen Control ID': d.id
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dishRows), 'Dishes');
+
+  var menuRows = (DB.menus||[]).map(function(m){
+    return {
+      'Name': m.name||'', 'Type': m.type||'', 'Description': m.desc||'',
+      'Dishes': exportFormatDishes(m.dishes),
+      'Kitchen Control ID': m.id
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(menuRows), 'Menus');
+
+  return wb;
+}
+function exportAllData(){
+  var msg = document.getElementById('set-export-msg');
+  if(msg){ msg.style.display='inline'; msg.style.color='var(--muted)'; msg.textContent='Preparing your export...'; }
+  try{
+    var wb = exportBuildWorkbook();
+    XLSX.writeFile(wb, exportFileName());
+    if(msg){ msg.style.color='var(--green)'; msg.textContent='✓ Downloaded'; setTimeout(function(){ msg.style.display='none'; }, 4000); }
+  }catch(e){
+    console.error('exportAllData failed:', e);
+    if(msg){ msg.style.color='#dc2626'; msg.textContent='Export failed -- please try again.'; }
+    else alert('Export failed -- please try again.');
+  }
 }
 
 function settingsShowTerms(){
