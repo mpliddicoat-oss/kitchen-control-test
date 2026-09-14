@@ -466,7 +466,8 @@ async function loadIngredients() {
     var _ingRes = await supabaseClient
       .from('ingredients')
       .select('*')
-      .order('name', { ascending: true });
+      .order('name', { ascending: true })
+      .range(0, 4999);
     var data = _ingRes.data; var error = _ingRes.error;
 
     if (error) { console.error('loadIngredients error:', error); return; }
@@ -646,7 +647,8 @@ async function loadYields() {
     var { data, error } = await supabaseClient
       .from('yields')
       .select('*')
-      .order('name', { ascending: true });
+      .order('name', { ascending: true })
+      .range(0, 4999);
 
     if (error) { console.error('loadYields error:', error); return; }
 
@@ -738,7 +740,7 @@ async function deleteYieldFromSupabase(id) {
 async function loadRecipes() {
   if(window.KC_DEMO){ return; }
   try {
-    var res = await supabaseClient.from('recipes').select('*').order('name', {ascending:true});
+    var res = await supabaseClient.from('recipes').select('*').order('name', {ascending:true}).range(0, 4999);
     if (res.error) { console.error('loadRecipes:', res.error); return; }
     DB.recipes = (res.data||[]).map(function(row) {
       return {
@@ -812,7 +814,7 @@ async function deleteRecipeFromSupabase(id) {
 async function loadDishes() {
   if(window.KC_DEMO){ return; }
   try {
-    var res = await supabaseClient.from('dishes').select('*').order('name', {ascending:true});
+    var res = await supabaseClient.from('dishes').select('*').order('name', {ascending:true}).range(0, 4999);
     if (res.error) { console.error('loadDishes:', res.error); return; }
     DB.dishes = (res.data||[]).map(function(row) {
       return {
@@ -941,7 +943,7 @@ async function loadDishAllergenOverrides() {
 async function loadMenus() {
   if(window.KC_DEMO){ return; }
   try {
-    var res = await supabaseClient.from('menus').select('*').order('name', {ascending:true});
+    var res = await supabaseClient.from('menus').select('*').order('name', {ascending:true}).range(0, 4999);
     if (res.error) { console.error('loadMenus:', res.error); return; }
     DB.menus = (res.data||[]).map(function(row) {
       return {
