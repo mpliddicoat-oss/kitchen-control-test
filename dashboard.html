@@ -8062,6 +8062,40 @@ var _impIngHeaders = [];
 var _impIngRows = [];
 var _impIngPreview = null; // built by impIngBuildPreview(), consumed by the review step + commit
 
+// Auto-suggest column mapping for both import wizards. Scores every
+// (field, header) pair across ALL fields at once, rather than guessing
+// each field in isolation, so a header that clearly belongs to one field
+// (e.g. "Unit Cost") can't get stolen by a looser match on another (e.g.
+// "Unit") -- a real full-header match always wins before a merely-plausible
+// partial one is even considered, and once a header is claimed it's off
+// the table for every other field.
+function guessColumnMapping(fields, synonyms, headers){
+  function clean(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim(); }
+  var cleanHeaders = headers.map(clean);
+  var candidates = [];
+  fields.forEach(function(f){
+    var terms = [f.label].concat(synonyms[f.key] || []);
+    terms.forEach(function(term, termIdx){
+      var t = clean(term);
+      if(!t) return;
+      var re = new RegExp('\\b'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b','i');
+      cleanHeaders.forEach(function(ch, hIdx){
+        if(!ch) return;
+        if(ch===t) candidates.push({ field:f.key, hIdx:hIdx, tier:0, termIdx:termIdx });
+        else if(re.test(ch)) candidates.push({ field:f.key, hIdx:hIdx, tier:1, termIdx:termIdx });
+      });
+    });
+  });
+  candidates.sort(function(a,b){ return a.tier-b.tier || a.termIdx-b.termIdx; });
+  var mapping = {}, usedHeaders = {};
+  candidates.forEach(function(c){
+    if(mapping[c.field] || usedHeaders[c.hIdx]) return;
+    mapping[c.field] = headers[c.hIdx];
+    usedHeaders[c.hIdx] = true;
+  });
+  return mapping;
+}
+
 var IMP_ING_FIELDS = [
   { key:'name', label:'Name', required:true },
   { key:'brand', label:'Brand' },
@@ -8076,6 +8110,21 @@ var IMP_ING_FIELDS = [
   { key:'shelfLifeValue', label:'Shelf Life' },
   { key:'shelfLifeUnit', label:'Shelf Life Unit' }
 ];
+
+var IMP_ING_SYNONYMS = {
+  name: ['item name','product name','ingredient name','product','ingredient','item','title','description'],
+  brand: ['brand','manufacturer','make'],
+  category: ['category','type','group','classification'],
+  supplierName: ['supplier name','vendor name','supplier','vendor'],
+  supplierCode: ['supplier code','vendor code','product code','item code','sku','code'],
+  packSize: ['pack size','case size','pack qty','pack quantity','case qty','qty','quantity'],
+  packCost: ['pack cost','pack price','case cost','case price','unit cost','cost price','price','cost'],
+  unit: ['unit of measure','uom','unit measure','measure','unit'],
+  fullIngredients: ['full ingredients list','ingredients statement','ingredients list','ingredients'],
+  notes: ['notes','comments','remarks'],
+  shelfLifeValue: ['shelf life days','shelf life'],
+  shelfLifeUnit: ['shelf life unit']
+};
 
 function openImportIngredientsModal(){
   if(!canEdit()){ alert('Only owners, head chefs and sous chefs can import ingredients.'); return; }
@@ -8133,15 +8182,11 @@ function impIngRenderMapping(){
   var headerOptions = '<option value="">-- Don\'t import --</option>' +
     _impIngHeaders.map(function(h){ return '<option value="'+esc(h)+'">'+esc(h)+'</option>'; }).join('');
 
-  // Best-effort auto-suggest: match KC field labels against the file's own
-  // headers so a well-labelled export (including our own) pre-fills itself.
-  function guessFor(field){
-    var lower = field.label.toLowerCase();
-    var found = _impIngHeaders.find(function(h){ return h.toLowerCase().trim()===lower; });
-    if(found) return found;
-    found = _impIngHeaders.find(function(h){ return h.toLowerCase().indexOf(lower)>=0; });
-    return found || '';
-  }
+  // Best-effort auto-suggest: match KC fields against the file's own
+  // headers (via label + common synonyms from other systems) so a
+  // well-labelled export -- including a foreign one -- pre-fills itself.
+  var _impIngGuesses = guessColumnMapping(IMP_ING_FIELDS, IMP_ING_SYNONYMS, _impIngHeaders);
+  function guessFor(field){ return _impIngGuesses[field.key] || ''; }
 
   var rowsHtml = IMP_ING_FIELDS.map(function(f){
     var guess = guessFor(f);
@@ -8574,6 +8619,17 @@ var IMP_REC_FIELDS = [
   { key:'steps', label:'Method / Steps' }
 ];
 
+var IMP_REC_SYNONYMS = {
+  recipeName: ['recipe name','dish name','recipe','dish'],
+  componentName: ['ingredient name','component name','ingredient','component','item name','item'],
+  qty: ['quantity','qty','amount'],
+  unit: ['unit of measure','uom','unit measure','measure','unit'],
+  category: ['category','type','group'],
+  yieldQty: ['yield quantity','yield qty','yield amount','batch yield','yield'],
+  yieldUnit: ['yield unit'],
+  steps: ['method steps','instructions','procedure','directions','method','steps','step']
+};
+
 function openImportRecipesModal(){
   if(!canEdit()){ alert('Only owners, head chefs and sous chefs can import recipes.'); return; }
   resetImportRecipesModal();
@@ -8627,14 +8683,8 @@ function impRecRenderMapping(){
   hide('imp-rec-upload');
   var headerOptions = '<option value="">-- Don\'t import --</option>' +
     _impRecHeaders.map(function(h){ return '<option value="'+esc(h)+'">'+esc(h)+'</option>'; }).join('');
-  function guessFor(field){
-    var lower = field.label.toLowerCase();
-    var found = _impRecHeaders.find(function(h){ return h.toLowerCase().trim()===lower; });
-    if(found) return found;
-    var firstWord = lower.split(' ')[0];
-    found = _impRecHeaders.find(function(h){ return h.toLowerCase().indexOf(firstWord)>=0; });
-    return found || '';
-  }
+  var _impRecGuesses = guessColumnMapping(IMP_REC_FIELDS, IMP_REC_SYNONYMS, _impRecHeaders);
+  function guessFor(field){ return _impRecGuesses[field.key] || ''; }
   var rowsHtml = IMP_REC_FIELDS.map(function(f){
     var guess = guessFor(f);
     return '<div class="fr" style="align-items:center;margin-bottom:8px">'+
