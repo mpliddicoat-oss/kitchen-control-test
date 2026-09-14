@@ -2131,6 +2131,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
       <div><h1>Recipes</h1><div class="ph-sub">Scalable recipes with live costing and allergens</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-outline" onclick="openRecipeScanModal()">&#128248; Import Recipe</button>
+        <button class="btn btn-outline" onclick="openImportRecipesModal()">&#128229; Import Recipes (Spreadsheet)</button>
         <button class="btn btn-green" onclick="recNew()">+ New Recipe</button>
       </div>
     </div>
@@ -8541,6 +8542,271 @@ async function impIngCommit(){
 }
 
 // ============================================================
+// BULK RECIPE IMPORT
+// A second, separate entry point from the AI recipe scan above -- this
+// one is for a STRUCTURED spreadsheet export (one row per recipe
+// ingredient line, the natural shape a normalized recipe-costing tool
+// exports), not a single messy document. Deliberately doesn't try to
+// parse a free-text ingredients blob -- that's what the AI scan already
+// does well, so a single-row-per-recipe export with everything crammed
+// into one cell should go through "Import Recipe" instead.
+// ============================================================
+var _impRecHeaders = [];
+var _impRecRows = [];
+var _impRecPreview = null;
+
+var IMP_REC_FIELDS = [
+  { key:'recipeName', label:'Recipe Name', required:true },
+  { key:'componentName', label:'Ingredient / Component Name', required:true },
+  { key:'qty', label:'Quantity' },
+  { key:'unit', label:'Unit' },
+  { key:'category', label:'Category' },
+  { key:'yieldQty', label:'Yield Quantity' },
+  { key:'yieldUnit', label:'Yield Unit' },
+  { key:'steps', label:'Method / Steps' }
+];
+
+function openImportRecipesModal(){
+  if(!canEdit()){ alert('Only owners, head chefs and sous chefs can import recipes.'); return; }
+  resetImportRecipesModal();
+  el('import-recipes-modal').classList.add('open');
+}
+function closeImportRecipesModal(){
+  el('import-recipes-modal').classList.remove('open');
+}
+function resetImportRecipesModal(){
+  _impRecHeaders = []; _impRecRows = []; _impRecPreview = null;
+  var fileInput = el('imp-rec-file-input'); if(fileInput) fileInput.value = '';
+  show('imp-rec-upload'); hide('imp-rec-mapping'); hide('imp-rec-review'); hide('imp-rec-done');
+  el('imp-rec-actions-mapping').style.display = 'none';
+  el('imp-rec-actions-review').style.display = 'none';
+  el('imp-rec-actions-done').style.display = 'none';
+}
+
+function handleImportRecipesUpload(input){
+  var file = input.files[0];
+  if(!file) return;
+  if(typeof XLSX === 'undefined'){
+    alert('The spreadsheet reader isn\'t available right now (couldn\'t load it). Please check your connection and try again.');
+    return;
+  }
+  var reader = new FileReader();
+  reader.onerror = function(){ alert('Couldn\'t read that file.'); };
+  reader.onload = function(e){
+    try{
+      var wb = XLSX.read(e.target.result, { type:'array' });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:false, defval:'' });
+      while(rows.length && rows[rows.length-1].every(function(c){ return String(c||'').trim()===''; })) rows.pop();
+      if(rows.length < 2){ alert('That file doesn\'t have any data rows below the header.'); return; }
+      var headers = rows[0].map(function(h){ return String(h||'').trim(); });
+      var dataRows = rows.slice(1).map(function(r){
+        var obj = {};
+        headers.forEach(function(h, i){ obj[h] = r[i]!=null ? String(r[i]) : ''; });
+        return obj;
+      });
+      _impRecHeaders = headers;
+      _impRecRows = dataRows;
+      impRecRenderMapping();
+    }catch(err){
+      alert('Couldn\'t read that file: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function impRecRenderMapping(){
+  hide('imp-rec-upload');
+  var headerOptions = '<option value="">-- Don\'t import --</option>' +
+    _impRecHeaders.map(function(h){ return '<option value="'+esc(h)+'">'+esc(h)+'</option>'; }).join('');
+  function guessFor(field){
+    var lower = field.label.toLowerCase();
+    var found = _impRecHeaders.find(function(h){ return h.toLowerCase().trim()===lower; });
+    if(found) return found;
+    var firstWord = lower.split(' ')[0];
+    found = _impRecHeaders.find(function(h){ return h.toLowerCase().indexOf(firstWord)>=0; });
+    return found || '';
+  }
+  var rowsHtml = IMP_REC_FIELDS.map(function(f){
+    var guess = guessFor(f);
+    return '<div class="fr" style="align-items:center;margin-bottom:8px">'+
+      '<div class="fg" style="flex:0 0 220px"><label style="margin-bottom:0">'+esc(f.label)+(f.required?' <span style="color:#dc2626">*</span>':'')+'</label></div>'+
+      '<div class="fg" style="flex:1"><select id="imp-rec-map-'+f.key+'" onchange="impRecUpdatePreview()">'+
+        headerOptions.replace('value="'+esc(guess)+'"', 'value="'+esc(guess)+'" selected')+
+      '</select></div>'+
+    '</div>';
+  }).join('');
+
+  el('imp-rec-mapping').innerHTML =
+    '<p style="color:var(--muted);font-size:13px;margin-bottom:6px">This is for a structured export -- one row per recipe ingredient, with the recipe name repeated on each of its rows. If your file has one row per recipe with everything in one text cell, use "Import Recipe" instead and paste or upload it there.</p>'+
+    '<p style="color:var(--muted);font-size:13px;margin-bottom:14px"><strong>Recipe Name</strong> and <strong>Ingredient / Component Name</strong> are required -- rows sharing the same Recipe Name are grouped into one recipe.</p>'+
+    rowsHtml+
+    '<h4 style="font-size:13px;margin:16px 0 8px;color:var(--dark)">Preview (first 5 rows)</h4>'+
+    '<div id="imp-rec-preview-table" style="overflow-x:auto"></div>';
+
+  show('imp-rec-mapping');
+  el('imp-rec-actions-mapping').style.display = 'flex';
+  impRecUpdatePreview();
+}
+
+function impRecGetMapping(){
+  var m = {};
+  IMP_REC_FIELDS.forEach(function(f){
+    var sel = el('imp-rec-map-'+f.key);
+    m[f.key] = sel ? sel.value : '';
+  });
+  return m;
+}
+
+function impRecUpdatePreview(){
+  var preview = document.getElementById('imp-rec-preview-table');
+  if(!preview) return;
+  var mapping = impRecGetMapping();
+  var cols = IMP_REC_FIELDS.filter(function(f){ return mapping[f.key]; });
+  if(!cols.length){ preview.innerHTML = '<p style="color:var(--muted);font-size:12px">Map some fields above to see a preview.</p>'; return; }
+  var sampleRows = _impRecRows.slice(0, 5);
+  preview.innerHTML = '<table style="width:100%;font-size:12px;border-collapse:collapse">'+
+    '<tr>'+cols.map(function(f){ return '<th style="text-align:left;padding:4px 8px;border-bottom:2px solid var(--border,#e5e7eb)">'+esc(f.label)+'</th>'; }).join('')+'</tr>'+
+    sampleRows.map(function(row){
+      return '<tr>'+cols.map(function(f){ return '<td style="padding:4px 8px;border-bottom:1px solid var(--border,#e5e7eb)">'+esc((row[mapping[f.key]]||'').toString())+'</td>'; }).join('')+'</tr>';
+    }).join('')+
+    '</table>';
+}
+
+// Groups flat rows into one object per distinct (normalized) Recipe
+// Name -- recipe-level fields (category/yield/steps) take the first
+// non-blank value seen across that recipe's rows, since they're
+// typically repeated identically or only present on one row.
+function impRecGroupRows(mapping){
+  var groups = {}, order = [];
+  _impRecRows.forEach(function(row){
+    var rawName = mapping.recipeName ? (row[mapping.recipeName]||'').trim() : '';
+    if(!rawName) return;
+    var key = normalizeMatchText(rawName);
+    if(!groups[key]){
+      groups[key] = { name: tc(rawName), category:'', yieldQty:'', yieldUnit:'', steps:[], lines:[] };
+      order.push(key);
+    }
+    var g = groups[key];
+    if(!g.category && mapping.category) g.category = (row[mapping.category]||'').trim();
+    if(!g.yieldQty && mapping.yieldQty) g.yieldQty = (row[mapping.yieldQty]||'').trim();
+    if(!g.yieldUnit && mapping.yieldUnit) g.yieldUnit = (row[mapping.yieldUnit]||'').trim();
+    if(mapping.steps){
+      var stepText = (row[mapping.steps]||'').trim();
+      if(stepText && g.steps.indexOf(stepText)<0) g.steps.push(stepText);
+    }
+    var compName = mapping.componentName ? (row[mapping.componentName]||'').trim() : '';
+    if(compName){
+      g.lines.push({
+        name: compName,
+        qty: mapping.qty ? (parseFloat(row[mapping.qty])||0) : 0,
+        unit: mapping.unit ? ((row[mapping.unit]||'').trim() || 'g') : 'g'
+      });
+    }
+  });
+  return order.map(function(k){ return groups[k]; });
+}
+
+// Reuses matchComponentByName's existing ingredient -> recipe -> yield
+// cascade directly -- unresolved lines are kept (not dropped), exactly
+// matching how recSave() already tolerates unresolved _scannedName
+// components today, so they render as the same "Missing" badges a
+// chef already knows from the AI recipe scan.
+function impRecResolveComponents(group){
+  return group.lines.map(function(line){
+    var m = matchComponentByName(line.name);
+    if(m) return { type:m.type, id:m.item.id, qty:line.qty, unit:line.unit };
+    return { type:'ingredient', id:'', qty:line.qty, unit:line.unit, _scannedName:line.name };
+  });
+}
+
+function impRecBuildPreview(){
+  var mapping = impRecGetMapping();
+  var groups = impRecGroupRows(mapping);
+  var recipes = groups.map(function(g){
+    var components = impRecResolveComponents(g);
+    var unresolvedCount = components.filter(function(c){ return !c.id; }).length;
+    return {
+      name:g.name, category:g.category, yieldQty:parseFloat(g.yieldQty)||1, yieldUnit:g.yieldUnit||'portions',
+      steps:g.steps, components:components, unresolvedCount:unresolvedCount
+    };
+  });
+  var ready = recipes.filter(function(r){ return r.unresolvedCount===0 && r.components.length>0; });
+  var needsReview = recipes.filter(function(r){ return r.unresolvedCount>0 || r.components.length===0; });
+  _impRecPreview = { ready:ready, needsReview:needsReview };
+  return _impRecPreview;
+}
+
+function impRecShowReview(){
+  if(!el('imp-rec-map-recipeName').value || !el('imp-rec-map-componentName').value){
+    alert('Please map both Recipe Name and Ingredient / Component Name before continuing.'); return;
+  }
+  var p = impRecBuildPreview();
+  function listHtml(items, renderRow){
+    var shown = items.slice(0, 20);
+    var html = '<ul style="margin:6px 0 0 18px;font-size:12px;color:var(--muted)">'+shown.map(renderRow).join('')+'</ul>';
+    if(items.length > 20) html += '<p style="font-size:12px;color:var(--muted);margin-top:4px">...and '+(items.length-20)+' more</p>';
+    return html;
+  }
+  el('imp-rec-review').innerHTML =
+    '<div style="background:#eff6ff;color:#1e40af;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">'+p.ready.length+' recipe'+(p.ready.length===1?'':'s')+' ready to import -- every ingredient matched'+
+      (p.ready.length ? listHtml(p.ready, function(r){ return '<li>'+esc(r.name)+' ('+r.components.length+' ingredients)</li>'; }) : '')+
+    '</div>'+
+    (p.needsReview.length ? '<div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:10px 12px;font-size:13px;font-weight:600">'+p.needsReview.length+' recipe'+(p.needsReview.length===1?'':'s')+' will still be created, but need ingredient review after import'+
+      listHtml(p.needsReview, function(r){ return '<li>'+esc(r.name)+' -- '+r.unresolvedCount+' of '+r.components.length+' ingredient'+(r.components.length===1?'':'s')+' not matched</li>'; })+
+    '</div>' : '');
+
+  hide('imp-rec-mapping'); show('imp-rec-review');
+  el('imp-rec-actions-mapping').style.display = 'none';
+  el('imp-rec-actions-review').style.display = 'flex';
+}
+
+function impRecBackToMapping(){
+  hide('imp-rec-review'); show('imp-rec-mapping');
+  el('imp-rec-actions-review').style.display = 'none';
+  el('imp-rec-actions-mapping').style.display = 'flex';
+}
+
+async function impRecCommit(){
+  var p = _impRecPreview || impRecBuildPreview();
+  var btn = el('imp-rec-actions-review') ? el('imp-rec-actions-review').querySelector('.btn-green') : null;
+  if(btn){ btn.disabled = true; btn.textContent = 'Importing...'; }
+  try{
+    var all = p.ready.concat(p.needsReview);
+    for(var i=0;i<all.length;i++){
+      var r = all[i];
+      var newRec = {
+        id: uid(), name:r.name, category:r.category||'', portions:r.yieldQty||1, yieldQty:r.yieldQty||1,
+        yieldUnit:r.yieldUnit||'portions', steps:r.steps||[], method:(r.steps||[]).join('\n'),
+        components:r.components, shelfLifeValue:null, shelfLifeUnit:'days'
+      };
+      DB.recipes.push(newRec);
+      if(!window.KC_DEMO){
+        var newId = await saveRecipeToSupabase(newRec);
+        if(newId && newId!==newRec.id) newRec.id = newId;
+      }
+    }
+    save(); dashUpdate();
+    if(el('recipes') && el('recipes').classList.contains('active') && typeof recList==='function') recList();
+
+    el('imp-rec-done').innerHTML =
+      '<div style="text-align:center;padding:10px 0 4px">'+
+        '<div style="font-size:40px;margin-bottom:10px">&#10003;</div>'+
+        '<p style="font-size:14px;color:var(--dark);font-weight:600;margin-bottom:6px">Import complete</p>'+
+        '<p style="font-size:13px;color:var(--muted)">'+all.length+' recipe'+(all.length===1?'':'s')+' imported'+(p.needsReview.length?' ('+p.needsReview.length+' need ingredient review -- look for the Missing badges)':'')+'</p>'+
+      '</div>';
+    hide('imp-rec-review'); show('imp-rec-done');
+    el('imp-rec-actions-review').style.display = 'none';
+    el('imp-rec-actions-done').style.display = 'flex';
+  }catch(e){
+    console.error('impRecCommit failed:', e);
+    alert('Something went wrong during import. Nothing that failed to save was lost from your file -- please try again.');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '✓ Import'; }
+  }
+}
+
+// ============================================================
 // RECIPE IMPORT - Gemini Vision via Vercel serverless function
 // Parses a photo/PDF/pasted-text recipe, matches ingredients against
 // DB.ingredients, then hands the whole thing to the normal recipe form
@@ -9205,6 +9471,45 @@ async function scanIngredientText(file) {
     <div id="imp-ing-actions-done" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
       <button class="btn btn-green" onclick="closeImportIngredientsModal();go('ingredients')">Go to Ingredients</button>
       <button class="btn btn-grey" onclick="closeImportIngredientsModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT RECIPES MODAL -->
+<div class="invoice-modal" id="import-recipes-modal" onclick="if(event.target===this)closeImportRecipesModal()">
+  <div class="invoice-box wizard-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h2 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">📥 Import Recipes (Spreadsheet)</h2>
+      <button onclick="closeImportRecipesModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);line-height:1;">&times;</button>
+    </div>
+
+    <div id="imp-rec-upload" style="text-align:center;padding:20px 0;">
+      <div style="font-size:48px;margin-bottom:12px;">📊</div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">Upload a structured spreadsheet export — one row per recipe ingredient, with the recipe name repeated on each of its rows.</p>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px;">Got one row per recipe with everything in a single text cell instead? Use <strong>Import Recipe</strong> (photo/paste) rather than this.</p>
+      <input type="file" id="imp-rec-file-input" accept=".csv,.xlsx,.xls,.ods" style="display:none" onchange="handleImportRecipesUpload(this)">
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-green" onclick="document.getElementById('imp-rec-file-input').click()">📄 Choose File</button>
+        <button class="btn btn-grey" onclick="closeImportRecipesModal()">Cancel</button>
+      </div>
+    </div>
+
+    <div id="imp-rec-mapping" style="display:none;"></div>
+    <div id="imp-rec-review" style="display:none;"></div>
+    <div id="imp-rec-done" style="display:none;"></div>
+
+    <div id="imp-rec-actions-mapping" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="impRecShowReview()">Continue → Review</button>
+      <button class="btn btn-grey" onclick="closeImportRecipesModal()">Cancel</button>
+    </div>
+    <div id="imp-rec-actions-review" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="impRecCommit()">✓ Import</button>
+      <button class="btn btn-outline" onclick="impRecBackToMapping()">← Back</button>
+      <button class="btn btn-grey" onclick="closeImportRecipesModal()">Cancel</button>
+    </div>
+    <div id="imp-rec-actions-done" style="display:none;gap:8px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-green" onclick="closeImportRecipesModal();go('recipes')">Go to Recipes</button>
+      <button class="btn btn-grey" onclick="closeImportRecipesModal()">Close</button>
     </div>
   </div>
 </div>
