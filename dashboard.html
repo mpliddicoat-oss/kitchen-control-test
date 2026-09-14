@@ -7691,8 +7691,15 @@ async function settingsResetPassword(){
 // "Kitchen Control ID" column carries the real id so re-uploading your
 // own export through the import wizard can be recognised as an update
 // rather than creating duplicates.
+// (x||[]) only guards a falsy value -- if a field ever comes back truthy
+// but not actually an array (a real risk for jsonb/array columns that
+// have shifted shape over time, or legacy rows saved before a field
+// existed), .map()/.join() on it throws and the whole export fails with
+// no indication why. Every array-shaped field below goes through this
+// instead so one malformed row can't take down the entire export.
+function asArr(x){ return Array.isArray(x) ? x : []; }
 function exportFormatAllergens(ids){
-  ids = ids || [];
+  ids = asArr(ids);
   if(!ids.length || (ids.length===1 && ids[0]==='none')) return 'None';
   return ids.map(function(id){
     var a = ALLERGENS.find(function(x){ return x.id===id; });
@@ -7707,10 +7714,10 @@ function exportComponentName(c){
   return typeLabel+': '+name+' ('+(c.qty||'')+' '+(c.unit||'')+')';
 }
 function exportFormatComponents(components){
-  return (components||[]).filter(function(c){ return c.id || c._scannedName; }).map(exportComponentName).join('; ');
+  return asArr(components).filter(function(c){ return c && (c.id || c._scannedName); }).map(exportComponentName).join('; ');
 }
 function exportFormatDishes(dishLines){
-  return (dishLines||[]).map(function(l){
+  return asArr(dishLines).map(function(l){
     var d = byId(DB.dishes, l.dishId);
     return (d?d.name:'(unknown)')+' (£'+(parseFloat(l.sell)||0).toFixed(2)+')';
   }).join('; ');
@@ -7728,7 +7735,7 @@ function exportBuildWorkbook(){
       'Name': s.name||'', 'Account Number': s.account||'', 'Contact Name': s.contact||'',
       'Phone': s.phone||'', 'Email': s.email||'', 'Website': s.web||'', 'Address': s.address||'',
       'Notes': s.notes||'', 'Order Cutoff': s.cutoff||'', 'Min Order': s.minOrder||'',
-      'Delivery Days': (s.deliveryDays||[]).join(', '),
+      'Delivery Days': asArr(s.deliveryDays).join(', '),
       'Kitchen Control ID': s.id
     };
   });
@@ -7771,7 +7778,7 @@ function exportBuildWorkbook(){
       'Name': r.name||'', 'Category': r.category||'',
       'Yield Qty': r.yieldQty||'', 'Yield Unit': r.yieldUnit||'',
       'Components': exportFormatComponents(r.components),
-      'Steps': (r.steps||[]).map(function(s,i){ return (i+1)+'. '+s; }).join('\n'),
+      'Steps': asArr(r.steps).map(function(s,i){ return (i+1)+'. '+s; }).join('\n'),
       'Allergens': exportFormatAllergens(r.allergens),
       'Notes': r.notes||'',
       'Shelf Life': r.shelfLifeValue||'', 'Shelf Life Unit': r.shelfLifeUnit||'',
@@ -7781,7 +7788,7 @@ function exportBuildWorkbook(){
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(recipeRows), 'Recipes');
 
   var dishRows = (DB.dishes||[]).map(function(d){
-    var overrides = DB.manual[d.id]||[];
+    var overrides = asArr(DB.manual[d.id]);
     return {
       'Name': d.name||'', 'Category': d.category||'',
       'Components': exportFormatComponents(d.components),
