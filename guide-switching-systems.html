@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Switching From Another System: How Kitchen Control Helps | Kitchen Control</title>
+<meta name="description" content="Worried about losing your ingredients and recipes if you switch? Kitchen Control's Import Data wizard brings in ingredients, yields, recipes and dishes from a spreadsheet exported by any system — and you can export everything back out at any time.">
+<meta name="keywords" content="switching kitchen software, migrate recipe data, import ingredients spreadsheet, data migration kitchen software, allergen management software, kitchen management software, menu costing software, Natasha's Law compliance, HACCP software, food safety software, restaurant management software, catering software, food cost software, back of house software, kitchen software UK, chef software, hospitality software UK">
+<link rel="canonical" href="https://www.kitchen-control.co.uk/guide-switching-systems">
+<meta property="og:title" content="Switching From Another System: How Kitchen Control Helps">
+<meta property="og:description" content="Worried about losing your ingredients and recipes if you switch? Kitchen Control's Import Data wizard brings in ingredients, yields, recipes and dishes from a spreadsheet exported by any system.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://www.kitchen-control.co.uk/guide-switching-systems">
+<meta property="og:image" content="https://www.kitchen-control.co.uk/images/og-image.png">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RDBRZY77BD"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-RDBRZY77BD');
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --paper: #F7F5F1;
+    --paper-dim: #EFEBE2;
+    --navy: #2A3950;
+    --navy-soft: #5B6779;
+    --green: #97C25A;
+    --green-dark: #75973F;
+    --grey: #8C9199;
+    --line: #DAD5C9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper);
+    color:var(--navy);
+    font-family:'DM Mono', monospace;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+  }
+  .mono{font-family:'DM Mono', monospace;}
+  .display{font-family:'Oswald', sans-serif; font-weight:700; letter-spacing:-0.01em; text-transform:uppercase;}
+  a{color:inherit;}
+
+  .wrap{max-width:820px; margin:0 auto; padding:0 24px;}
+
+  header{border-bottom:1px solid var(--line); padding:20px 0;}
+  header .wrap{display:flex; justify-content:space-between; align-items:center; max-width:820px;}
+  .logo{
+    font-family:'Oswald', sans-serif; font-weight:700; font-size:1.05rem; letter-spacing:0.02em;
+    text-transform:uppercase; color:var(--navy); text-decoration:none;
+  }
+  .logo span{color:var(--green-dark);}
+  .header-cta{
+    font-family:'DM Mono', monospace; font-size:0.75rem; font-weight:500; color:var(--navy);
+    text-decoration:none; border:1px solid var(--navy); padding:9px 14px; border-radius:2px;
+  }
+
+  .hero{padding:56px 0 36px;}
+  .eyebrow{
+    font-family:'DM Mono', monospace; font-size:0.74rem; text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--green-dark); margin-bottom:16px; display:flex; align-items:center; gap:9px;
+  }
+  .eyebrow::before{content:''; width:7px; height:7px; background:var(--green-dark); border-radius:50%; display:inline-block;}
+  h1{
+    font-family:'Oswald', sans-serif; font-weight:700; text-transform:uppercase;
+    font-size:clamp(1.8rem, 4.2vw, 2.6rem); line-height:1.1; margin-bottom:18px; max-width:19ch; color:var(--navy);
+  }
+  .lede{font-size:1.02rem; color:var(--navy-soft); max-width:60ch; margin-bottom:12px;}
+  .byline{font-family:'DM Mono', monospace; font-size:0.76rem; color:var(--grey); margin-top:20px;}
+
+  article{padding:8px 0 48px;}
+  article h2{
+    font-family:'Oswald', sans-serif; font-weight:700; text-transform:uppercase;
+    font-size:1.3rem; margin:44px 0 14px; color:var(--navy);
+  }
+  article h2:first-child{margin-top:0;}
+  article p{font-size:0.94rem; color:var(--navy-soft); margin-bottom:16px; max-width:66ch;}
+  article strong{color:var(--navy);}
+  article ol, article ul{margin:0 0 18px 20px; color:var(--navy-soft); font-size:0.94rem;}
+  article li{margin-bottom:8px;}
+
+  .check-box{background:#fff; border:1px solid var(--line); padding:24px 26px; margin:28px 0;}
+  .check-box .tag{
+    font-family:'Oswald', sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--green-dark); margin-bottom:12px; font-weight:600; display:block;
+  }
+  .check-row{display:flex; gap:10px; align-items:flex-start; padding:8px 0; font-size:0.9rem; color:var(--navy-soft);}
+  .check-row .tick{color:var(--green-dark); font-weight:700; flex-shrink:0;}
+
+  .order-box{background:#fff; border:1px solid var(--line); padding:24px 26px; margin:28px 0;}
+  .order-box .tag{
+    font-family:'Oswald', sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--green-dark); margin-bottom:14px; font-weight:600; display:block;
+  }
+  .order-row{display:flex; gap:14px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--paper-dim);}
+  .order-row:last-child{border-bottom:none;}
+  .order-num{
+    font-family:'Oswald', sans-serif; font-weight:700; font-size:0.85rem; color:#fff; background:var(--green-dark);
+    width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .order-row div.txt strong{display:block; font-size:0.92rem; color:var(--navy); margin-bottom:2px;}
+  .order-row div.txt span{font-size:0.86rem; color:var(--navy-soft);}
+
+  .honest-box{background:var(--paper-dim); border-left:3px solid var(--navy); padding:20px 22px; margin:28px 0; font-size:0.9rem;}
+  .honest-box .tag{display:block; font-family:'Oswald', sans-serif; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--navy); margin-bottom:8px; font-weight:600;}
+  .honest-box ul{margin:10px 0 0 20px;}
+  .honest-box li{margin-bottom:8px;}
+
+  .product-note{
+    background:#fff; border:1px solid var(--line); border-left:3px solid var(--green-dark);
+    padding:22px 24px; margin:36px 0 8px;
+  }
+  .product-note .tag{
+    font-family:'Oswald', sans-serif; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--green-dark); margin-bottom:10px; font-weight:600; display:block;
+  }
+  .product-note p{margin-bottom:14px;}
+  .btn-primary{
+    font-family:'DM Mono', monospace; font-weight:500; font-size:0.82rem;
+    background:var(--navy); color:var(--paper);
+    padding:12px 20px; text-decoration:none; border-radius:2px; display:inline-block;
+  }
+  .product-note .price-tag{font-family:'DM Mono', monospace; font-size:0.78rem; color:var(--grey); margin-top:12px;}
+
+  footer{padding:28px 0; font-family:'DM Mono', monospace; font-size:0.72rem; color:var(--grey); border-top:1px solid var(--line);}
+  footer .wrap{max-width:820px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a href="/" class="logo">Kitchen<span>·</span>Control</a>
+    <a href="https://www.kitchen-control.co.uk/" class="header-cta">FIND OUT MORE</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Guide — Switching Systems</div>
+    <h1>Bring Your Ingredients and Recipes With You</h1>
+    <p class="lede">The biggest reason kitchens put off switching software isn't the software — it's the thought of re-typing hundreds of ingredients and recipes from scratch. Kitchen Control's Import Data feature is built to remove that excuse entirely.</p>
+    <div class="byline mono">Kitchen Control · Guides</div>
+  </div>
+</section>
+
+<article>
+  <div class="wrap">
+
+    <h2>Why this exists</h2>
+    <p>We lost a sale to a kitchen with 500 ingredients and 250 recipes already entered on another system. Not because Kitchen Control was the wrong fit — because starting again from zero felt like too big a job to take on. That's a genuine cost, and it's one every kitchen management system creates for itself if it doesn't address it directly.</p>
+    <p>So Kitchen Control has a proper <strong>Import Data</strong> tool, built specifically so you're not typing anything out twice. And because data belonging to you shouldn't only flow one way, there's a matching <strong>Export All Data</strong> button too — your ingredients, yields, recipes, dishes, menus and suppliers, as a spreadsheet you can open anywhere, any time you want it.</p>
+
+    <h2>What you need to bring it across</h2>
+    <p>A spreadsheet — CSV or Excel — exported from whatever you're using now. That's it. Kitchen Control doesn't need it in any particular format: you'll match its columns to the right fields on screen, so it works whether your export calls a column "Item Name," "Product," or just "Name."</p>
+
+    <div class="check-box">
+      <span class="tag">What's automatic</span>
+      <div class="check-row"><span class="tick">✓</span><span>Column matching — Kitchen Control recognises common header names from other systems and pre-fills the mapping for you, so most files need zero manual setup</span></div>
+      <div class="check-row"><span class="tick">✓</span><span>Duplicate detection — a row that looks like something you've already got is flagged, not silently overwritten</span></div>
+      <div class="check-row"><span class="tick">✓</span><span>Ingredient and recipe matching — bring recipes in after their ingredients, and each line is matched to the ingredient it needs automatically</span></div>
+      <div class="check-row"><span class="tick">✓</span><span>A full review screen before anything is written — see exactly what will be created, updated or needs a second look, and back out any time before you confirm</span></div>
+    </div>
+
+    <h2>The order that works best</h2>
+    <p>If you're bringing everything across, importing in this order means each step can match against what you just brought in:</p>
+
+    <div class="order-box">
+      <span class="tag">Settings → Import Data</span>
+      <div class="order-row"><div class="order-num">1</div><div class="txt"><strong>Ingredients</strong><span>The foundation everything else links back to.</span></div></div>
+      <div class="order-row"><div class="order-num">2</div><div class="txt"><strong>Yields</strong><span>Prepped/trimmed costings, each linked to a base ingredient you just imported.</span></div></div>
+      <div class="order-row"><div class="order-num">3</div><div class="txt"><strong>Recipes</strong><span>Built from the ingredients and yields already in the system.</span></div></div>
+      <div class="order-row"><div class="order-num">4</div><div class="txt"><strong>Dishes</strong><span>Your customer-facing menu items, built from recipes, yields and ingredients.</span></div></div>
+    </div>
+
+    <p>You don't have to do all four — import just your ingredients if that's all you need, or only your recipes if your ingredient list is small enough to re-enter by hand. And if a name doesn't quite match anything on the way in, that row is never silently dropped — it's created and clearly flagged, so you can link it up properly afterward instead of losing it.</p>
+
+    <h2>Already just using a spreadsheet?</h2>
+    <p>Even easier — there's no "other system" to export from in the first place. Tidy your existing spreadsheet's headers roughly to match (or don't; the column-matching step handles most of it either way) and upload it directly.</p>
+
+    <h2>What Import Data doesn't try to do</h2>
+    <div class="honest-box">
+      <span class="tag">Worth knowing before you start</span>
+      <ul>
+        <li>Allergen data is never guessed. If a row's allergen information is missing or unclear, that item goes to your Awaiting list for you to confirm — it's never assumed to have no allergens just because the column was blank.</li>
+        <li>It expects one row per item (ingredients, yields) or one row per component line (recipes, dishes) — a single cell with a whole recipe crammed into it needs the separate Import Recipe (photo/paste) tool instead, built for exactly that.</li>
+        <li>It's not a live sync with another system — it's a one-time bring-across. Run it again later if you add more on the old system before fully switching over.</li>
+      </ul>
+    </div>
+
+    <h2>Leaving, or just want a backup?</h2>
+    <p>The same trust runs the other way. <strong>Export All Data</strong> is available any time in Settings, to anyone with access to it — not gated behind a support request, not something you have to ask for. If you ever decide Kitchen Control isn't the right fit, your data leaves with you, not us.</p>
+
+    <div class="product-note">
+      <span class="tag">Try it before you commit anything</span>
+      <p>Import Data is included in every Kitchen Control plan. Export a sample from your current system and see what comes across before you decide.</p>
+      <a href="https://www.kitchen-control.co.uk/" class="btn-primary">START YOUR FREE 30-DAY TRIAL</a>
+      <div class="price-tag">Then £12.99/month. Cancel any time.</div>
+    </div>
+
+  </div>
+</article>
+
+<footer>
+  <div class="wrap" style="margin-bottom:12px;">
+    <a href="/compare-spreadsheets">vs Spreadsheets</a> · <a href="/compare-menuiq">vs MenuIQ</a> · <a href="/compare-jelly">vs Jelly</a> · <a href="/for-independent-businesses">For Independent Businesses</a> · <a href="/for-small-kitchens">For Small Kitchens</a> · <a href="/for-takeaways">For Takeaways</a> · <a href="/for-cafes">For Cafes</a> · <a href="/for-pubs">For Pubs</a> · <a href="/for-outside-catering">For Outside Catering</a> · <a href="/for-food-vans">For Food Vans</a> · <a href="/for-bakeries">For Bakeries</a> · <a href="/for-sandwich-shops">For Sandwich Shops</a> · <a href="/for-cake-makers">For Cake Makers</a> · <a href="/for-ice-cream-shops">For Ice Cream Shops</a> · <a href="/for-private-chefs">For Private Chefs</a> · <a href="/guide-allergen-law">Allergen Law Guide</a> · <a href="/guide-label-printing">Label Printing Guide</a> · <a href="/guide-natashas-law">Natasha's Law Guide</a>
+  </div>
+  <div class="wrap">
+    KITCHEN CONTROL LTD · COMPANIES HOUSE NO. 17239504 · KITCHEN-CONTROL.CO.UK · &copy; 2026
+  </div>
+</footer>
+
+</body>
+</html>
