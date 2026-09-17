@@ -49,7 +49,7 @@
     line-height: 1.7;
     margin-bottom: 12px;
   }
-  a.btn {
+  .btn {
     display: inline-block;
     margin-top: 20px;
     background: #8CC63F;
@@ -57,8 +57,15 @@
     text-decoration: none;
     padding: 12px 28px;
     border-radius: 6px;
+    border: none;
     font-size: 14px;
     font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: default;
   }
   .footer {
     background: #f4f6f8;
@@ -102,12 +109,24 @@
   const SUPABASE_URL = "https://qdvektbnhyfzxuxjhorw.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkdmVrdGJuaHlmenh1eGpob3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MTA2OTMsImV4cCI6MjA5MzQ4NjY5M30.DOo4wLbkQ-uU5ZdOtdRWGWUr3eOJQ7vEutLubCop1Nw";
 
-  async function processUnsubscribe() {
+  let pendingToken = null;
+
+  function showConfirmStep() {
+    const content = document.getElementById("content");
+    content.innerHTML = `
+      <div class="icon">✉️</div>
+      <h1>Unsubscribe from Kitchen Control emails?</h1>
+      <p>Are you sure you want to unsubscribe? You won't receive any further emails from us.</p>
+      <button type="button" class="btn" id="confirm-unsub-btn" onclick="confirmUnsubscribe()">Yes, unsubscribe me</button>
+    `;
+  }
+
+  function init() {
     const content = document.getElementById("content");
     const params  = new URLSearchParams(window.location.search);
     const token   = params.get("token");
 
-    // No token in URL
+    // No token in URL -- nothing to confirm, keep this immediate as before
     if (!token) {
       content.innerHTML = `
         <div class="icon">❌</div>
@@ -117,6 +136,19 @@
       `;
       return;
     }
+
+    // Token present -- wait for explicit confirmation before calling the
+    // RPC, so a security scanner or link-preview bot opening this page
+    // can't silently unsubscribe someone who never clicked anything.
+    pendingToken = token;
+    showConfirmStep();
+  }
+
+  async function confirmUnsubscribe() {
+    const content = document.getElementById("content");
+    const token = pendingToken;
+    const btn = document.getElementById("confirm-unsub-btn");
+    if (btn) { btn.disabled = true; btn.textContent = "Unsubscribing..."; }
 
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/unsubscribe_prospect`, {
@@ -159,7 +191,7 @@
     }
   }
 
-  processUnsubscribe();
+  init();
 </script>
 
 </body>
