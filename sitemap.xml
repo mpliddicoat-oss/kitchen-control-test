@@ -68,7 +68,73 @@
   </url>
 
   <url>
+    <loc>https://www.kitchen-control.co.uk/for-bakeries</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/for-pubs</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/for-cake-makers</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/for-food-vans</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/for-ice-cream-shops</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/for-private-chefs</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/for-sandwich-shops</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/allergen-management-software-uk</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <url>
     <loc>https://www.kitchen-control.co.uk/guide-allergen-law</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/guide-natashas-law</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/guide-label-printing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.kitchen-control.co.uk/guide-switching-systems</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
