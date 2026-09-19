@@ -625,13 +625,16 @@ section { padding: 100px 24px; }
 /* VERTICALS */
 .verticals { background: white; }
 .verticals-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 14px;
   margin-top: 40px;
 }
 .vertical-link {
   display: block;
+  flex: 1 1 200px;
+  max-width: 240px;
   background: var(--cream);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -643,6 +646,7 @@ section { padding: 100px 24px; }
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
 }
 .vertical-link:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); border-color: var(--green); }
+@media (max-width: 640px) { .vertical-link { flex-basis: 100%; max-width: none; } }
 
 /* FOOTER */
 footer {
