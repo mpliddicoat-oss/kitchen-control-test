@@ -4380,7 +4380,7 @@ function compRender(ctx){
     var onQty=arrNm+'['+i+'].qty=this.value;'+calcNm+'();compRenderCost('+q+ctx+q+','+i+')';
     if(comp.type==='recipe'){
       var onChg=arrNm+'['+i+'].id=this.value;compRender('+q+ctx+q+')';
-      var onUnit=arrNm+'['+i+'].unit=this.value;'+calcNm+'()';
+      var onUnit=arrNm+'['+i+'].unit=this.value;'+calcNm+'();compRenderCost('+q+ctx+q+','+i+')';
       var rec=comp.id?byId(DB.recipes,comp.id):null;
       var yUnit=rec?(rec.yieldUnit||'portions'):(comp.unit||'portions');
       html+='<div class="comp-row" style="grid-template-columns:auto 2fr 70px 90px auto 28px">';
@@ -4391,7 +4391,7 @@ function compRender(ctx){
       html+=costStr+'<button class="btn btn-red btn-sm" onclick="'+onRm+'">X</button></div>';
     }else if(comp.type==='yield'){
       var onYChg=arrNm+'['+i+'].id=this.value;'+arrNm+'['+i+'].unit=(byId(DB.yields,this.value)||{unit:'+q+'g'+q+'}).unit;compRender('+q+ctx+q+')';
-      var onUnitY=arrNm+'['+i+'].unit=this.value;'+calcNm+'()';
+      var onUnitY=arrNm+'['+i+'].unit=this.value;'+calcNm+'();compRenderCost('+q+ctx+q+','+i+')';
       html+='<div class="comp-row" style="grid-template-columns:auto 2fr 70px 90px auto 28px">';
       html+='<span class="badge bg-purple">Yield</span>';
       html+='<div id="comp-yld-sel-'+ctx+'-'+i+'"></div>';
@@ -4400,7 +4400,7 @@ function compRender(ctx){
       html+=costStr+'<button class="btn btn-red btn-sm" onclick="'+onRm+'">X</button></div>';
     }else{
       var onIChg=arrNm+'['+i+'].id=this.value;'+arrNm+'['+i+'].unit=byId(DB.ingredients,this.value)?byId(DB.ingredients,this.value).unit:'+q+'g'+q+';compRender('+q+ctx+q+')';
-      var onUnitI=arrNm+'['+i+'].unit=this.value;'+calcNm+'()';
+      var onUnitI=arrNm+'['+i+'].unit=this.value;'+calcNm+'();compRenderCost('+q+ctx+q+','+i+')';
       html+='<div class="comp-row" style="grid-template-columns:auto 2fr 70px 90px auto 28px">';
       html+=comp._scannedName?'<span class="badge" style="background:#fef3c7;color:#92400e">&#9888; Missing</span>':'<span class="badge bg-green">Ingredient</span>';
       html+='<div><div id="comp-ing-sel-'+ctx+'-'+i+'"></div>'+(comp._scannedName?'<div style="font-size:11px;color:#b45309;margin-top:2px">Scanned as: "'+esc(comp._scannedName)+'" — pick a match, or '+(ctx==='rec'?'<a href="javascript:void(0)" onclick="addNewIngredientForRecipeSlot('+i+')" style="color:#b45309;text-decoration:underline">create new ingredient</a>':'create a new ingredient first')+'</div>':'')+'</div>';
