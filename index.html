@@ -337,10 +337,12 @@ section { padding: 100px 24px; }
 .problem { background: white; }
 .problem-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
-  margin-top: 56px;
+  margin: 56px auto 0;
+  max-width: 720px;
 }
+@media (max-width: 640px) { .problem-grid { grid-template-columns: 1fr; } }
 .problem-card {
   background: #fff8f8;
   border: 1px solid #fee2e2;
