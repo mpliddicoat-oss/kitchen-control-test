@@ -7263,10 +7263,20 @@ function settingsRenderSubscription(profile){
   h += '</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-top:5px">Resets ' + nextStr + '</div>';
   h += '</div>';
-  h += '<div style="display:flex;gap:10px;flex-wrap:wrap">';
-  h += '<button class="btn btn-outline" onclick="settingsManageBilling()">Manage Billing →</button>';
-  h += '<button class="btn btn-outline" style="color:#dc2626;border-color:#fecaca" onclick="settingsCancelSubscription()">Cancel Subscription</button>';
-  h += '</div>';
+  // Billing actions are owner-only. This has to be checked here, inside the
+  // render itself, not left to a separate applyRolePermissions() call to
+  // hide afterward — this function rebuilds the buttons from scratch every
+  // time Settings is opened, so anything hidden by an earlier call is back
+  // as soon as this HTML replaces it. (The server independently rejects a
+  // non-owner's cancel/billing request regardless of this — see
+  // cancel-subscription.js's requireOwner check — but the button should
+  // never be shown to click in the first place.)
+  if(canManageBilling()){
+    h += '<div style="display:flex;gap:10px;flex-wrap:wrap">';
+    h += '<button class="btn btn-outline" onclick="settingsManageBilling()">Manage Billing →</button>';
+    h += '<button class="btn btn-outline" style="color:#dc2626;border-color:#fecaca" onclick="settingsCancelSubscription()">Cancel Subscription</button>';
+    h += '</div>';
+  }
   subEl.innerHTML = h;
 }
 
