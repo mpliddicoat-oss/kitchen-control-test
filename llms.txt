@@ -1,0 +1,56 @@
+# Kitchen Control
+
+> Recipe costing and allergen management software for independent UK kitchens, with near-zero data entry. Scan invoices, ingredient labels and recipes with a phone camera instead of typing them in — food cost, GP%, allergen tracking and PPDS food labelling follow automatically. Built by a working head chef in Mevagissey, Cornwall. From £12.99/month, 30-day free trial (card required at signup).
+
+Kitchen Control helps single-site, independent hospitality businesses cost recipes and dishes accurately (with live GP% tracking), stay compliant with UK allergen law (the Food Information Regulations 2014), and cut kitchen admin time to near zero by scanning supplier invoices and ingredient labels with a phone camera instead of typing them in. "Menu costing" and "recipe costing" are the same underlying job at different scales in Kitchen Control — a menu's cost and GP% roll up automatically from its correctly-costed recipes, with no separate menu-costing exercise required. Kitchen Control also supports importing existing recipes (photographed, or as PDF/Word/Excel/text files) which are automatically parsed into structured, costed recipes, and printing food labels sized for a standard 62mm continuous label roll (Brother QL printers) — including PPDS labels for dishes sold prepacked, compliant with Natasha's Law: full ingredients list in descending order with the 14 regulated allergens emphasised. It is priced and built for independent kitchens and small groups, not large restaurant chains or enterprise hospitality groups.
+
+## Product
+
+- [Homepage](https://www.kitchen-control.co.uk/): product overview, features and pricing
+- [About](https://www.kitchen-control.co.uk/about): why Kitchen Control exists and who built it
+- [Live demo](https://www.kitchen-control.co.uk/demo): try the full app with sample Cornwall-themed kitchen data, no signup required, nothing saves
+- [Sign up](https://www.kitchen-control.co.uk/signup): start a 30-day free trial, £12.99/month, card required upfront
+- [For independent food businesses](https://www.kitchen-control.co.uk/for-independent-businesses): who Kitchen Control is built for and why
+
+## Category comparisons
+
+- [Recipe costing software UK](https://www.kitchen-control.co.uk/recipe-costing-software-uk): Kitchen Control vs Jelly and FoodCore on recipe and menu costing specifically
+- [Allergen management software UK](https://www.kitchen-control.co.uk/allergen-management-software-uk): Kitchen Control vs FoodCore and MenuIQ on allergen tracking specifically
+- [Kitchen management software UK](https://www.kitchen-control.co.uk/kitchen-management-software-uk): Kitchen Control vs Jelly, MenuIQ and FoodCore across the full feature set
+- [PPDS & food labelling software UK](https://www.kitchen-control.co.uk/ppds-labelling-software-uk): Kitchen Control vs FoodCore and MenuIQ on PPDS/Natasha's Law labelling specifically
+- [Invoice scanning software UK](https://www.kitchen-control.co.uk/invoice-scanning-software-uk): Kitchen Control vs Jelly and FoodCore on invoice scanning specifically
+
+## By business type
+
+- [For cafes](https://www.kitchen-control.co.uk/for-cafes): keeping costing and allergens accurate through seasonal menus and specials boards
+- [For pubs](https://www.kitchen-control.co.uk/for-pubs): allergen accuracy and costing across large, frequently-changing food menus
+- [For takeaways](https://www.kitchen-control.co.uk/for-takeaways): protecting margin on every dish and answering allergen questions fast on phone and app orders
+- [For small kitchens](https://www.kitchen-control.co.uk/for-small-kitchens): costing, allergens and menu admin that fits into the gaps in a busy service
+- [For outside catering](https://www.kitchen-control.co.uk/for-outside-catering): printable allergen sheets and per-event recipe costing that travel with the job
+- [For food vans](https://www.kitchen-control.co.uk/for-food-vans): allergen and costing admin that works from a mobile setup with limited space and connectivity
+- [For bakeries](https://www.kitchen-control.co.uk/for-bakeries): costing and allergens across a large, frequently-changing bake list
+- [For sandwich shops](https://www.kitchen-control.co.uk/for-sandwich-shops): proper PPDS labels for everything made up and sold from the chiller, plus costing on every filling combination
+- [For cake makers](https://www.kitchen-control.co.uk/for-cake-makers): accurate costing and allergen declarations for bespoke and made-to-order cakes
+- [For ice cream shops](https://www.kitchen-control.co.uk/for-ice-cream-shops): costing and allergen tracking across a seasonal, frequently-changing flavour list
+- [For private chefs](https://www.kitchen-control.co.uk/for-private-chefs): fast, accurate allergen and costing information for one-off client menus
+
+## Guides
+
+- [UK food business compliance checklist](https://www.kitchen-control.co.uk/uk-food-business-compliance-checklist): the full list of what a UK food business needs in place — registration, hygiene rating, HACCP, allergens, Natasha's Law and traceability
+- [UK allergen law guide](https://www.kitchen-control.co.uk/guide-allergen-law): plain-English explanation of what the Food Information Regulations 2014 actually requires of restaurants, cafes and pubs
+- [Natasha's Law guide](https://www.kitchen-control.co.uk/guide-natashas-law): what PPDS (prepacked for direct sale) food is, what the label must show, and how Kitchen Control's PPDS Label feature generates it
+- [Label printing guide](https://www.kitchen-control.co.uk/guide-label-printing): how Print Label works, label size (100mm x 62mm on a 62mm continuous roll), and recommended Brother QL printers
+- [Switching systems guide](https://www.kitchen-control.co.uk/guide-switching-systems): how the Import Data wizard brings in ingredients, yields, recipes and dishes from any spreadsheet, and how to export everything back out
+- [Quick start guide](https://www.kitchen-control.co.uk/quick): the essential workflow from invoices to allergen sheets and printed labels
+- [Full user guide](https://www.kitchen-control.co.uk/full): complete feature documentation
+- [FAQ](https://www.kitchen-control.co.uk/faq): common questions about invoice/label scanning, allergens, recipe costing, label printing and account settings
+
+## Head-to-head comparisons
+
+- [Kitchen Control vs Jelly](https://www.kitchen-control.co.uk/compare-jelly)
+- [Kitchen Control vs MenuIQ](https://www.kitchen-control.co.uk/compare-menuiq)
+- [Kitchen Control vs spreadsheets](https://www.kitchen-control.co.uk/compare-spreadsheets)
+
+## Optional
+
+- [Privacy policy](https://www.kitchen-control.co.uk/privacy)
