@@ -1,6 +1,6 @@
 // /api/scan.js — Kitchen Control label scanning via Gemini
 
-import { requireAuth, getCallerProfile, serviceHeaders } from './_auth.js';
+import { requireAuth, getCallerProfile, getEffectiveSubscriptionStatus, serviceHeaders } from './_auth.js';
 import { isDemoRequest, checkDemoRateLimit } from './_demo.js';
 
 export const config = {
@@ -61,7 +61,10 @@ export default async function handler(req, res) {
     // and 'trialing' because signup writes 'trial' and the Stripe webhook writes
     // 'trialing' — a user may briefly have either before the webhook lands.
     const ALLOWED_SCAN_STATUSES = ['active', 'trialing', 'trial', 'past_due'];
-    const status = profile.subscription_status;
+    // Team members never get their own subscription_status set -- the
+    // company's one subscription, held by the owner, is what actually
+    // governs their access.
+    const status = await getEffectiveSubscriptionStatus(profile);
     if (status && ALLOWED_SCAN_STATUSES.indexOf(status) === -1) {
       return res.status(403).json({ error: 'Active subscription required' });
     }

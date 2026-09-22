@@ -1,6 +1,6 @@
 // /api/cancel-subscription.js
 
-import { requireAuth, getCallerProfile, serviceHeaders } from './_auth.js';
+import { requireAuth, getCallerProfile, requireOwner, serviceHeaders } from './_auth.js';
 import { sendEmail, emailHeader, emailFooter, emailButton, escHtml } from './_email.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -15,6 +15,13 @@ export default async function handler(req, res) {
 
   const profile = await getCallerProfile(user.id);
   if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+  // 2. Only the owner holds the company's subscription — a team member has
+  // no stripe_customer_id of their own, so without this check this endpoint
+  // would silently mark the WRONG account as cancelled (their own row) and
+  // send them a misleading "your subscription is cancelled" email, without
+  // touching the company's actual Stripe subscription at all.
+  if (!requireOwner(profile, res)) return;
 
   console.log('Cancel subscription: user', user.id, 'stripe_customer_id', profile.stripe_customer_id || 'NONE');
 

@@ -65,6 +65,58 @@ export async function getCallerProfile(userId) {
   return (rows && rows[0]) || null;
 }
 
+// Statuses that positively mean "no active subscription". A denylist rather
+// than an allowlist deliberately: a status we don't recognise (a future
+// Stripe status, or a profile predating this column) must fail open, not
+// silently start blocking real customers.
+export const BLOCKED_SUBSCRIPTION_STATUSES = ['incomplete', 'incomplete_expired', 'canceled', 'cancelled', 'unpaid', 'paused'];
+
+/**
+ * Returns the subscription status that should actually govern this caller's
+ * access. Kitchen Control bills one subscription per company (owned by the
+ * owner), not per user — a team member added via accept-invite.js never
+ * gets their own subscription_status written (it's simply never set on that
+ * profile), so checking a non-owner's own row directly always reads NULL
+ * and silently passes every check that treats a falsy status as "allow".
+ * For anyone who isn't the owner, this looks up the company's owner and
+ * uses THEIR status instead — that's the subscription that actually covers
+ * this account.
+ */
+export async function getEffectiveSubscriptionStatus(profile) {
+  if (!profile) return null;
+  if (profile.role === 'owner' || !profile.company_id) return profile.subscription_status;
+
+  try {
+    const companyRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/companies?id=eq.${profile.company_id}&select=owner_id`,
+      { headers: serviceHeaders }
+    );
+    const companyRows = await companyRes.json();
+    const ownerId = companyRows && companyRows[0] && companyRows[0].owner_id;
+    if (!ownerId) return profile.subscription_status;
+
+    const ownerRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${ownerId}&select=subscription_status`,
+      { headers: serviceHeaders }
+    );
+    const ownerRows = await ownerRes.json();
+    const ownerStatus = ownerRows && ownerRows[0] && ownerRows[0].subscription_status;
+    return ownerStatus != null ? ownerStatus : profile.subscription_status;
+  } catch (e) {
+    console.error('getEffectiveSubscriptionStatus error:', e.message);
+    // Can't verify the owner's status — fail open rather than block a team
+    // member over a transient lookup error.
+    return profile.subscription_status;
+  }
+}
+
+/**
+ * True if this status positively means no active subscription.
+ */
+export function isSubscriptionBlocked(status) {
+  return !!(status && BLOCKED_SUBSCRIPTION_STATUSES.indexOf(status) !== -1);
+}
+
 /**
  * Asserts the caller is an owner. Sends 403 and returns false if not.
  */

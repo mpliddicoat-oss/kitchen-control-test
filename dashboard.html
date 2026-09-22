@@ -7942,22 +7942,20 @@ function hideBootLoader(){
   setTimeout(function(){ l.remove(); }, 250);
 }
 
-// Explicit denylist rather than an allowlist, deliberately: a profile whose
-// subscription_status is missing/unknown (e.g. an account created before
-// this column existed, or a status Stripe adds later that we haven't seen
-// yet) must never be locked out by mistake. Only a status we positively know
-// means "no active subscription" blocks access.
-var BLOCKED_SUBSCRIPTION_STATUSES = ['incomplete','incomplete_expired','canceled','cancelled','unpaid','paused'];
-
-// Returns true if the account should be let in. Fails open (returns true)
-// whenever the status can't be determined, for the same reason as above —
+// Returns true if the account should be let in. This has to go through the
+// server (/api/check-access) rather than reading the caller's own profile
+// row directly: a team member's access is governed by their company
+// owner's subscription, not their own (which is never set on an invited
+// account), so a client-side read of just this row can't answer it
+// correctly. Fails open (returns true) whenever the check can't complete —
 // an error here must never turn into an accidental lockout.
 async function checkSubscriptionAccess(userId){
   try{
-    var r = await supabaseClient.from('profiles').select('subscription_status').eq('user_id', userId).maybeSingle();
-    var status = r.data && r.data.subscription_status;
-    if(status && BLOCKED_SUBSCRIPTION_STATUSES.indexOf(status) !== -1) return false;
-    return true;
+    var headers = await getAuthHeaders();
+    var r = await fetch('/api/check-access', { method:'POST', headers: headers });
+    if(!r.ok) return true;
+    var d = await r.json();
+    return d.allowed !== false;
   }catch(e){
     console.error('Subscription check error:', e);
     return true;
