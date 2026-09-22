@@ -7942,9 +7942,70 @@ function hideBootLoader(){
   setTimeout(function(){ l.remove(); }, 250);
 }
 
+// Explicit denylist rather than an allowlist, deliberately: a profile whose
+// subscription_status is missing/unknown (e.g. an account created before
+// this column existed, or a status Stripe adds later that we haven't seen
+// yet) must never be locked out by mistake. Only a status we positively know
+// means "no active subscription" blocks access.
+var BLOCKED_SUBSCRIPTION_STATUSES = ['incomplete','incomplete_expired','canceled','cancelled','unpaid','paused'];
+
+// Returns true if the account should be let in. Fails open (returns true)
+// whenever the status can't be determined, for the same reason as above —
+// an error here must never turn into an accidental lockout.
+async function checkSubscriptionAccess(userId){
+  try{
+    var r = await supabaseClient.from('profiles').select('subscription_status').eq('user_id', userId).maybeSingle();
+    var status = r.data && r.data.subscription_status;
+    if(status && BLOCKED_SUBSCRIPTION_STATUSES.indexOf(status) !== -1) return false;
+    return true;
+  }catch(e){
+    console.error('Subscription check error:', e);
+    return true;
+  }
+}
+
+// Repurposes the boot loader (rather than hiding it) into a screen asking
+// for payment details, for an account that was never actually completed at
+// Stripe — e.g. someone who confirmed their signup email after abandoning
+// checkout, without ever entering a card.
+function showSubscriptionRequired(){
+  var l = document.getElementById('kc-boot-loader');
+  if(!l) return;
+  l.innerHTML =
+    '<img src="logo.png" alt="Kitchen Control" style="width:120px;height:auto;margin-bottom:20px;">' +
+    '<div style="color:#fff;font-size:17px;font-weight:600;margin-bottom:10px;text-align:center;max-width:320px;">Your trial needs a payment method</div>' +
+    '<div style="color:rgba(255,255,255,0.6);font-size:14px;text-align:center;max-width:320px;margin-bottom:24px;line-height:1.5;">Add your card to continue — you won\'t be charged during your 30-day trial.</div>' +
+    '<button id="kc-sub-continue-btn" style="padding:12px 24px;background:#7fbf3f;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">Continue to payment →</button>' +
+    '<a id="kc-sub-logout-link" href="#" style="margin-top:16px;color:rgba(255,255,255,0.5);font-size:13px;text-decoration:underline;">Log out</a>';
+  document.getElementById('kc-sub-continue-btn').onclick = async function(){
+    var btn = this;
+    btn.textContent = 'Redirecting...';
+    btn.disabled = true;
+    try{
+      var headers = await getAuthHeaders();
+      var checkoutRes = await fetch('/api/create-checkout', { method:'POST', headers: headers, body: JSON.stringify({}) });
+      var checkoutData = await checkoutRes.json();
+      if(checkoutRes.ok && checkoutData.url){
+        window.location.href = checkoutData.url;
+      } else {
+        btn.textContent = 'Continue to payment →';
+        btn.disabled = false;
+        alert(checkoutData.error || 'Could not start checkout. Please try again or contact support@kitchen-control.co.uk.');
+      }
+    }catch(e){
+      btn.textContent = 'Continue to payment →';
+      btn.disabled = false;
+      alert('Could not start checkout. Please try again or contact support@kitchen-control.co.uk.');
+    }
+  };
+  document.getElementById('kc-sub-logout-link').onclick = function(e){
+    e.preventDefault();
+    supabaseClient.auth.signOut().then(function(){ window.location.href = 'login.html'; });
+  };
+}
+
 if(window.KC_DEMO){ hideBootLoader(); demoBoot(); } else {
 supabaseClient.auth.getSession().then(async function(res){
-  hideBootLoader();
   if(res.data && res.data.session){
     var userId = res.data.session.user.id;
     window._kcUserId = userId;
@@ -7976,17 +8037,25 @@ supabaseClient.auth.getSession().then(async function(res){
       }
     }catch(e){ console.error('Profile init error:', e); }
 
-    // Session exists - load data
+    var allowed = await checkSubscriptionAccess(userId);
+    if(!allowed){ showSubscriptionRequired(); return; }
+
+    // Session exists and subscription is valid - load data
+    hideBootLoader();
     startDataLoad();
 
   } else {
-    hideBootLoader();
     // No session - try to refresh
-    supabaseClient.auth.refreshSession().then(function(refreshRes){
+    supabaseClient.auth.refreshSession().then(async function(refreshRes){
       if(refreshRes.data && refreshRes.data.session){
+        var refreshedUserId = refreshRes.data.session.user.id;
+        var allowedAfterRefresh = await checkSubscriptionAccess(refreshedUserId);
+        if(!allowedAfterRefresh){ showSubscriptionRequired(); return; }
+        hideBootLoader();
         startDataLoad();
       } else {
         // Session expired - redirect to login
+        hideBootLoader();
         localStorage.removeItem('kc_user_id');
         window.location.href = 'login.html';
       }

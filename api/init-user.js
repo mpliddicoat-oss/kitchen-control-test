@@ -6,9 +6,13 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 
 // Find the Stripe customer that belongs to this Supabase user.
-// Checkout always creates/finds the customer BEFORE this endpoint ever runs
-// (the browser redirects here only after Stripe checkout completes), so the
-// customer is guaranteed to already exist by the time we look for it.
+// NOTE: this endpoint does NOT only run after a completed Stripe checkout —
+// the dashboard calls it on first login for any signed-up user, including
+// someone who abandoned checkout entirely. create-checkout.js creates the
+// Stripe customer up front (before the card form is even shown), so a
+// customer often exists here regardless of whether they ever paid — see
+// findSubscriptionStatus() below, which is what actually distinguishes the
+// two cases.
 async function findStripeCustomerId(userId, email) {
   if (!STRIPE_SECRET) return null;
   try {
@@ -36,6 +40,28 @@ async function findStripeCustomerId(userId, email) {
     console.error('findStripeCustomerId error:', e.message);
   }
   return null;
+}
+
+// Returns the real Stripe subscription status for this customer, or
+// 'incomplete' if no customer or no subscription exists yet. A Stripe
+// customer object alone proves nothing — it's created the moment
+// create-checkout.js runs, well before the card form is shown, so someone
+// who abandons at Stripe still has a customer with no subscription behind
+// it. Only an actual subscription object means checkout was completed.
+async function findSubscriptionStatus(stripeCustomerId) {
+  if (!STRIPE_SECRET || !stripeCustomerId) return 'incomplete';
+  try {
+    const r = await fetch(
+      `https://api.stripe.com/v1/subscriptions?customer=${stripeCustomerId}&status=all&limit=1`,
+      { headers: { 'Authorization': `Bearer ${STRIPE_SECRET}` } }
+    );
+    const data = await r.json();
+    const sub = data.data && data.data[0];
+    return (sub && sub.status) || 'incomplete';
+  } catch (e) {
+    console.error('findSubscriptionStatus error:', e.message);
+    return 'incomplete';
+  }
 }
 
 export default async function handler(req, res) {
@@ -116,6 +142,13 @@ export default async function handler(req, res) {
     // on the very first write — this is the piece that was previously missing.
     const stripeCustomerId = await findStripeCustomerId(user.id, user.email);
 
+    // Reflect Stripe's actual state rather than assuming checkout completed —
+    // this used to be hardcoded to 'trialing', which granted full access to
+    // anyone who signed up and confirmed their email, whether or not they
+    // ever reached Stripe at all. dashboard.html's boot gate blocks anything
+    // that isn't a real active/trialing/past_due subscription.
+    const subscriptionStatus = await findSubscriptionStatus(stripeCustomerId);
+
     // Create or update profile
     const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
       method: 'POST',
@@ -127,7 +160,7 @@ export default async function handler(req, res) {
         company_id: companyId,
         role: 'owner',
         scans_used: 0,
-        subscription_status: 'trialing',
+        subscription_status: subscriptionStatus,
         stripe_customer_id: stripeCustomerId,
         referral_source: referralSource,
         billing_start_date: new Date().toISOString().split('T')[0]
