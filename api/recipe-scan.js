@@ -34,6 +34,15 @@ export default async function handler(req, res) {
     profile = await getCallerProfile(user.id);
     if (!profile) return res.status(403).json({ error: 'Profile not found' });
 
+    // The client hides the scan UI for 'chef' (canScan() in dashboard.html),
+    // but that's UX only -- nothing was actually stopping a direct API call
+    // from that account, which would still consume the company's shared
+    // quota. Mirrors canScan()'s allowed roles exactly.
+    const ALLOWED_SCAN_ROLES = ['owner', 'head_chef', 'sous_chef'];
+    if (profile.role && ALLOWED_SCAN_ROLES.indexOf(profile.role) === -1) {
+      return res.status(403).json({ error: 'Your role does not have permission to scan.' });
+    }
+
     const ALLOWED_SCAN_STATUSES = ['active', 'trialing', 'trial', 'past_due'];
     // Team members never get their own subscription_status or scans_used
     // set -- the company's one subscription and its single shared scan

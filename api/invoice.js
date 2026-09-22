@@ -34,6 +34,15 @@ export default async function handler(req, res) {
     profile = await getCallerProfile(user.id);
     if (!profile) return res.status(403).json({ error: 'Profile not found' });
 
+    // The client hides the scan UI for 'chef' (canScan() in dashboard.html),
+    // but that's UX only -- nothing was actually stopping a direct API call
+    // from that account, which would still consume the company's shared
+    // quota. Mirrors canScan()'s allowed roles exactly.
+    const ALLOWED_SCAN_ROLES = ['owner', 'head_chef', 'sous_chef'];
+    if (profile.role && ALLOWED_SCAN_ROLES.indexOf(profile.role) === -1) {
+      return res.status(403).json({ error: 'Your role does not have permission to scan.' });
+    }
+
     // Allow scanning for any active or trial status. We accept both 'trial'
     // and 'trialing' because signup writes 'trial' and the Stripe webhook writes
     // 'trialing' — a user may briefly have either before the webhook lands.
