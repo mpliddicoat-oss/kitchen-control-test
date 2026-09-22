@@ -7236,12 +7236,32 @@ async function settingsRender(){
   if(_deferredInstallPrompt && btn) btn.style.display = 'inline-flex';
 }
 
-function settingsRenderSubscription(profile){
+async function settingsRenderSubscription(profile){
   var subEl = document.getElementById('set-subscription-content');
   if(!subEl) return;
+
+  // The scan counter is a shared company-wide quota (see getBillingProfile
+  // in api/_auth.js), but scans_used still lives per profile row -- new
+  // scans only ever land on the owner's row now, but older, pre-fix scans
+  // may still sit on team members' own rows too. Summing every profile in
+  // the company rather than reading a single row gives the true total
+  // either way, and matches the profile-scan-counter live-update listener
+  // below exactly, so the number doesn't jump the moment a live update fires.
   var scansUsed = profile.scans_used || 0;
+  var billingStartRaw = profile.billing_start_date;
+  if(profile.company_id){
+    try{
+      var teamRes = await supabaseClient.from('profiles').select('role,scans_used,billing_start_date').eq('company_id', profile.company_id);
+      if(teamRes.data && teamRes.data.length){
+        scansUsed = teamRes.data.reduce(function(sum,p){ return sum + (p.scans_used||0); }, 0);
+        var ownerRow = teamRes.data.find(function(p){ return p.role === 'owner'; });
+        if(ownerRow && ownerRow.billing_start_date) billingStartRaw = ownerRow.billing_start_date;
+      }
+    }catch(e){ console.error('Could not load company scan total:', e); }
+  }
+
   var pct = Math.min(100, Math.round((scansUsed/1000)*100));
-  var billingStart = profile.billing_start_date ? new Date(profile.billing_start_date) : new Date();
+  var billingStart = billingStartRaw ? new Date(billingStartRaw) : new Date();
   var nextBilling = new Date(billingStart);
   nextBilling.setMonth(nextBilling.getMonth() + 1);
   var nextStr = nextBilling.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
