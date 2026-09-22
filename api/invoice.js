@@ -1,6 +1,6 @@
 // /api/invoice.js — Kitchen Control invoice scanning via Gemini
 
-import { requireAuth, getCallerProfile, getEffectiveSubscriptionStatus, serviceHeaders } from './_auth.js';
+import { requireAuth, getCallerProfile, getBillingProfile, serviceHeaders } from './_auth.js';
 import { isDemoRequest, checkDemoRateLimit } from './_demo.js';
 
 export const config = {
@@ -18,6 +18,7 @@ export default async function handler(req, res) {
   let user = null;
   let profile = null;
   let scansUsed = 0;
+  let billingUserId = null;
 
   if (demo) {
     const rl = checkDemoRateLimit(req);
@@ -37,15 +38,17 @@ export default async function handler(req, res) {
     // and 'trialing' because signup writes 'trial' and the Stripe webhook writes
     // 'trialing' — a user may briefly have either before the webhook lands.
     const ALLOWED_SCAN_STATUSES = ['active', 'trialing', 'trial', 'past_due'];
-    // Team members never get their own subscription_status set -- the
-    // company's one subscription, held by the owner, is what actually
-    // governs their access.
-    const status = await getEffectiveSubscriptionStatus(profile);
+    // Team members never get their own subscription_status or scans_used
+    // set -- the company's one subscription and its single shared scan
+    // quota, both held by the owner, are what actually govern their access.
+    const billingProfile = await getBillingProfile(profile);
+    const status = billingProfile && billingProfile.subscription_status;
     if (status && ALLOWED_SCAN_STATUSES.indexOf(status) === -1) {
       return res.status(403).json({ error: 'Active subscription required' });
     }
 
-    scansUsed = profile.scans_used || 0;
+    scansUsed = (billingProfile && billingProfile.scans_used) || 0;
+    billingUserId = (billingProfile && billingProfile.user_id) || user.id;
     if (scansUsed >= SCAN_LIMIT) {
       return res.status(429).json({ error: `Scan limit reached (${SCAN_LIMIT}/month). Resets on your next billing date.` });
     }
@@ -243,14 +246,14 @@ IMPORTANT RULES:
     // reading the same starting count and both landing past the limit.
     if (!demo && user) {
       try {
-        const incRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}&scans_used=eq.${scansUsed}`, {
+        const incRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${billingUserId}&scans_used=eq.${scansUsed}`, {
           method: 'PATCH',
           headers: { ...serviceHeaders, Prefer: 'return=representation' },
           body: JSON.stringify({ scans_used: scansUsed + 1 })
         });
         if (incRes.ok) {
           const updated = await incRes.json().catch(() => []);
-          if (!updated.length) console.warn('scans_used increment lost a race for user', user.id);
+          if (!updated.length) console.warn('scans_used increment lost a race for billing user', billingUserId, '(scanned by', user.id + ')');
         } else {
           console.error('Failed to increment scans_used:', incRes.status);
         }
