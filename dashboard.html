@@ -2750,105 +2750,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
           </div>
         </div>
       </div>
-
-      <p class="form-legal">
-        By signing up you agree to our <a href="#" onclick="showTerms();return false;">Terms &amp; Conditions</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
-      </p>
-      <div class="secure-badges">
-        <div class="secure-badge">🔒 SSL Secured</div>
-        <div class="secure-badge">🛡️ GDPR Compliant</div>
-        <div class="secure-badge">↩️ Cancel Anytime</div>
-      </div>
-    </form>
   </div>
-</div>
-
-<script>
-var kcSupa = supabase.createClient(
-  'https://qdvektbnhyfzxuxjhorw.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFkdmVrdGJuaHlmenh1eGpob3J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MTA2OTMsImV4cCI6MjA5MzQ4NjY5M30.DOo4wLbkQ-uU5ZdOtdRWGWUr3eOJQ7vEutLubCop1Nw'
-);
-
-// Clear form fields on load to prevent browser autofill
-window.addEventListener('load', function(){
-  setTimeout(function(){
-    var fields = ['email','password','firstName','lastName','businessName','town'];
-    fields.forEach(function(id){
-      var el = document.getElementById(id);
-      if(el) el.value = '';
-    });
-  }, 100);
-});
-
-function showTerms(){
-  document.getElementById('terms-modal').style.display = 'block';
-}
-
-function showError(msg){
-  var e = document.getElementById('error-box');
-  e.textContent = msg;
-  e.style.display = 'block';
-  window.scrollTo(0,0);
-}
-
-async function handleSignup(){
-  var btn = document.getElementById('submit-btn');
-  var errBox = document.getElementById('error-box');
-  errBox.style.display = 'none';
-
-  var firstName = document.getElementById('firstName').value.trim();
-  var lastName = document.getElementById('lastName').value.trim();
-  var email = document.getElementById('email').value.trim();
-  var password = document.getElementById('password').value;
-  var business = document.getElementById('businessName').value.trim();
-
-  if(!firstName){ showError('Please enter your first name.'); return; }
-  if(!email){ showError('Please enter your email address.'); return; }
-  if(!password || password.length < 8){ showError('Password must be at least 8 characters.'); return; }
-  if(!business){ showError('Please enter your business name.'); return; }
-  if(!document.getElementById('terms-check').checked){ showError('Please accept the Terms & Conditions to continue.'); return; }
-
-  btn.textContent = 'Setting up your account...';
-  btn.disabled = true;
-
-  var fullName = (firstName + ' ' + lastName).trim();
-
-  try{
-    // Create Supabase auth account - store name and business in metadata
-    var authRes = await kcSupa.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: {
-          full_name: fullName,
-          company_name: business,
-          terms_accepted_at: new Date().toISOString(),
-          marketing_consent: document.getElementById('marketing-check').checked,
-          marketing_consent_at: document.getElementById('marketing-check').checked ? new Date().toISOString() : null
-        }
-      }
-    });
-
-    if(authRes.error) throw authRes.error;
-
-    // When email confirmation is ON, user is null until they confirm
-    // Store gate pass so confirmation link works
-    // Store signup details - will be used to create profile after email confirmation
-
-    // Show success
-    document.getElementById('signup-form').style.display = 'none';
-    document.getElementById('confirm-email').textContent = email;
-    document.getElementById('success-box').style.display = 'block';
-    btn.style.display = 'none';
-
-  }catch(e){
-    console.error('Signup error:', e);
-    showError(e.message || 'Could not create account. Please try again.');
-    btn.textContent = 'Start My Free 30-Day Trial →';
-    btn.disabled = false;
-  }
-}
-</script>
 
 <!-- SCAN MODAL -->
 <div class="scan-modal" id="scan-modal">
@@ -3010,7 +2912,6 @@ function mainScrollEl(){ return document.querySelector('.main'); }
 function tc(s){
   return s.replace(/\w+/g,function(w){ return BIZ.indexOf(w.toLowerCase())>=0?w.toUpperCase():w[0].toUpperCase()+w.slice(1).toLowerCase(); });
 }
-function capFirst(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
 // Capitalizes the first letter of every sentence (not just the first), e.g.
 // "vegan. store in fridge" -> "Vegan. Store in fridge" -- used for free-text
 // notes fields where full title-casing (tc()) would be wrong.
@@ -3262,6 +3163,7 @@ function go(id, btn){
   });
   var fn={home:dashUpdate,suppliers:supList,ingredients:ingList,yields:yldList,recipes:recList,dishes:dishList,menus:menuList,allergens:aRender,ordering:ordList,'print-label':plInit,settings:settingsRender};
   if(fn[id]) fn[id]();
+  if(typeof updateMobTitle === 'function') updateMobTitle(id);
   if(typeof closeSidebar === 'function') closeSidebar();
 }
 
@@ -3631,8 +3533,6 @@ function ingRenderExtraSups(){
   });
   cont.innerHTML=html;
 }
-function ingCalcExtra(i){ /* cost recalc handled on save */ }
-
 function ingPickerBuild(){
   var html='<div class="ac '+(_ingA.none?'none':'off')+'" onclick="ingToggleNone()">No Allergens</div>';
   html+=ALLERGENS.map(function(a){ return '<div class="ac '+(_ingA[a.id]?'on':'off')+'" onclick="ingToggle(\''+a.id+'\')">'+a.e+' '+a.label+'</div>'; }).join('');
@@ -3657,20 +3557,6 @@ function ingCalcFromPack(){
     if(cdEl) cdEl.textContent='--';
   }
 }
-function ingCalcFromCase(){
-  var size=parseFloat(val('ing-size'))||0;
-  var caseSize=parseFloat(val('ing-case-size'))||0;
-  var caseCost=parseFloat(val('ing-case-cost'))||0;
-  var unit=val('ing-unit')||'kg';
-  if(caseSize>0&&caseCost>0){
-    var packCost=caseCost/caseSize;
-    var pcEl=el('ing-pack-cost')||el('ing-cost');
-    if(pcEl&&document.activeElement!==pcEl) pcEl.value=packCost.toFixed(2);
-    var cpuEl=el('ing-cpu'); if(cpuEl&&size) cpuEl.textContent='£'+(packCost/size).toFixed(4)+' per '+unit;
-    var cdEl=el('ing-case-disp'); if(cdEl) cdEl.textContent='£'+caseCost.toFixed(2)+' per case ('+caseSize+' × £'+packCost.toFixed(2)+')';
-  }
-}
-
 function ingCalc(){
   ingCalcFromPack();
   var packSize=parseFloat(val('ing-size'))||0;
@@ -3862,11 +3748,6 @@ function ingRow(i){
   var slLabel=shelfLifeLabel(i); var slDisp=slLabel?(' &middot; Shelf life: '+slLabel):'';
   var labelNameDisp=(i.labelName && i.labelName!==i.name)?(' &middot; Label: '+esc(i.labelName)):'';
   return '<div class="card-row"><div onclick="ingShowDetail(\''+i.id+'\')" style="flex:1;cursor:pointer"><div class="cr-title">'+esc(i.name)+hasLabel+'</div><div class="cr-sub">'+ingCpuLabel(i)+' &middot; '+aDisp+slDisp+labelNameDisp+'</div></div><div class="cr-actions"><button class="btn btn-outline btn-sm" onclick="ingEdit(\''+i.id+'\')">Edit</button><button class="btn btn-red btn-sm" onclick="ingDel(\''+i.id+'\',event)">Del</button></div></div>';
-}
-
-function ingGoBack(){
-  go('ingredients');
-  if(typeof ingRender === 'function') ingRender();
 }
 
 function ingRender(f){
@@ -5234,60 +5115,6 @@ function aRenderIngredient(){
   el('a-by-ingredient').innerHTML=aMatrixTable(rows,'All Ingredients — Allergen Matrix',true,'Ingredient');
 }
 
-function aTableIng(rows){
-  if(!rows.length) return '<p style="color:var(--muted);text-align:center;padding:30px">No ingredients yet.</p>';
-  var logo=el('logo-img');var logoSrc=logo?logo.src:'';
-  var html='<div class="as-wrap"><div class="as-hdr"><img src="'+logoSrc+'" alt="KC"><div><h2>Allergen Information &mdash; By Ingredient</h2><p>Click any dot to toggle the allergen directly on the ingredient. Changes save immediately.</p></div></div>';
-  html+='<div style="overflow-x:auto"><table class="dt" style="border-radius:0;border:none"><thead><tr><th style="min-width:160px">Ingredient</th>';
-  ALLERGENS.forEach(function(a){ html+='<th style="width:44px;text-align:center;border-left:1px solid var(--border)"><div class="col-hdr">'+a.label+'</div></th>'; });
-  html+='</tr></thead><tbody>';
-  rows.forEach(function(row){
-    html+='<tr><td>'+esc(row.label)+'</td>';
-    ALLERGENS.forEach(function(a){
-      var has=row.auto&&row.auto[a.id];
-      html+='<td class="a-cell"><div class="a-dot '+(has?'yes':'no')+' click" data-iid="'+row.iid+'" data-aid="'+a.id+'" onclick="aIngClickHandler(this)" title="'+(has?'Remove '+a.label+' from this ingredient':'Add '+a.label+' to this ingredient')+'"></div></td>';
-    });
-    html+='</tr>';
-  });
-  html+='</tbody></table></div>';
-  // No allergen key note
-  html+='<div class="a-key"><strong style="font-size:11px">Note:</strong><span style="font-size:11px;color:var(--muted)">All dots are editable. Changes update the ingredient permanently and flow through to all recipes, dishes, menus and allergen sheets.</span></div>';
-  html+='<div class="a-disclaimer">'+ALLERGEN_DISCLAIMER+'</div>';
-  html+='<div class="print-only" style="margin-top:20px">'+
-    '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">'+
-    '<span>Date Printed: <strong>'+new Date().toLocaleDateString('en-GB')+'</strong></span>'+
-    '<span>Kitchen Control - Allergen Information Sheet</span></div>'+
-    '<div class="sig-row">'+
-    '<div class="sig-field"><div class="sig-line"></div><div class="sig-label">Verified by (Print Name)</div></div>'+
-    '<div class="sig-field"><div class="sig-line"></div><div class="sig-label">Signature</div></div>'+
-    '<div class="sig-field"><div class="sig-line"></div><div class="sig-label">Date</div></div>'+
-    '</div></div>';
-  html+='</div>';
-  return html;
-}
-
-function aIngClickHandler(el){
-  var ingId=el.getAttribute('data-iid');
-  var allergenId=el.getAttribute('data-aid');
-  aIngToggle(ingId, allergenId);
-}
-function aIngToggle(ingId, allergenId){
-  var ing=byId(DB.ingredients,ingId);
-  if(!ing) return;
-  if(!ing.allergens) ing.allergens=[];
-  // Remove "none" if present since we are adding a real allergen
-  ing.allergens=ing.allergens.filter(function(a){ return a!=='none'; });
-  var idx=ing.allergens.indexOf(allergenId);
-  if(idx>=0){
-    ing.allergens.splice(idx,1);
-    // If no allergens left, mark as none confirmed
-    if(ing.allergens.length===0) ing.allergens=['none'];
-  } else {
-    ing.allergens.push(allergenId);
-  }
-  save();
-  aRenderIngredient();
-}
 function aRenderMenu(){
   var mId=val('a-menu-sel'), cont=el('a-menu-matrix');
   if(!mId){ cont.innerHTML='<p style="color:var(--muted);text-align:center;padding:30px">Select a menu above.</p>'; return; }
@@ -6101,10 +5928,8 @@ function ppdsPrint(useBy, useByStr){
 }
 
 // ================================================================
-// INVOICE IMPORT (UI Demo)
+// INVOICE IMPORT
 // ================================================================
-var _invoiceDemoMatched = [];
-var _invoiceDemoAwaiting = [];
 
 function openInvoiceModal(){
   if (window.KC_DEMO && !demoScanAllowed('invoice')) return;
@@ -6126,8 +5951,6 @@ function resetInvoiceModal(){
   document.getElementById('invoice-actions-initial').style.display='flex';
   document.getElementById('invoice-actions-result').style.display='none';
   document.getElementById('invoice-file-input').value='';
-  _invoiceDemoMatched=[];
-  _invoiceDemoAwaiting=[];
 }
 
 async function handleInvoiceUpload(input){
@@ -6389,69 +6212,6 @@ var _invoiceAwaitingItems = [];
 var _invoiceData = null;
 var _invoiceSupplierId = null;
 
-function showInvoiceResults(){
-  // Build demo results using real ingredients if available, otherwise use demo data
-  _invoiceDemoMatched = [];
-  _invoiceDemoAwaiting = [];
-
-  // Use real ingredients if they exist
-  var ings = DB.ingredients||[];
-  if(ings.length >= 2){
-    // Pick 2-3 random existing ingredients to "update"
-    var sample = ings.slice(0, Math.min(3, ings.length));
-    sample.forEach(function(ing){
-      var oldPrice = ing.packCost || 5.00;
-      var change = (Math.random() > 0.5 ? 1 : -1) * (Math.round(Math.random()*40)/100 + 0.05);
-      var newPrice = Math.max(0.5, oldPrice + change);
-      _invoiceDemoMatched.push({
-        ingId: ing.id,
-        name: ing.name,
-        oldPrice: oldPrice,
-        newPrice: parseFloat(newPrice.toFixed(2)),
-        packSize: ing.packSize,
-        unit: ing.unit
-      });
-    });
-  } else {
-    // Demo data if no ingredients yet
-    _invoiceDemoMatched = [
-      {name:'Plain Flour',oldPrice:8.50,newPrice:8.95,packSize:16,unit:'kg',ingId:null},
-      {name:'Double Cream',oldPrice:12.40,newPrice:12.10,packSize:12,unit:'litre',ingId:null}
-    ];
-  }
-
-  // Always add 2 new awaiting items
-  _invoiceDemoAwaiting = [
-    {id:'await_'+uid(),name:'Smoked Paprika',supplier:'Demo Supplier',packSize:500,unit:'g',packCost:3.20},
-    {id:'await_'+uid(),name:'Coconut Milk',supplier:'Demo Supplier',packSize:12,unit:'each',packCost:14.40}
-  ];
-
-  // Render matched
-  var matchedHTML = _invoiceDemoMatched.map(function(m){
-    var dir = m.newPrice > m.oldPrice ? '&#8593;' : '&#8595;';
-    var col = m.newPrice > m.oldPrice ? '#dc2626' : '#065f46';
-    return '<div class="invoice-match-row">'
-      +'<span>'+esc(m.name)+' ('+m.packSize+' '+m.unit+')</span>'
-      +'<span class="price-update">'
-      +'<span class="price-old">&pound;'+m.oldPrice.toFixed(2)+'</span>'
-      +'<span class="price-new" style="color:'+col+'">'+dir+' &pound;'+m.newPrice.toFixed(2)+'</span>'
-      +'</span></div>';
-  }).join('');
-  document.getElementById('invoice-matched-items').innerHTML = matchedHTML || '<p style="font-size:13px;color:var(--muted)">No existing ingredients matched on this invoice.</p>';
-
-  // Render awaiting
-  var awaitHTML = _invoiceDemoAwaiting.map(function(a){
-    return '<div class="invoice-await-row">'
-      +'<span>'+a.name+' ('+a.packSize+' '+a.unit+' &mdash; &pound;'+a.packCost.toFixed(2)+')</span>'
-      +'<span class="badge-new">NEW</span>'
-      +'</div>';
-  }).join('');
-  document.getElementById('invoice-awaiting-items').innerHTML = awaitHTML;
-
-  document.getElementById('invoice-results').style.display='block';
-  document.getElementById('invoice-actions-result').style.display='flex';
-}
-
 async function saveInvoiceResultsData(){
   // Save results WITHOUT closing modal - used by Scan Another
 
@@ -6621,29 +6381,6 @@ function resetScanModal(){
 }
 
 
-function handleScanPhoto(input){
-  var file=input.files[0]; if(!file) return;
-  var reader=new FileReader();
-  reader.onload=function(e){
-    var img=document.getElementById('scan-img-preview');
-    img.src=e.target.result;
-    img.style.display='block';
-    document.getElementById('scan-placeholder').style.display='none';
-    // Show processing animation
-    var proc=document.getElementById('scan-processing');
-    proc.style.display='flex';
-    document.getElementById('scan-actions-initial').style.display='none';
-    // Simulate AI processing delay then show demo results
-    setTimeout(function(){
-      proc.style.display='none';
-      showDemoScanResults(e.target.result);
-    }, 2200);
-  };
-  reader.readAsDataURL(file);
-}
-
-// demo scan function removed
-
 function applyScanResults(){
   // Apply detected allergens to the picker
   if(_scanDetectedAllergens.length>0){
@@ -6699,7 +6436,7 @@ function mobileSetup(){
 }
 
 function updateMobTitle(page){
-  var titles={home:'Dashboard',suppliers:'Suppliers',ingredients:'Ingredients',yields:'Yields',recipes:'Recipes',dishes:'Dishes',menus:'Menus',allergens:'Allergen Sheet',ordering:'Ordering',help:'Help'};
+  var titles={home:'Dashboard',suppliers:'Suppliers',ingredients:'Ingredients',yields:'Yields',recipes:'Recipes',dishes:'Dishes',menus:'Menus',allergens:'Allergen Sheet',ordering:'Ordering','print-label':'Print Label',settings:'Settings'};
   var el=document.getElementById('mob-title');
   if(el) el.textContent=titles[page]||'Kitchen Control';
 }
@@ -6913,36 +6650,6 @@ function applyInvoiceResultsAndScanAnother(){
     var inp = document.getElementById('invoice-file-input');
     if(inp){ inp.value=''; inp.click(); }
   }, 300);
-}
-
-
-// Course ordering for menus
-var COURSE_ORDER = [
-  'Snacks / Canapés', 'Snack', 'Bread / Amuse', 'Amuse',
-  'Starter', 'Starters',
-  'Soup',
-  'Fish Course', 'Fish',
-  'Main', 'Mains',
-  'Side', 'Sides',
-  'Sauce', 'Sauces',
-  'Cheese',
-  'Dessert', 'Desserts',
-  "Children's Menu", 'Kids',
-  'Drinks', 'Drink'
-];
-
-function courseIndex(cat){
-  var c = (cat||'').trim();
-  for(var i=0; i<COURSE_ORDER.length; i++){
-    if(COURSE_ORDER[i].toLowerCase()===c.toLowerCase()) return i;
-  }
-  return 999; // Unknown categories go last
-}
-
-function sortDishesByCourse(dishes){
-  return dishes.slice().sort(function(a,b){
-    return courseIndex(a.category) - courseIndex(b.category);
-  });
 }
 
 
@@ -10185,48 +9892,7 @@ function applyRecipeScanResults(data){
 
 // ============================================================
 // LABEL SCANNING - Gemini Vision via Vercel serverless function
-// Clean implementation - matches actual modal element IDs
 // ============================================================
-
-function detectAllergensFromText(text) {
-  var lower = text.toLowerCase();
-  var map = {
-    gluten:['wheat','barley','rye','oat','spelt','kamut','gluten','flour','bran','malt'],
-    crustaceans:['prawn','shrimp','crab','lobster','crayfish','langoustine','crustacean'],
-    eggs:['egg','albumin','mayonnaise','meringue','lysozyme','lecithin (egg)'],
-    fish:['fish','salmon','tuna','cod','haddock','anchovy','sardine','trout','bass','bream','pollock','tilapia'],
-    peanuts:['peanut','groundnut','monkey nut','arachis'],
-    soya:['soya','soy','tofu','edamame','miso','tempeh','textured vegetable protein','tvp','lecithin (soy'],
-    milk:['milk','butter','cheese','cream','lactose','whey','casein','dairy','ghee','yogurt','yoghurt','fromage','quark','curd'],
-    nuts:['almond','hazelnut','walnut','cashew','pecan','brazil nut','pistachio','macadamia','pine nut','nut'],
-    celery:['celery','celeriac'],
-    mustard:['mustard'],
-    sesame:['sesame','tahini'],
-    sulphites:['sulphite','sulfite','sulphur dioxide','so2','e220','e221','e222','e223','e224','e225','e226','e227','e228'],
-    lupin:['lupin','lupine'],
-    molluscs:['mussel','clam','oyster','squid','octopus','scallop','mollusc','abalone','snail']
-  };
-  var found = [];
-  for (var key in map) {
-    if (map[key].some(function(w){ return lower.indexOf(w) !== -1; })) found.push(key);
-  }
-  return found;
-}
-
-function applyDetectedAllergens(allergens) {
-  if (!allergens || !allergens.length) return;
-  if (typeof _ingA === 'undefined') return;
-  // Clear none flag, set each detected allergen
-  delete _ingA['none'];
-  allergens.forEach(function(a){ _ingA[a] = true; });
-  // Rebuild the picker if it's visible
-  var picker = document.getElementById('ing-allergen-picker');
-  if (picker && typeof ingPickerBuild === 'function') {
-    ingPickerBuild();
-  }
-  // If picker isn't rendered yet, _ingA is already set so it will
-  // apply correctly when ingPickerBuild() is called during form render
-}
 
 async function scanIngredientText(file) {
   if (window.KC_DEMO && !demoScanAllowed('label')) { return; }
