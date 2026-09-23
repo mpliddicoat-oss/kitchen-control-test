@@ -1,8 +1,13 @@
 // /api/remove-user.js
 
-import { requireAuth, getCallerProfile, requireOwner, requireSameCompany, serviceHeaders, isValidUuid } from './_auth.js';
+import { requireAuth, getCallerProfile, requireSameCompany, serviceHeaders, isValidUuid } from './_auth.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
+
+// Matches who the team list's remove button is shown to (dashboard.html's
+// canManageTeam) — this endpoint was owner-only, silently rejecting a
+// head_chef who'd already clicked remove in the UI.
+const ALLOWED_MANAGE_ROLES = ['owner', 'head_chef'];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -11,9 +16,11 @@ export default async function handler(req, res) {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  // 2. Verify caller is an owner
+  // 2. Verify caller is an owner or head_chef
   const callerProfile = await getCallerProfile(user.id);
-  if (!requireOwner(callerProfile, res)) return;
+  if (!callerProfile || ALLOWED_MANAGE_ROLES.indexOf(callerProfile.role) === -1) {
+    return res.status(403).json({ error: 'Owner or head chef access required' });
+  }
 
   const { targetUserId } = req.body || {};
   if (!targetUserId) return res.status(400).json({ error: 'targetUserId required' });
@@ -26,6 +33,17 @@ export default async function handler(req, res) {
 
   // 4. Target must be in the same company
   if (!await requireSameCompany(callerProfile, targetUserId, res)) return;
+
+  // 5. Only the owner may remove another owner (there normally isn't one,
+  // but guard it rather than let a head_chef delete an owner's account)
+  if (callerProfile.role !== 'owner') {
+    const targetRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${targetUserId}&select=role`, { headers: serviceHeaders });
+    const targetRows = await targetRes.json();
+    const targetRole = targetRows && targetRows[0] && targetRows[0].role;
+    if (targetRole === 'owner') {
+      return res.status(403).json({ error: 'Only the owner can remove the owner' });
+    }
+  }
 
   if (!SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
     return res.status(500).json({ error: 'Supabase env vars not configured' });

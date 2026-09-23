@@ -1,12 +1,16 @@
 // /api/change-role.js
 
-import { requireAuth, getCallerProfile, requireOwner, requireSameCompany, serviceHeaders, isValidUuid } from './_auth.js';
+import { requireAuth, getCallerProfile, requireSameCompany, serviceHeaders, isValidUuid } from './_auth.js';
 import { sendEmail, emailHeader, emailFooter, emailButton, escHtml } from './_email.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 
 const roleLabels = { owner: 'Owner', head_chef: 'Head Chef', sous_chef: 'Sous Chef', chef: 'Chef' };
 const validRoles = ['owner', 'head_chef', 'sous_chef', 'chef'];
+// Matches who the team list's role dropdown is shown to (dashboard.html's
+// canManageTeam) — this endpoint was owner-only, silently rejecting a
+// head_chef who'd already changed the dropdown in the UI.
+const ALLOWED_MANAGE_ROLES = ['owner', 'head_chef'];
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -15,14 +19,21 @@ export default async function handler(req, res) {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  // 2. Verify caller is an owner
+  // 2. Verify caller is an owner or head_chef
   const callerProfile = await getCallerProfile(user.id);
-  if (!requireOwner(callerProfile, res)) return;
+  if (!callerProfile || ALLOWED_MANAGE_ROLES.indexOf(callerProfile.role) === -1) {
+    return res.status(403).json({ error: 'Owner or head chef access required' });
+  }
 
   const { targetUserId, newRole } = req.body || {};
   if (!targetUserId || !newRole) return res.status(400).json({ error: 'Missing fields' });
   if (!isValidUuid(targetUserId)) return res.status(400).json({ error: 'Invalid targetUserId' });
   if (!validRoles.includes(newRole)) return res.status(400).json({ error: 'Invalid role' });
+  // A head_chef can manage the team, but only the owner may hand out the
+  // owner role itself — otherwise a head_chef could grant it to anyone.
+  if (newRole === 'owner' && callerProfile.role !== 'owner') {
+    return res.status(403).json({ error: 'Only the owner can assign the owner role' });
+  }
 
   // 3. Verify target is in the same company
   if (!await requireSameCompany(callerProfile, targetUserId, res)) return;
