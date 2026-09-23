@@ -65,6 +65,70 @@ export async function getCallerProfile(userId) {
   return (rows && rows[0]) || null;
 }
 
+// Statuses that positively mean "no active subscription". A denylist rather
+// than an allowlist deliberately: a status we don't recognise (a future
+// Stripe status, or a profile predating this column) must fail open, not
+// silently start blocking real customers.
+export const BLOCKED_SUBSCRIPTION_STATUSES = ['incomplete', 'incomplete_expired', 'canceled', 'cancelled', 'unpaid', 'paused'];
+
+/**
+ * Returns the profile row that actually governs this account's billing —
+ * its own profile if the caller IS the owner, otherwise the company
+ * owner's profile, looked up via companies.owner_id. Kitchen Control bills
+ * one subscription AND one shared scan quota per company, held by the
+ * owner, not per user — a team member added via accept-invite.js never
+ * gets a real subscription_status (it's simply never set on that profile),
+ * and their own scans_used starts at 0 independently of everyone else's,
+ * so anything that reads a non-owner's own row directly either
+ * under-reports usage or over-reports access. Every check that needs to
+ * know "does this company have an active subscription" or "how many scans
+ * has this company used this month" must resolve to this same row.
+ * Falls back to the caller's own profile if the owner can't be resolved,
+ * so a lookup error fails open rather than blocking access outright.
+ */
+export async function getBillingProfile(profile) {
+  if (!profile) return null;
+  if (profile.role === 'owner' || !profile.company_id) return profile;
+
+  try {
+    const companyRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/companies?id=eq.${profile.company_id}&select=owner_id`,
+      { headers: serviceHeaders }
+    );
+    const companyRows = await companyRes.json();
+    const ownerId = companyRows && companyRows[0] && companyRows[0].owner_id;
+    if (!ownerId) return profile;
+
+    const ownerRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${ownerId}&select=user_id,role,company_id,subscription_status,scans_used,stripe_customer_id`,
+      { headers: serviceHeaders }
+    );
+    const ownerRows = await ownerRes.json();
+    const ownerProfile = ownerRows && ownerRows[0];
+    return ownerProfile || profile;
+  } catch (e) {
+    console.error('getBillingProfile error:', e.message);
+    return profile;
+  }
+}
+
+/**
+ * Returns the subscription status that should actually govern this
+ * caller's access — see getBillingProfile for why this can't just be
+ * profile.subscription_status for a non-owner.
+ */
+export async function getEffectiveSubscriptionStatus(profile) {
+  const billing = await getBillingProfile(profile);
+  return billing ? billing.subscription_status : null;
+}
+
+/**
+ * True if this status positively means no active subscription.
+ */
+export function isSubscriptionBlocked(status) {
+  return !!(status && BLOCKED_SUBSCRIPTION_STATUSES.indexOf(status) !== -1);
+}
+
 /**
  * Asserts the caller is an owner. Sends 403 and returns false if not.
  */

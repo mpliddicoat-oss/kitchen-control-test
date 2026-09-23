@@ -278,6 +278,11 @@ async function handleSignup(){
   if(!business){ showError('Please enter your business name.'); return; }
   if(!document.getElementById('terms-check').checked){ showError('Please accept the Terms & Conditions to continue.'); return; }
 
+  // Funnel tracking: form passed validation and signup is actually being attempted
+  if(typeof gtag === 'function'){
+    gtag('event', 'signup_form_submit', { method: 'email' });
+  }
+
   btn.textContent = 'Creating your account...';
   btn.disabled = true;
 
@@ -341,6 +346,10 @@ async function handleSignup(){
     }
 
     // Step 4: Redirect to Stripe checkout
+    // Funnel tracking: account exists and checkout was actually reached
+    if(typeof gtag === 'function'){
+      gtag('event', 'begin_checkout', { currency: 'GBP', value: 12.99 });
+    }
     window.location.href = checkoutData.url;
 
   }catch(e){

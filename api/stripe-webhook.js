@@ -130,6 +130,32 @@ export default async function handler(req, res) {
     }
   }
 
+  // Mirrors billing-relevant fields onto every team member's own profile
+  // row, not just the owner's -- getBillingProfile (api/_auth.js) already
+  // resolves a team member's access/quota to the owner's row regardless of
+  // what's stored here, but the stored value should still genuinely reflect
+  // the company's real status rather than sit there stale or blank. Also
+  // covers the scans_used reset: without this, a fresh billing cycle only
+  // zeroed the owner's own counter, so any usage still sitting on a team
+  // member's row (their own scans from before this was made a shared
+  // company-wide quota) would never actually clear.
+  async function propagateToTeam(companyId, data) {
+    if(!companyId) return;
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/profiles?company_id=eq.${companyId}&role=neq.owner`, {
+        method: 'PATCH',
+        headers: supabaseHeaders,
+        body: JSON.stringify(data)
+      });
+      if(!r.ok) {
+        const errText = await r.text().catch(() => '');
+        console.error(`propagateToTeam failed (${r.status}) for company ${companyId}:`, errText);
+      }
+    } catch (e) {
+      console.error('propagateToTeam error:', e.message);
+    }
+  }
+
   try {
     switch(event.type) {
 
@@ -169,6 +195,7 @@ ${emailFooter()}`);
             subscription_status: 'cancelled',
             deletion_date: deletionDate.toISOString().split('T')[0]
           });
+          await propagateToTeam(profile.company_id, { subscription_status: 'cancelled' });
         }
 
         // Remove from the newsletter list
@@ -224,6 +251,11 @@ ${emailFooter()}`);
             subscription_status: 'active',
             billing_start_date: new Date().toISOString().split('T')[0]
           });
+          // Also zero every team member's own scans_used -- without this,
+          // a monthly reset only cleared the owner's row, and any usage
+          // still sitting on a team member's row would linger forever in
+          // the company-wide total shown in Settings.
+          await propagateToTeam(profile.company_id, { scans_used: 0, subscription_status: 'active' });
         }
 
         await sendEmail(email, `Payment confirmed — ${amount} Kitchen Control`, `
@@ -302,6 +334,7 @@ ${emailFooter()}`);
             stripe_customer_id: session.customer,
             subscription_status: 'trialing'
           });
+          await propagateToTeam(profile.company_id, { subscription_status: 'trialing' });
         }
 
         await sendEmail(ADMIN_EMAIL, `New subscriber: ${name} — ${company}`, `

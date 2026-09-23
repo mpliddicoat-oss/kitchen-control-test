@@ -1,6 +1,6 @@
 // /api/create-portal.js
 
-import { requireAuth, getCallerProfile } from './_auth.js';
+import { requireAuth, getCallerProfile, requireOwner } from './_auth.js';
 
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 
@@ -11,8 +11,15 @@ export default async function handler(req, res) {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  // 2. Get stripe_customer_id from their profile — don't trust the request body
+  // 2. Only the owner holds the company's Stripe customer/subscription --
+  // same reasoning as cancel-subscription.js. A team member's own row never
+  // gets a stripe_customer_id written (accept-invite.js doesn't set one),
+  // so this is currently unreachable in practice, but that's an accident of
+  // the data, not a guarantee -- check explicitly rather than rely on it.
   const profile = await getCallerProfile(user.id);
+  if (!requireOwner(profile, res)) return;
+
+  // 3. Get stripe_customer_id from their profile — don't trust the request body
   const customerId = profile && profile.stripe_customer_id;
 
   if (!customerId) {

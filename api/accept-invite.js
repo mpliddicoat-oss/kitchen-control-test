@@ -1,6 +1,6 @@
 // /api/accept-invite.js
 
-import { requireAuth, serviceHeaders, isValidUuid } from './_auth.js';
+import { requireAuth, serviceHeaders, isValidUuid, getBillingProfile } from './_auth.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 
@@ -37,6 +37,16 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Pull the company's real current status at acceptance time rather than
+    // leaving this blank or guessing -- reuses the exact same owner-lookup
+    // getBillingProfile does for access checks, so what gets stored here is
+    // never out of step with what actually governs this account. It won't
+    // stay perfectly in sync on its own after this point though: the
+    // Stripe webhook's propagateToTeam() is what keeps it matching the
+    // owner's status as it changes later (upgrades, cancellations, etc).
+    const billing = await getBillingProfile({ role, company_id: companyId });
+    const initialStatus = (billing && billing.subscription_status) || null;
+
     const profileRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
       method: 'POST',
       headers: { ...serviceHeaders, 'Prefer': 'resolution=merge-duplicates,return=representation' },
@@ -47,6 +57,7 @@ export default async function handler(req, res) {
         company_id: companyId,
         role: role,
         scans_used: 0,
+        subscription_status: initialStatus,
         billing_start_date: new Date().toISOString().split('T')[0]
       })
     });

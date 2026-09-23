@@ -2589,6 +2589,30 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light);
   <div class="card" style="margin-bottom:20px">
     <h3 style="margin-bottom:16px;color:var(--dark)">&#128101; Team</h3>
     <div id="set-team-content"><p style="font-size:13px;color:var(--muted)">Save your company name to manage your team.</p></div>
+    <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:600;color:var(--dark);margin-bottom:10px">What each role can do</div>
+      <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead>
+          <tr style="text-align:left;color:var(--muted)">
+            <th style="padding:6px 8px;font-weight:600">Permission</th>
+            <th style="padding:6px 8px;font-weight:600;text-align:center">Owner</th>
+            <th style="padding:6px 8px;font-weight:600;text-align:center">Head Chef</th>
+            <th style="padding:6px 8px;font-weight:600;text-align:center">Sous Chef</th>
+            <th style="padding:6px 8px;font-weight:600;text-align:center">Chef</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-top:1px solid var(--border)"><td style="padding:6px 8px">View ingredients, recipes, dishes, menus, suppliers, yields</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td></tr>
+          <tr style="border-top:1px solid var(--border)"><td style="padding:6px 8px">Add / edit ingredients, recipes, dishes, menus, suppliers, yields</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td></tr>
+          <tr style="border-top:1px solid var(--border)"><td style="padding:6px 8px">Delete ingredients, recipes, dishes, menus, suppliers, yields</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+          <tr style="border-top:1px solid var(--border)"><td style="padding:6px 8px">Scan recipes &amp; invoices (AI import)</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td></tr>
+          <tr style="border-top:1px solid var(--border)"><td style="padding:6px 8px">Invite, edit roles &amp; remove team members</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+          <tr style="border-top:1px solid var(--border)"><td style="padding:6px 8px">Manage billing &amp; subscription</td><td style="text-align:center">&#10003;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td><td style="text-align:center">&mdash;</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
   </div>
   <!-- ACCOUNT -->
   <div class="card" style="margin-bottom:20px">
@@ -7236,12 +7260,32 @@ async function settingsRender(){
   if(_deferredInstallPrompt && btn) btn.style.display = 'inline-flex';
 }
 
-function settingsRenderSubscription(profile){
+async function settingsRenderSubscription(profile){
   var subEl = document.getElementById('set-subscription-content');
   if(!subEl) return;
+
+  // The scan counter is a shared company-wide quota (see getBillingProfile
+  // in api/_auth.js), but scans_used still lives per profile row -- new
+  // scans only ever land on the owner's row now, but older, pre-fix scans
+  // may still sit on team members' own rows too. Summing every profile in
+  // the company rather than reading a single row gives the true total
+  // either way, and matches the profile-scan-counter live-update listener
+  // below exactly, so the number doesn't jump the moment a live update fires.
   var scansUsed = profile.scans_used || 0;
+  var billingStartRaw = profile.billing_start_date;
+  if(profile.company_id){
+    try{
+      var teamRes = await supabaseClient.from('profiles').select('role,scans_used,billing_start_date').eq('company_id', profile.company_id);
+      if(teamRes.data && teamRes.data.length){
+        scansUsed = teamRes.data.reduce(function(sum,p){ return sum + (p.scans_used||0); }, 0);
+        var ownerRow = teamRes.data.find(function(p){ return p.role === 'owner'; });
+        if(ownerRow && ownerRow.billing_start_date) billingStartRaw = ownerRow.billing_start_date;
+      }
+    }catch(e){ console.error('Could not load company scan total:', e); }
+  }
+
   var pct = Math.min(100, Math.round((scansUsed/1000)*100));
-  var billingStart = profile.billing_start_date ? new Date(profile.billing_start_date) : new Date();
+  var billingStart = billingStartRaw ? new Date(billingStartRaw) : new Date();
   var nextBilling = new Date(billingStart);
   nextBilling.setMonth(nextBilling.getMonth() + 1);
   var nextStr = nextBilling.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
@@ -7263,10 +7307,20 @@ function settingsRenderSubscription(profile){
   h += '</div>';
   h += '<div style="font-size:11px;color:var(--muted);margin-top:5px">Resets ' + nextStr + '</div>';
   h += '</div>';
-  h += '<div style="display:flex;gap:10px;flex-wrap:wrap">';
-  h += '<button class="btn btn-outline" onclick="settingsManageBilling()">Manage Billing →</button>';
-  h += '<button class="btn btn-outline" style="color:#dc2626;border-color:#fecaca" onclick="settingsCancelSubscription()">Cancel Subscription</button>';
-  h += '</div>';
+  // Billing actions are owner-only. This has to be checked here, inside the
+  // render itself, not left to a separate applyRolePermissions() call to
+  // hide afterward — this function rebuilds the buttons from scratch every
+  // time Settings is opened, so anything hidden by an earlier call is back
+  // as soon as this HTML replaces it. (The server independently rejects a
+  // non-owner's cancel/billing request regardless of this — see
+  // cancel-subscription.js's requireOwner check — but the button should
+  // never be shown to click in the first place.)
+  if(canManageBilling()){
+    h += '<div style="display:flex;gap:10px;flex-wrap:wrap">';
+    h += '<button class="btn btn-outline" onclick="settingsManageBilling()">Manage Billing →</button>';
+    h += '<button class="btn btn-outline" style="color:#dc2626;border-color:#fecaca" onclick="settingsCancelSubscription()">Cancel Subscription</button>';
+    h += '</div>';
+  }
   subEl.innerHTML = h;
 }
 
@@ -7942,9 +7996,68 @@ function hideBootLoader(){
   setTimeout(function(){ l.remove(); }, 250);
 }
 
+// Returns true if the account should be let in. This has to go through the
+// server (/api/check-access) rather than reading the caller's own profile
+// row directly: a team member's access is governed by their company
+// owner's subscription, not their own (which is never set on an invited
+// account), so a client-side read of just this row can't answer it
+// correctly. Fails open (returns true) whenever the check can't complete —
+// an error here must never turn into an accidental lockout.
+async function checkSubscriptionAccess(userId){
+  try{
+    var headers = await getAuthHeaders();
+    var r = await fetch('/api/check-access', { method:'POST', headers: headers });
+    if(!r.ok) return true;
+    var d = await r.json();
+    return d.allowed !== false;
+  }catch(e){
+    console.error('Subscription check error:', e);
+    return true;
+  }
+}
+
+// Repurposes the boot loader (rather than hiding it) into a screen asking
+// for payment details, for an account that was never actually completed at
+// Stripe — e.g. someone who confirmed their signup email after abandoning
+// checkout, without ever entering a card.
+function showSubscriptionRequired(){
+  var l = document.getElementById('kc-boot-loader');
+  if(!l) return;
+  l.innerHTML =
+    '<img src="logo.png" alt="Kitchen Control" style="width:120px;height:auto;margin-bottom:20px;">' +
+    '<div style="color:#fff;font-size:17px;font-weight:600;margin-bottom:10px;text-align:center;max-width:320px;">Your trial needs a payment method</div>' +
+    '<div style="color:rgba(255,255,255,0.6);font-size:14px;text-align:center;max-width:320px;margin-bottom:24px;line-height:1.5;">Add your card to continue — you won\'t be charged during your 30-day trial.</div>' +
+    '<button id="kc-sub-continue-btn" style="padding:12px 24px;background:#7fbf3f;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;">Continue to payment →</button>' +
+    '<a id="kc-sub-logout-link" href="#" style="margin-top:16px;color:rgba(255,255,255,0.5);font-size:13px;text-decoration:underline;">Log out</a>';
+  document.getElementById('kc-sub-continue-btn').onclick = async function(){
+    var btn = this;
+    btn.textContent = 'Redirecting...';
+    btn.disabled = true;
+    try{
+      var headers = await getAuthHeaders();
+      var checkoutRes = await fetch('/api/create-checkout', { method:'POST', headers: headers, body: JSON.stringify({}) });
+      var checkoutData = await checkoutRes.json();
+      if(checkoutRes.ok && checkoutData.url){
+        window.location.href = checkoutData.url;
+      } else {
+        btn.textContent = 'Continue to payment →';
+        btn.disabled = false;
+        alert(checkoutData.error || 'Could not start checkout. Please try again or contact support@kitchen-control.co.uk.');
+      }
+    }catch(e){
+      btn.textContent = 'Continue to payment →';
+      btn.disabled = false;
+      alert('Could not start checkout. Please try again or contact support@kitchen-control.co.uk.');
+    }
+  };
+  document.getElementById('kc-sub-logout-link').onclick = function(e){
+    e.preventDefault();
+    supabaseClient.auth.signOut().then(function(){ window.location.href = 'login.html'; });
+  };
+}
+
 if(window.KC_DEMO){ hideBootLoader(); demoBoot(); } else {
 supabaseClient.auth.getSession().then(async function(res){
-  hideBootLoader();
   if(res.data && res.data.session){
     var userId = res.data.session.user.id;
     window._kcUserId = userId;
@@ -7976,17 +8089,25 @@ supabaseClient.auth.getSession().then(async function(res){
       }
     }catch(e){ console.error('Profile init error:', e); }
 
-    // Session exists - load data
+    var allowed = await checkSubscriptionAccess(userId);
+    if(!allowed){ showSubscriptionRequired(); return; }
+
+    // Session exists and subscription is valid - load data
+    hideBootLoader();
     startDataLoad();
 
   } else {
-    hideBootLoader();
     // No session - try to refresh
-    supabaseClient.auth.refreshSession().then(function(refreshRes){
+    supabaseClient.auth.refreshSession().then(async function(refreshRes){
       if(refreshRes.data && refreshRes.data.session){
+        var refreshedUserId = refreshRes.data.session.user.id;
+        var allowedAfterRefresh = await checkSubscriptionAccess(refreshedUserId);
+        if(!allowedAfterRefresh){ showSubscriptionRequired(); return; }
+        hideBootLoader();
         startDataLoad();
       } else {
         // Session expired - redirect to login
+        hideBootLoader();
         localStorage.removeItem('kc_user_id');
         window.location.href = 'login.html';
       }

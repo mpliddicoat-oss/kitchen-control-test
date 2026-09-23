@@ -1,15 +1,21 @@
 // /api/invite.js
 
-import { requireAuth, getCallerProfile, requireOwner } from './_auth.js';
+import { requireAuth, getCallerProfile } from './_auth.js';
 import { checkRateLimit } from './_ratelimit.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
+// Matches who the "+ Invite User" button is shown to (dashboard.html's
+// isOwnerOrHead) — this was previously owner-only, silently rejecting a
+// head_chef who'd already gone through the invite UI and had an `invites`
+// row written for them client-side.
+const ALLOWED_INVITE_ROLES = ['owner', 'head_chef'];
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Guards against a compromised/scripted owner session hammering Supabase's
+  // Guards against a compromised/scripted session hammering Supabase's
   // invite endpoint (and its outbound email quota) with invite spam.
   const rl = checkRateLimit(req, { max: 20, windowMs: 60 * 60 * 1000, prefix: 'invite' });
   if (!rl.ok) return res.status(429).json({ error: 'Too many requests. Please try again later.' });
@@ -18,9 +24,11 @@ export default async function handler(req, res) {
   const user = await requireAuth(req, res);
   if (!user) return;
 
-  // 2. Verify caller is an owner
+  // 2. Verify caller is an owner or head_chef
   const callerProfile = await getCallerProfile(user.id);
-  if (!requireOwner(callerProfile, res)) return;
+  if (!callerProfile || ALLOWED_INVITE_ROLES.indexOf(callerProfile.role) === -1) {
+    return res.status(403).json({ error: 'Owner or head chef access required' });
+  }
 
   const { email, role } = req.body || {};
   if (!email) return res.status(400).json({ error: 'Email required' });
