@@ -47,6 +47,13 @@ export default async function handler(req, res) {
         company_id: companyId,
         role: role,
         scans_used: 0,
+        // Explicitly null, not omitted -- a team member's own subscription
+        // status has no independent meaning (the company's one subscription,
+        // held by the owner, is what getBillingProfile resolves to for
+        // access purposes), and leaving this out lets a Postgres column
+        // default silently fill in something that looks like real data but
+        // immediately goes stale and never gets touched again.
+        subscription_status: null,
         billing_start_date: new Date().toISOString().split('T')[0]
       })
     });
