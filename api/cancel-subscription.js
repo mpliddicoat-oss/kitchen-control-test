@@ -1,9 +1,8 @@
 // /api/cancel-subscription.js
 
-import { requireAuth, getCallerProfile, requireOwner, serviceHeaders } from './_auth.js';
+import { requireAuth, getCallerProfile, requireOwner } from './_auth.js';
 import { sendEmail, emailHeader, emailFooter, emailButton, escHtml } from './_email.js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
 const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
 
 export default async function handler(req, res) {
@@ -62,24 +61,17 @@ export default async function handler(req, res) {
       }
     }
 
-    // Mark cancelled in Supabase
-    const deletionDate = new Date();
-    deletionDate.setDate(deletionDate.getDate() + 90);
-    const markRes = await fetch(`${SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user.id}`, {
-      method: 'PATCH',
-      headers: serviceHeaders,
-      body: JSON.stringify({
-        subscription_status: 'cancelled',
-        deletion_date: deletionDate.toISOString().split('T')[0]
-      })
-    });
-    if (!markRes.ok) {
-      // Stripe has already been cancelled above at this point — don't tell
-      // the user cancellation failed outright, but don't send the "you're
-      // cancelled" email off an unconfirmed DB write either.
-      console.error('cancel-subscription: Stripe cancelled but Supabase update failed, status', markRes.status);
-      return res.status(500).json({ error: 'Your subscription was cancelled with Stripe, but we could not update your account. Please contact support.' });
-    }
+    // Deliberately NOT writing subscription_status/deletion_date here. Stripe
+    // was told cancel_at_period_end=true above, so the subscription (and
+    // this account's access) stays genuinely active until the paid period
+    // actually ends -- exactly what the email below promises. The real
+    // transition to 'cancelled' (and the 90-day deletion_date) is handled
+    // by stripe-webhook.js's customer.subscription.deleted handler, which
+    // only fires once Stripe actually ends the subscription at period end.
+    // Setting it here too, immediately, used to cut off access (and start
+    // the deletion clock) the moment someone clicked Cancel -- mid-billing-
+    // period, while they were still a paying customer with unused access
+    // and a broken promise sitting right there in this same email.
 
     const name = escHtml(profile.full_name || 'Chef');
 
@@ -90,9 +82,9 @@ export default async function handler(req, res) {
       `${emailHeader()}
 <h1 style="color:#16222c;font-size:24px;font-weight:700;margin:0 0 16px;">Subscription cancelled</h1>
 <p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">Hi <strong>${name}</strong>,</p>
-<p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">Your Kitchen Control subscription has been cancelled. You will retain access until the end of your current billing period.</p>
+<p style="color:#374151;font-size:15px;line-height:1.7;margin:0 0 16px;">Your Kitchen Control subscription has been cancelled. You will retain full access until the end of your current billing period.</p>
 <div style="background:#fee2e2;border:1px solid #fecaca;border-radius:8px;padding:16px 20px;margin:20px 0;">
-  <p style="color:#dc2626;font-size:14px;font-weight:700;margin:0 0 6px;">Your data will be permanently deleted in 90 days.</p>
+  <p style="color:#dc2626;font-size:14px;font-weight:700;margin:0 0 6px;">Your data will be permanently deleted 90 days after your billing period ends.</p>
   <p style="color:#dc2626;font-size:13px;margin:0;">If you change your mind and resubscribe before then, your data will be restored.</p>
 </div>
 <p style="color:#374151;font-size:14px;line-height:1.7;margin:0 0 16px;">We're sorry to see you go. If there's anything we could have done better please email <a href="mailto:support@kitchen-control.co.uk" style="color:#7fbf3f;">support@kitchen-control.co.uk</a></p>
